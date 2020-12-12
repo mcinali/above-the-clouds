@@ -4,7 +4,7 @@ const { pool, pgTransaction } = require('../pg_helpers')
 const { pgMigrate } = require('../pg_migrations')
 
 const { storeAccount, storeAccountDetails } = require('../models/accounts')
-const { storeQuestion } = require('../models/questions')
+const { storeTopic } = require('../models/topics')
 
 const testUsername = 'testAccount'
 
@@ -47,7 +47,7 @@ describe('Accounts Tests', function() {
       lastname:'Account',
     }
     // Check to make sure correct Account details
-    await pgTransaction(`DELETE FROM accounts_details WHERE account_id = ${accountDetails.accountId}`)
+    await pgTransaction(`DELETE FROM account_details WHERE account_id = ${accountDetails.accountId}`)
     const accountAttributes = await storeAccountDetails(accountDetails)
     expect(accountAttributes.account_id).to.equal(accountDetails.accountId)
     expect(accountAttributes.email).to.equal(accountDetails.email)
@@ -58,20 +58,20 @@ describe('Accounts Tests', function() {
   })
 })
 
-describe('Questions Tests', function() {
+describe('Topics Tests', function() {
   it(`Should...
-      - Insert test Question
-      - Check to make sure correct Question info`, async function() {
-    // Insert test Question
+      - Insert test Topic
+      - Check to make sure correct Topic info`, async function() {
+    // Insert test topic
     const accountRow = await getAccountRow()
     const accountId = accountRow.id
-    const questionInfo = {
+    const topicInfo = {
       accountId:accountId,
-      question:'What do you want to talk about?',
+      topic:'What do you want to talk about?',
     }
-    // Check to make sure correct Question info
-    const question = await storeQuestion(questionInfo)
-    expect(question.account_id).to.equal(questionInfo.accountId)
-    expect(question.question).to.equal(questionInfo.question)
+    // Check to make sure correct topic info
+    const topic = await storeTopic(topicInfo)
+    expect(topic.account_id).to.equal(topicInfo.accountId)
+    expect(topic.topic).to.equal(topicInfo.topic)
   })
 })

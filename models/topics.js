@@ -1,13 +1,12 @@
 const { pgTransaction } = require('../pg_helpers')
 
-async function storeQuestion(info){
+async function storeTopic(info){
   try {
-    const { accountId, question } = info
+    const { accountId, topic } = info
     const query = `
-      INSERT INTO questions (account_id, question)
-      VALUES (${accountId}, '${question}')
+      INSERT INTO topics (account_id, topic)
+      VALUES (${accountId}, '${topic}')
       RETURNING *`
-    console.log(query)
     const result = await pgTransaction(query)
     return result.rows[0]
   } catch (error) {
@@ -17,5 +16,5 @@ async function storeQuestion(info){
 }
 
 module.exports = {
-  storeQuestion,
+  storeTopic,
 }

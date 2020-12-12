@@ -19,7 +19,7 @@ async function storeAccountDetails(account_details){
   try {
     const { accountId, email, phone, firstname, lastname } = account_details
     const query = `
-      INSERT INTO accounts_details (account_id, email, phone, firstname, lastname)
+      INSERT INTO account_details (account_id, email, phone, firstname, lastname)
       VALUES (${accountId}, '${email}', ${phone}, '${firstname}', '${lastname}')
       RETURNING *`
     const result = await pgTransaction(query)
