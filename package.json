@@ -1,0 +1,25 @@
+{
+  "name": "above-the-clouds",
+  "version": "1.0.0",
+  "description": "Discovery Platform",
+  "main": "app.js",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "pg": "^8.5.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "npm test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mcinali/above-the-clouds.git"
+  },
+  "author": "mcinali",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mcinali/above-the-clouds/issues"
+  },
+  "homepage": "https://github.com/mcinali/above-the-clouds#readme"
+}
