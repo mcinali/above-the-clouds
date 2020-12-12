@@ -31,6 +31,15 @@ async function pgMigrate(){
   //     created_at TIMESTAMP NOT NULL DEFAULT now()
   //   )`
   // )
+
+  await pgTransaction(
+    `CREATE TABLE IF NOT EXISTS questions (
+      id SERIAL PRIMARY KEY NOT NULL,
+      account_id INTEGER UNIQUE NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      question VARCHAR(64) NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT now()
+    )`
+  )
 }
 
 module.exports = {
