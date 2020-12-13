@@ -1,6 +1,6 @@
 const { pgTransaction } = require('../pg_helpers')
 
-async function storeAccount(account_info){
+async function insertAccount(account_info){
   try {
     const { username, password } = account_info
     const query = `
@@ -15,7 +15,7 @@ async function storeAccount(account_info){
   }
 }
 
-async function storeAccountDetails(account_details){
+async function insertAccountDetails(account_details){
   try {
     const { accountId, email, phone, firstname, lastname } = account_details
     const query = `
@@ -31,6 +31,6 @@ async function storeAccountDetails(account_details){
 }
 
 module.exports = {
-  storeAccount,
-  storeAccountDetails,
+  insertAccount,
+  insertAccountDetails,
 }
