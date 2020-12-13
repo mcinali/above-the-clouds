@@ -79,6 +79,26 @@ async function pgMigrate(){
   )
 
   await pgTransaction(
+    `CREATE TABLE IF NOT EXISTS thread_activity (
+      id SERIAL PRIMARY KEY NOT NULL,
+      thread_id INTEGER NOT NULL REFERENCES threads(id) ON DELETE CASCADE,
+      account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      start_time TIMESTAMPTZ NOT NULL DEFAULT now(),
+      end_time TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`
+  )
+
+  await pgTransaction(
+    `CREATE TABLE IF NOT EXISTS displayed_threads (
+      id SERIAL PRIMARY KEY NOT NULL,
+      account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      thread_id INTEGER NOT NULL REFERENCES threads(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`
+  )
+
+  await pgTransaction(
     `CREATE TABLE IF NOT EXISTS thread_invitations (
       id SERIAL PRIMARY KEY NOT NULL,
       thread_id INTEGER NOT NULL REFERENCES threads(id) ON DELETE CASCADE,

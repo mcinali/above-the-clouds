@@ -12,6 +12,8 @@ const {
   updateParticipantRole,
   updateRemoveParticipant,
   insertThreadInvitation,
+  selectPossibleThreadsForUser,
+  selectThreadParticipants,
 } = require('../models/threads')
 
 const testUsername = 'testAccount'

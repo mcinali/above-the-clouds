@@ -1,4 +1,46 @@
-const { pgTransaction } = require('../pg_helpers')
+const { pool, pgTransaction } = require('../pg_helpers')
+
+async function selectPossibleThreadsForUser(accountId){
+  try {
+    const query = `
+      SELECT
+        t.id,
+        topic_id,
+        topic,
+        private,
+        start_time
+      FROM threads as t
+      JOIN topics as p
+      ON t.topic_id = p.id
+      WHERE (account_id in (SELECT account_id FROM thread_participants WHERE removed = False) OR private = False)
+      AND end_time is null
+      ORDER BY private desc, start_time - now() desc`
+    return pool
+            .query(query)
+            .then(res => res.rows)
+            .catch(error => new Error(error))
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+async function selectThreadParticipants(threadId){
+  try {
+    const query = `
+      SELECT
+        account_id,
+        role,
+        removed
+      FROM thread_participants
+      ORDER BY role desc`
+    return pool
+            .query(query)
+            .then(res => res.rows)
+            .catch(error => new Error(error))
+  } catch (error) {
+    throw new Error(error)
+  }
+}
 
 async function insertTopic(info){
   try {
@@ -111,4 +153,6 @@ module.exports = {
   updateParticipantRole,
   updateRemoveParticipant,
   insertThreadInvitation,
+  selectPossibleThreadsForUser,
+  selectThreadParticipants,
 }
