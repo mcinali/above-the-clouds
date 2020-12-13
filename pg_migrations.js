@@ -83,9 +83,9 @@ async function pgMigrate(){
       id SERIAL PRIMARY KEY NOT NULL,
       thread_id INTEGER NOT NULL REFERENCES threads(id) ON DELETE CASCADE,
       moderator_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
-      invitee_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      invitee_email VARCHAR(128) NOT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-      CONSTRAINT unique_thread_id_moderator_id_invitee_id UNIQUE (thread_id, moderator_id, invitee_id)
+      CONSTRAINT unique_thread_id_moderator_id_invitee_email UNIQUE (thread_id, moderator_id, invitee_email)
     )`
   )
 }

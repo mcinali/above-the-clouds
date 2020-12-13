@@ -11,6 +11,7 @@ const {
   insertThreadParticipant,
   updateParticipantRole,
   updateRemoveParticipant,
+  insertThreadInvitation,
 } = require('../models/threads')
 
 const testUsername = 'testAccount'
@@ -75,6 +76,8 @@ describe('Threads Tests', function() {
       - Check to make sure Thread Participant info is correct
       - Update Thread Participant
       - Check to make sure Thread Participant info is correct
+      - Insert Thread Invitation
+      - Check to make sure Thread Invitation info is correct
       - Remove Thread Participant
       - Check to make sure Thread Participant is removed
       - End Thread
@@ -126,6 +129,17 @@ describe('Threads Tests', function() {
     expect(audience.thread_id).to.equal(audienceInfo.threadId)
     expect(audience.account_id).to.equal(audienceInfo.accountId)
     expect(audience.role).to.equal(audienceInfo.role)
+    // Insert Thread Invitation
+    const invitationInfo = {
+      threadId: thread.id,
+      moderatorId: accountId,
+      inviteeEmail: 'invitee@test.com'
+    }
+    const invite = await insertThreadInvitation(invitationInfo)
+    // Check to make sure Thread Invitation info is correct
+    expect(invite.thread_id).to.equal(invitationInfo.threadId)
+    expect(invite.moderator_id).to.equal(invitationInfo.moderatorId)
+    expect(invite.invitee_email).to.equal(invitationInfo.inviteeEmail)
     // Remove Thread Participant
     const removedParticipant = await updateRemoveParticipant(audienceInfo)
     // Check to make sure Thread Participant is removed

@@ -90,8 +90,11 @@ async function updateRemoveParticipant(info){
 
 async function insertThreadInvitation(info){
   try {
-    const { } = info
-    const query = ``
+    const { threadId, moderatorId, inviteeEmail } = info
+    const query = `
+      INSERT INTO thread_invitations (thread_id, moderator_id, invitee_email)
+      VALUES (${threadId}, ${moderatorId}, '${inviteeEmail}')
+      RETURNING *`
     const result = await pgTransaction(query)
     return result.rows[0]
   } catch (error) {
