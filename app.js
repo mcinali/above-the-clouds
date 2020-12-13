@@ -1,6 +1,6 @@
 const express = require('express')
 const cors = require('cors')
-
+const { pgMigrate } = require('./pg_migrations')
 
 const app = express()
 app.use(cors())
@@ -12,3 +12,6 @@ const port = 8080;
 app.listen(port, hostname, () => {
   console.log(`App running at http://${hostname}:${port}`)
 })
+
+// RUN DB migrations
+pgMigrate()
