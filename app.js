@@ -1,10 +1,12 @@
 const express = require('express')
 const cors = require('cors')
 const { pgMigrate } = require('./pg_migrations')
+const accounts = require('./routes/accounts')
 
 const app = express()
 app.use(cors())
 app.use(express.json())
+app.use('/user', accounts)
 
 const hostname = '0.0.0.0';
 const port = 8080;
