@@ -93,12 +93,14 @@ describe('Threads Tests', function() {
     // Insert Thread
     const threadInfo = {
       topicId: topic.id,
+      accountId: accountId,
       private: true,
     }
     const start = new Date(new Date().getTime())
     const thread = await insertThreadToStart(threadInfo)
     // Check to make sure Thread info is correct
     expect(thread.topic_id).to.equal(threadInfo.topicId)
+    expect(thread.creator_id).to.equal(threadInfo.accountId)
     expect(thread.private).to.equal(threadInfo.private)
     expect(thread.start_time.getTime() - start.getTime()).to.be.within(0,1)
     // Insert Thread Participant

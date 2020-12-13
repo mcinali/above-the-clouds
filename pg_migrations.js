@@ -47,6 +47,7 @@ async function pgMigrate(){
     `CREATE TABLE IF NOT EXISTS threads (
       id SERIAL PRIMARY KEY NOT NULL,
       topic_id INTEGER NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
+      creator_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
       private BOOLEAN NOT NULL,
       start_time TIMESTAMPTZ NOT NULL DEFAULT now(),
       end_time TIMESTAMPTZ,
@@ -74,6 +75,17 @@ async function pgMigrate(){
       removed BOOLEAN NOT NULL DEFAULT False,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       CONSTRAINT unique_thread_id_account_id UNIQUE (thread_id, account_id)
+    )`
+  )
+
+  await pgTransaction(
+    `CREATE TABLE IF NOT EXISTS thread_invitations (
+      id SERIAL PRIMARY KEY NOT NULL,
+      thread_id INTEGER NOT NULL REFERENCES threads(id) ON DELETE CASCADE,
+      moderator_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      invitee_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      CONSTRAINT unique_thread_id_moderator_id_invitee_id UNIQUE (thread_id, moderator_id, invitee_id)
     )`
   )
 }

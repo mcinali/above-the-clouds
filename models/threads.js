@@ -17,10 +17,10 @@ async function insertTopic(info){
 
 async function insertThreadToStart(info){
   try {
-    const { topicId, private } = info
+    const { topicId, accountId, private } = info
     const query = `
-      INSERT INTO threads (topic_id, private)
-      VALUES (${topicId}, ${private})
+      INSERT INTO threads (topic_id, creator_id, private)
+      VALUES (${topicId}, ${accountId}, ${private})
       RETURNING *`
     const result = await pgTransaction(query)
     return result.rows[0]
@@ -88,6 +88,18 @@ async function updateRemoveParticipant(info){
   }
 }
 
+async function insertThreadInvitation(info){
+  try {
+    const { } = info
+    const query = ``
+    const result = await pgTransaction(query)
+    return result.rows[0]
+  } catch (error) {
+    console.error(error.stack)
+    throw new Error(error)
+  }
+}
+
 module.exports = {
   insertTopic,
   insertThreadToStart,
@@ -95,4 +107,5 @@ module.exports = {
   insertThreadParticipant,
   updateParticipantRole,
   updateRemoveParticipant,
+  insertThreadInvitation,
 }
