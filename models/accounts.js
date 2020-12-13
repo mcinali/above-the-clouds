@@ -10,7 +10,6 @@ async function insertAccount(account_info){
     const result = await pgTransaction(query)
     return result.rows[0]
   } catch (error) {
-    console.error(error.stack)
     throw new Error(error)
   }
 }
@@ -25,7 +24,6 @@ async function insertAccountDetails(account_details){
     const result = await pgTransaction(query)
     return result.rows[0]
   } catch (error) {
-    console.error(error.stack)
     throw new Error(error)
   }
 }
