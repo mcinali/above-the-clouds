@@ -12,7 +12,7 @@ const {
   updateParticipantRole,
   updateRemoveParticipant,
   insertThreadInvitation,
-  selectPossibleThreadsForUser,
+  selectThreadsForUser,
   selectThreadParticipants,
 } = require('../models/threads')
 
