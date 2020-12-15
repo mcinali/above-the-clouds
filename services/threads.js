@@ -1,42 +1,48 @@
+const { getAccountDetails } = require('../models/accounts')
 const {
   insertTopic,
   insertThreadToStart,
-  updateEndThread,
-  insertThreadParticipant,
-  updateParticipantRole,
-  updateRemoveParticipant,
   insertThreadInvitation,
-  selectThreadsForUser,
-  selectThreadParticipants,
 } = require('../models/threads')
 
-async function getThreads(userId){
+async function createThreadWithNewTopic(threadInfo){
   try {
-    const threads = await selectThreadsForUser(userId)
-    const promises = threads.map(async function(x) {x['participants'] = await selectThreadParticipants(x.id); return x})
-    const results = await Promise.all(promises)
-    return results
+    const topic = await insertTopic(threadInfo)
+    threadInfo['topicId'] = topic.id
+    const thread = await insertThreadToStart(threadInfo)
+    threadInfo['id'] = thread.id
+    return threadInfo
   } catch (error) {
     throw new Error(error)
   }
 }
 
-// async function forkThread(threadInfo){
-//   try {
-//
-//   } catch (error) {
-//     throw new Error(error)
-//   }
-// }
-//
-// async function createNewThread(threadInfo){
-//   try {
-//
-//   } catch (error) {
-//     throw new Error(error)
-//   }
-// }
+async function createThreadForkTopic(threadInfo){
+  try {
+    const thread = await insertThreadToStart(threadInfo)
+    threadInfo['id'] = thread.id
+    return threadInfo
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+async function sendEmailInviteToThread(info){
+  try {
+      const email = (info.inviteeAccountId) ? (await getAccountDetails(info.inviteeAccountId)).email : info.inviteeEmail
+      // TO DO: Send email
+      const invite = await insertThreadInvitation(info)
+      return
+  } catch (error) {
+    throw new Error(error)
+  }
+
+}
+
+
 
 module.exports = {
-  getThreads,
+  createThreadWithNewTopic,
+  createThreadForkTopic,
+  sendEmailInviteToThread,
 }

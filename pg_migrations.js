@@ -48,7 +48,6 @@ async function pgMigrate(){
       id SERIAL PRIMARY KEY NOT NULL,
       topic_id INTEGER NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
       creator_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
-      private BOOLEAN NOT NULL,
       start_time TIMESTAMPTZ NOT NULL DEFAULT now(),
       end_time TIMESTAMPTZ,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -56,25 +55,14 @@ async function pgMigrate(){
   )
 
   await pgTransaction(
-    `DO $$
-      BEGIN
-        IF NOT EXISTS (select * from pg_type where typname = 'role_enum')
-        THEN CREATE TYPE role_enum AS ENUM ('Moderator','Speaker','Audience');
-      END IF;
-      END;
-      $$
-      LANGUAGE plpgsql;`
-  )
-
-  await pgTransaction(
-    `CREATE TABLE IF NOT EXISTS thread_participants (
+    `CREATE TABLE IF NOT EXISTS thread_invitations (
       id SERIAL PRIMARY KEY NOT NULL,
       thread_id INTEGER NOT NULL REFERENCES threads(id) ON DELETE CASCADE,
-      account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
-      role role_enum NOT NULL,
-      removed BOOLEAN NOT NULL DEFAULT False,
+      inviter_account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      invitee_account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
+      invitee_email VARCHAR(128),
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-      CONSTRAINT unique_thread_id_account_id UNIQUE (thread_id, account_id)
+      CONSTRAINT unique_thread_id_moderator_id_invitee_email UNIQUE (thread_id, inviter_account_id, invitee_account_id, invitee_email)
     )`
   )
 
@@ -95,17 +83,6 @@ async function pgMigrate(){
       account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
       thread_id INTEGER NOT NULL REFERENCES threads(id) ON DELETE CASCADE,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-    )`
-  )
-
-  await pgTransaction(
-    `CREATE TABLE IF NOT EXISTS thread_invitations (
-      id SERIAL PRIMARY KEY NOT NULL,
-      thread_id INTEGER NOT NULL REFERENCES threads(id) ON DELETE CASCADE,
-      moderator_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
-      invitee_email VARCHAR(128) NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-      CONSTRAINT unique_thread_id_moderator_id_invitee_email UNIQUE (thread_id, moderator_id, invitee_email)
     )`
   )
 }

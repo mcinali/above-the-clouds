@@ -2,18 +2,15 @@ const should = require('chai').should()
 const expect = require('chai').expect
 const { pool, pgTransaction } = require('../pg_helpers')
 const { pgMigrate } = require('../pg_migrations')
-
-const { insertAccount, insertAccountDetails } = require('../models/accounts')
+const {
+  insertAccount,
+  insertAccountDetails,
+  getAccountDetails,
+} = require('../models/accounts')
 const {
   insertTopic,
   insertThreadToStart,
-  updateEndThread,
-  insertThreadParticipant,
-  updateParticipantRole,
-  updateRemoveParticipant,
   insertThreadInvitation,
-  selectThreadsForUser,
-  selectThreadParticipants,
 } = require('../models/threads')
 
 const testUsername = 'testAccount'
@@ -37,7 +34,9 @@ describe('Accounts Tests', function() {
       - Insert test Account
       - Check to make sure Account info is correct
       - Insert test Account Details
-      - Check to make sure Account details are correct`, async function() {
+      - Check to make sure Account details are correct
+      - Get Account Details
+      - Check to make sure Fetched Account Details are correct`, async function() {
     // Insert test Account
     const accountInfo = {
       username:testUsername,
@@ -49,21 +48,29 @@ describe('Accounts Tests', function() {
     expect(account.username).to.equal(accountInfo.username)
     should.exist(account.password)
     // Insert test Account Details
-    const accountDetails = {
+    const accountDetailsInfo = {
       accountId: account.id,
       email: 'test@email.com',
       phone:1234567890,
       firstname:'Test',
       lastname:'Account',
     }
-    await pgTransaction(`DELETE FROM account_details WHERE account_id = ${accountDetails.accountId}`)
-    const accountAttributes = await insertAccountDetails(accountDetails)
+    await pgTransaction(`DELETE FROM account_details WHERE account_id = ${accountDetailsInfo.accountId}`)
+    const accountDetails = await insertAccountDetails(accountDetailsInfo)
     // Check to make sure Account details are correct
-    expect(accountAttributes.account_id).to.equal(accountDetails.accountId)
-    expect(accountAttributes.email).to.equal(accountDetails.email)
-    expect(Number(accountAttributes.phone)).to.equal(accountDetails.phone)
-    expect(accountAttributes.firstname).to.equal(accountDetails.firstname)
-    expect(accountAttributes.lastname).to.equal(accountDetails.lastname)
+    expect(accountDetails.account_id).to.equal(accountDetailsInfo.accountId)
+    expect(accountDetails.email).to.equal(accountDetailsInfo.email)
+    expect(Number(accountDetails.phone)).to.equal(accountDetailsInfo.phone)
+    expect(accountDetails.firstname).to.equal(accountDetailsInfo.firstname)
+    expect(accountDetails.lastname).to.equal(accountDetailsInfo.lastname)
+    // Get Account Details
+    const accountDetailsFetched = await getAccountDetails(account.id)
+    // Check to make sure Fetched Account Details are correct
+    expect(accountDetailsFetched.account_id).to.equal(accountDetailsInfo.accountId)
+    expect(accountDetailsFetched.email).to.equal(accountDetailsInfo.email)
+    expect(Number(accountDetailsFetched.phone)).to.equal(accountDetailsInfo.phone)
+    expect(accountDetailsFetched.firstname).to.equal(accountDetailsInfo.firstname)
+    expect(accountDetailsFetched.lastname).to.equal(accountDetailsInfo.lastname)
 
   })
 })
@@ -74,16 +81,10 @@ describe('Threads Tests', function() {
       - Check to make sure Topic info is correct
       - Insert Thread
       - Check to make sure Thread info is correct
-      - Insert Thread Participant
-      - Check to make sure Thread Participant info is correct
-      - Update Thread Participant
-      - Check to make sure Thread Participant info is correct
-      - Insert Thread Invitation
-      - Check to make sure Thread Invitation info is correct
-      - Remove Thread Participant
-      - Check to make sure Thread Participant is removed
-      - End Thread
-      - Check to make sure Ended Thread info is correct`, async function() {
+      - Insert Thread Invitation with Account ID
+      - Check to make sure Thread Invitation with Account ID info is correct
+      - Insert Thread Invitation with Email
+      - Check to make sure Thread Invitation with Email is correct`, async function() {
     // Insert test topic
     const accountRow = await getAccountRow()
     const accountId = accountRow.id
@@ -99,57 +100,38 @@ describe('Threads Tests', function() {
     const threadInfo = {
       topicId: topic.id,
       accountId: accountId,
-      private: true,
     }
     const start = new Date(new Date().getTime())
     const thread = await insertThreadToStart(threadInfo)
     // Check to make sure Thread info is correct
     expect(thread.topic_id).to.equal(threadInfo.topicId)
     expect(thread.creator_id).to.equal(threadInfo.accountId)
-    expect(thread.private).to.equal(threadInfo.private)
     expect(thread.start_time.getTime() - start.getTime()).to.be.within(0,1)
-    // Insert Thread Participant
-    const moderatorInfo = {
+    // Check to make sure Thread Invitation with Account ID info is correct
+    const accountInvitationInfo = {
       threadId: thread.id,
-      accountId: accountId,
-      role: 'Moderator',
+      inviterAccountId: accountId,
+      inviteeAccountId: accountId,
+      inviteeEmail:null,
     }
-    const moderator = await insertThreadParticipant(moderatorInfo)
-    // Check to make sure Thread Participant info is correct
-    expect(moderator.thread_id).to.equal(moderatorInfo.threadId)
-    expect(moderator.account_id).to.equal(moderatorInfo.accountId)
-    expect(moderator.role).to.equal(moderatorInfo.role)
-    // Update Thread Participant
-    const audienceInfo = {
+    const accountInvitation = await insertThreadInvitation(accountInvitationInfo)
+    // Insert Thread Invitation with Account ID
+    expect(accountInvitation.thread_id).to.equal(accountInvitationInfo.threadId)
+    expect(accountInvitation.inviter_account_id).to.equal(accountInvitationInfo.inviterAccountId)
+    expect(accountInvitation.invitee_account_id).to.equal(accountInvitationInfo.inviteeAccountId)
+    should.not.exist(accountInvitation.invitee_email)
+    // Insert Thread Invitation with Email
+    const emailInvitationInfo = {
       threadId: thread.id,
-      accountId: accountId,
-      role: 'Audience',
+      inviterAccountId: accountId,
+      inviteeAccountId: null,
+      inviteeEmail:'invite@test.com',
     }
-    const audience = await updateParticipantRole(audienceInfo)
-    // Check to make sure Thread Participant info is correct
-    expect(audience.id).to.equal(moderator.id)
-    expect(audience.thread_id).to.equal(audienceInfo.threadId)
-    expect(audience.account_id).to.equal(audienceInfo.accountId)
-    expect(audience.role).to.equal(audienceInfo.role)
-    // Insert Thread Invitation
-    const invitationInfo = {
-      threadId: thread.id,
-      moderatorId: accountId,
-      inviteeEmail: 'invitee@test.com'
-    }
-    const invite = await insertThreadInvitation(invitationInfo)
-    // Check to make sure Thread Invitation info is correct
-    expect(invite.thread_id).to.equal(invitationInfo.threadId)
-    expect(invite.moderator_id).to.equal(invitationInfo.moderatorId)
-    expect(invite.invitee_email).to.equal(invitationInfo.inviteeEmail)
-    // Remove Thread Participant
-    const removedParticipant = await updateRemoveParticipant(audienceInfo)
-    // Check to make sure Thread Participant is removed
-    expect(removedParticipant.removed).to.equal(true)
-    // End Thread
-    const end = new Date(new Date().getTime())
-    const endedThread = await updateEndThread(thread.id)
-    // Check to make sure Ended Thread info is correct
-    expect(endedThread.end_time.getTime() - end.getTime()).to.be.within(0,1)
+    const emailInvitation = await insertThreadInvitation(emailInvitationInfo)
+    // Check to make sure Thread Invitation with Email is correct
+    expect(emailInvitation.thread_id).to.equal(emailInvitationInfo.threadId)
+    expect(emailInvitation.inviter_account_id).to.equal(emailInvitationInfo.inviterAccountId)
+    expect(emailInvitation.invitee_email).to.equal(emailInvitationInfo.inviteeEmail)
+    should.not.exist(emailInvitation.invitee_account_id)
   })
 })
