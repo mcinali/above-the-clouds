@@ -5,6 +5,7 @@ async function registerUser(accountInfo){
     const account = await insertAccount(accountInfo)
     accountInfo['accountId'] = account.id
     const accountDetails = insertAccountDetails(accountInfo)
+    // TO DO: send registration email
     // TO DO: return auth token
     return accountInfo
   } catch (error) {

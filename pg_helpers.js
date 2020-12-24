@@ -25,7 +25,17 @@ async function pgTransaction(text, values = []) {
   }
 }
 
+function freeTextFormatter(text){
+  try {
+    const textFormatted = text.replace("'","''")
+    return `'${textFormatted}'`
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 module.exports = {
   pool,
   pgTransaction,
+  freeTextFormatter,
 }

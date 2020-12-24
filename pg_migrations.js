@@ -24,16 +24,6 @@ async function pgMigrate(){
     )`
   )
 
-  // await pgTransaction(
-  //   `CREATE TABLE IF NOT EXISTS access_tokens (
-  //     id SERIAL PRIMARY KEY NOT NULL,
-  //     account_id INTEGER UNIQUE NOT NULL REFERENCES accounts(id),
-  //     token BYTEA NOT NULL,
-  //     expiration TIMESTAMPTZ NOT NULL,
-  //     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-  //   )`
-  // )
-
   await pgTransaction(
     `CREATE TABLE IF NOT EXISTS topics (
       id SERIAL PRIMARY KEY NOT NULL,
@@ -43,11 +33,20 @@ async function pgMigrate(){
     )`
   )
 
+  await pgTransaction(`DO $$
+                        BEGIN
+                          IF NOT EXISTS (select * from pg_type where typname = 'accessibility') THEN CREATE TYPE accessibility AS ENUM ('invite-only','network-only','public');
+                          END IF;
+                        END; $$
+                      LANGUAGE plpgsql`)
+
   await pgTransaction(
-    `CREATE TABLE IF NOT EXISTS threads (
+    `CREATE TABLE IF NOT EXISTS streams (
       id SERIAL PRIMARY KEY NOT NULL,
       topic_id INTEGER NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
       creator_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      speaker_accessibility accessibility NOT NULL,
+      capacity INTEGER NOT NULL,
       start_time TIMESTAMPTZ NOT NULL DEFAULT now(),
       end_time TIMESTAMPTZ,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -55,33 +54,23 @@ async function pgMigrate(){
   )
 
   await pgTransaction(
-    `CREATE TABLE IF NOT EXISTS thread_invitations (
+    `CREATE TABLE IF NOT EXISTS stream_invitations (
       id SERIAL PRIMARY KEY NOT NULL,
-      thread_id INTEGER NOT NULL REFERENCES threads(id) ON DELETE CASCADE,
-      inviter_account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      stream_id INTEGER NOT NULL REFERENCES streams(id) ON DELETE CASCADE,
+      account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
       invitee_account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
       invitee_email VARCHAR(128),
-      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-      CONSTRAINT unique_thread_id_moderator_id_invitee_email UNIQUE (thread_id, inviter_account_id, invitee_account_id, invitee_email)
-    )`
-  )
-
-  await pgTransaction(
-    `CREATE TABLE IF NOT EXISTS thread_activity (
-      id SERIAL PRIMARY KEY NOT NULL,
-      thread_id INTEGER NOT NULL REFERENCES threads(id) ON DELETE CASCADE,
-      account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
-      start_time TIMESTAMPTZ NOT NULL DEFAULT now(),
-      end_time TIMESTAMPTZ,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )`
   )
 
   await pgTransaction(
-    `CREATE TABLE IF NOT EXISTS displayed_threads (
+    `CREATE TABLE IF NOT EXISTS stream_participants (
       id SERIAL PRIMARY KEY NOT NULL,
+      stream_id INTEGER NOT NULL REFERENCES streams(id) ON DELETE CASCADE,
       account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
-      thread_id INTEGER NOT NULL REFERENCES threads(id) ON DELETE CASCADE,
+      start_time TIMESTAMPTZ NOT NULL DEFAULT now(),
+      end_time TIMESTAMPTZ,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )`
   )
