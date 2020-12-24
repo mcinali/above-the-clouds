@@ -57,7 +57,7 @@ async function pgMigrate(){
     `CREATE TABLE IF NOT EXISTS stream_invitations (
       id SERIAL PRIMARY KEY NOT NULL,
       stream_id INTEGER NOT NULL REFERENCES streams(id) ON DELETE CASCADE,
-      inviter INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
       invitee_account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
       invitee_email VARCHAR(128),
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
