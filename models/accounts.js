@@ -1,4 +1,4 @@
-const { pgTransaction } = require('../pg_helpers')
+const { pool, pgTransaction } = require('../pg_helpers')
 
 async function insertAccount(account_info){
   try {
@@ -28,7 +28,22 @@ async function insertAccountDetails(account_details){
   }
 }
 
+async function getAccountDetails(accountId){
+  try {
+    const query = `
+      SELECT account_id, email, phone, firstname, lastname
+      FROM account_details where account_id = ${accountId}`
+    return pool
+            .query(query)
+            .then(res => res.rows[0])
+            .catch(error => new Error(error))
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 module.exports = {
   insertAccount,
   insertAccountDetails,
+  getAccountDetails,
 }

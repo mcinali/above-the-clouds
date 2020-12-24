@@ -1,4 +1,4 @@
-const { pgTransaction } = require('../pg_helpers')
+const { pool, pgTransaction } = require('../pg_helpers')
 
 async function insertTopic(info){
   try {
@@ -17,10 +17,10 @@ async function insertTopic(info){
 
 async function insertThreadToStart(info){
   try {
-    const { topicId, accountId, private } = info
+    const { topicId, accountId} = info
     const query = `
-      INSERT INTO threads (topic_id, creator_id, private)
-      VALUES (${topicId}, ${accountId}, ${private})
+      INSERT INTO threads (topic_id, creator_id)
+      VALUES (${topicId}, ${accountId})
       RETURNING *`
     const result = await pgTransaction(query)
     return result.rows[0]
@@ -30,70 +30,13 @@ async function insertThreadToStart(info){
   }
 }
 
-async function updateEndThread(threadId){
+async function insertThreadInvitation(inviteInfo){
   try {
-    const query = `UPDATE threads SET end_time = now() WHERE id = ${threadId} RETURNING *`
-    const result = await pgTransaction(query)
-    return result.rows[0]
-  } catch (error) {
-    console.error(error.stack)
-    throw new Error(error)
-  }
-}
-
-async function insertThreadParticipant(info){
-  try {
-    const { threadId, accountId, role } = info
+    const { threadId, inviterAccountId, inviteeAccountId, inviteeEmail } = inviteInfo
+    const email = (inviteeEmail) ? `'${inviteeEmail}'` : inviteeEmail
     const query = `
-      INSERT INTO thread_participants (thread_id, account_id, role)
-      VALUES (${threadId}, ${accountId}, '${role}')
-      RETURNING *`
-    const result = await pgTransaction(query)
-    return result.rows[0]
-  } catch (error) {
-    console.error(error.stack)
-    throw new Error(error)
-  }
-}
-
-async function updateParticipantRole(info){
-  try {
-    const { threadId, accountId, role } = info
-    const query = `
-      UPDATE thread_participants
-      SET role = '${role}'
-      WHERE thread_id = ${threadId} and account_id = ${accountId}
-      RETURNING *`
-    const result = await pgTransaction(query)
-    return result.rows[0]
-  } catch (error) {
-    console.error(error.stack)
-    throw new Error(error)
-  }
-}
-
-async function updateRemoveParticipant(info){
-  try {
-    const { threadId, accountId } = info
-    const query = `
-      UPDATE thread_participants
-      SET removed = True
-      WHERE thread_id = ${threadId} and account_id = ${accountId}
-      RETURNING *`
-    const result = await pgTransaction(query)
-    return result.rows[0]
-  } catch (error) {
-    console.error(error.stack)
-    throw new Error(error)
-  }
-}
-
-async function insertThreadInvitation(info){
-  try {
-    const { threadId, moderatorId, inviteeEmail } = info
-    const query = `
-      INSERT INTO thread_invitations (thread_id, moderator_id, invitee_email)
-      VALUES (${threadId}, ${moderatorId}, '${inviteeEmail}')
+      INSERT INTO thread_invitations ( thread_id, inviter_account_id, invitee_account_id, invitee_email )
+      VALUES (${threadId}, ${inviterAccountId}, ${inviteeAccountId}, ${email})
       RETURNING *`
     const result = await pgTransaction(query)
     return result.rows[0]
@@ -106,9 +49,5 @@ async function insertThreadInvitation(info){
 module.exports = {
   insertTopic,
   insertThreadToStart,
-  updateEndThread,
-  insertThreadParticipant,
-  updateParticipantRole,
-  updateRemoveParticipant,
   insertThreadInvitation,
 }
