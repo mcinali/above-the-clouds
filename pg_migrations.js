@@ -24,16 +24,6 @@ async function pgMigrate(){
     )`
   )
 
-  // await pgTransaction(
-  //   `CREATE TABLE IF NOT EXISTS access_tokens (
-  //     id SERIAL PRIMARY KEY NOT NULL,
-  //     account_id INTEGER UNIQUE NOT NULL REFERENCES accounts(id),
-  //     token BYTEA NOT NULL,
-  //     expiration TIMESTAMPTZ NOT NULL,
-  //     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-  //   )`
-  // )
-
   await pgTransaction(
     `CREATE TABLE IF NOT EXISTS topics (
       id SERIAL PRIMARY KEY NOT NULL,
@@ -44,7 +34,7 @@ async function pgMigrate(){
   )
 
   await pgTransaction(
-    `CREATE TABLE IF NOT EXISTS threads (
+    `CREATE TABLE IF NOT EXISTS streams (
       id SERIAL PRIMARY KEY NOT NULL,
       topic_id INTEGER NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
       creator_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,

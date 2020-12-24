@@ -7,6 +7,7 @@ const {
   insertAccountDetails,
   getAccountDetails,
 } = require('../models/accounts')
+const { insertTopic } = require('../models/topics')
 
 const testUsername = 'testAccount'
 
@@ -67,6 +68,24 @@ describe('Accounts Tests', function() {
     expect(accountDetailsFetched.firstname).to.equal(accountDetailsInfo.firstname)
     expect(accountDetailsFetched.lastname).to.equal(accountDetailsInfo.lastname)
 
+  })
+})
+
+describe('Topics Tests', function() {
+  it(`Should...
+      - Insert test Topic
+      - Check to make sure Topic info is correct`, async function() {
+    // Insert test topic
+    const accountRow = await getAccountRow()
+    const accountId = accountRow.id
+    const topicInfo = {
+      accountId:accountId,
+      topic:'What do you want to talk about?',
+    }
+    const topic = await insertTopic(topicInfo)
+    // Check to make sure Topic info is correct
+    expect(topic.account_id).to.equal(topicInfo.accountId)
+    expect(topic.topic).to.equal(topicInfo.topic)
   })
 })
 
