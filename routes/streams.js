@@ -2,6 +2,7 @@ const express = require('express')
 const router = express.Router()
 const {
   createStream,
+  getStreamInfo,
   inviteParticipantToStream,
   joinStream,
   leaveStream,
@@ -13,6 +14,17 @@ const {
 router.post('/', async function (req, res) {
   try {
     const results = await createStream(req.body)
+    return res.send(results)
+  } catch (error) {
+    console.error(error)
+    return res.status(400).json({error: ``})
+  }
+})
+
+// Create Stream
+router.get('/:streamId', async function (req, res) {
+  try {
+    const results = await getStreamInfo(req.params.streamId)
     return res.send(results)
   } catch (error) {
     console.error(error)

@@ -19,7 +19,24 @@ async function createStream(streamInfo){
   }
 }
 
-// Create Stream
+// Get Stream Information
+async function getStreamInfo(streamId){
+  try {
+    const streamDetails = await getStreamDetails(streamId)
+    const streamParticipants = await getStreamParticipants(streamId)
+    const streamInvites = await getStreamInvitations(streamId)
+
+    const results = {}
+    results['info'] = streamDetails
+    results['participants'] = streamParticipants
+    results['invites'] = streamInvites
+    return results
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+// Invite Participant to Stream
 async function inviteParticipantToStream(inviteInfo){
   try {
     // TO DO: Send invite email
@@ -34,6 +51,7 @@ async function inviteParticipantToStream(inviteInfo){
 async function joinStream(joinInfo){
   try {
     // TO DO: Check if user is allowed to join stream
+    // TO DO: Check if user is part of any other streams
     const results = insertStreamParticipant(joinInfo)
     return results
   } catch (error) {
@@ -65,6 +83,7 @@ async function endStream(streamId){
 
 module.exports = {
   createStream,
+  getStreamInfo,
   inviteParticipantToStream,
   joinStream,
   leaveStream,

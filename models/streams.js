@@ -79,7 +79,7 @@ async function getStreamParticipants(streamId){
   try {
     const query = `
       SELECT id, stream_id, account_id, start_time, end_time
-      FROM stream_participants WHERE stream_id = ${streamId}`
+      FROM stream_participants WHERE stream_id = ${streamId} and end_time is null`
     return pool
             .query(query)
             .then(res => res.rows)
