@@ -1,4 +1,4 @@
-const { insertAccount, insertAccountDetails } = require('../models/accounts')
+const { insertAccount, insertAccountDetails, getAccountDetails } = require('../models/accounts')
 
 async function registerUser(accountInfo){
   try {
@@ -12,6 +12,16 @@ async function registerUser(accountInfo){
   }
 }
 
+async function fetchAccountDetails(accountId){
+  try {
+    const accountDetails = getAccountDetails(accountId)
+    return accountDetails
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 module.exports = {
   registerUser,
+  fetchAccountDetails,
 }

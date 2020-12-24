@@ -7,11 +7,6 @@ const {
   insertAccountDetails,
   getAccountDetails,
 } = require('../models/accounts')
-const {
-  insertTopic,
-  insertThreadToStart,
-  insertThreadInvitation,
-} = require('../models/threads')
 
 const testUsername = 'testAccount'
 
@@ -75,63 +70,63 @@ describe('Accounts Tests', function() {
   })
 })
 
-describe('Threads Tests', function() {
-  it(`Should...
-      - Insert test Topic
-      - Check to make sure Topic info is correct
-      - Insert Thread
-      - Check to make sure Thread info is correct
-      - Insert Thread Invitation with Account ID
-      - Check to make sure Thread Invitation with Account ID info is correct
-      - Insert Thread Invitation with Email
-      - Check to make sure Thread Invitation with Email is correct`, async function() {
-    // Insert test topic
-    const accountRow = await getAccountRow()
-    const accountId = accountRow.id
-    const topicInfo = {
-      accountId:accountId,
-      topic:'What do you want to talk about?',
-    }
-    const topic = await insertTopic(topicInfo)
-    // Check to make sure Topic info is correct
-    expect(topic.account_id).to.equal(topicInfo.accountId)
-    expect(topic.topic).to.equal(topicInfo.topic)
-    // Insert Thread
-    const threadInfo = {
-      topicId: topic.id,
-      accountId: accountId,
-    }
-    const start = new Date(new Date().getTime())
-    const thread = await insertThreadToStart(threadInfo)
-    // Check to make sure Thread info is correct
-    expect(thread.topic_id).to.equal(threadInfo.topicId)
-    expect(thread.creator_id).to.equal(threadInfo.accountId)
-    expect(thread.start_time.getTime() - start.getTime()).to.be.within(0,1)
-    // Check to make sure Thread Invitation with Account ID info is correct
-    const accountInvitationInfo = {
-      threadId: thread.id,
-      inviterAccountId: accountId,
-      inviteeAccountId: accountId,
-      inviteeEmail:null,
-    }
-    const accountInvitation = await insertThreadInvitation(accountInvitationInfo)
-    // Insert Thread Invitation with Account ID
-    expect(accountInvitation.thread_id).to.equal(accountInvitationInfo.threadId)
-    expect(accountInvitation.inviter_account_id).to.equal(accountInvitationInfo.inviterAccountId)
-    expect(accountInvitation.invitee_account_id).to.equal(accountInvitationInfo.inviteeAccountId)
-    should.not.exist(accountInvitation.invitee_email)
-    // Insert Thread Invitation with Email
-    const emailInvitationInfo = {
-      threadId: thread.id,
-      inviterAccountId: accountId,
-      inviteeAccountId: null,
-      inviteeEmail:'invite@test.com',
-    }
-    const emailInvitation = await insertThreadInvitation(emailInvitationInfo)
-    // Check to make sure Thread Invitation with Email is correct
-    expect(emailInvitation.thread_id).to.equal(emailInvitationInfo.threadId)
-    expect(emailInvitation.inviter_account_id).to.equal(emailInvitationInfo.inviterAccountId)
-    expect(emailInvitation.invitee_email).to.equal(emailInvitationInfo.inviteeEmail)
-    should.not.exist(emailInvitation.invitee_account_id)
-  })
-})
+// describe('Threads Tests', function() {
+//   it(`Should...
+//       - Insert test Topic
+//       - Check to make sure Topic info is correct
+//       - Insert Thread
+//       - Check to make sure Thread info is correct
+//       - Insert Thread Invitation with Account ID
+//       - Check to make sure Thread Invitation with Account ID info is correct
+//       - Insert Thread Invitation with Email
+//       - Check to make sure Thread Invitation with Email is correct`, async function() {
+//     // Insert test topic
+//     const accountRow = await getAccountRow()
+//     const accountId = accountRow.id
+//     const topicInfo = {
+//       accountId:accountId,
+//       topic:'What do you want to talk about?',
+//     }
+//     const topic = await insertTopic(topicInfo)
+//     // Check to make sure Topic info is correct
+//     expect(topic.account_id).to.equal(topicInfo.accountId)
+//     expect(topic.topic).to.equal(topicInfo.topic)
+//     // Insert Thread
+//     const threadInfo = {
+//       topicId: topic.id,
+//       accountId: accountId,
+//     }
+//     const start = new Date(new Date().getTime())
+//     const thread = await insertThreadToStart(threadInfo)
+//     // Check to make sure Thread info is correct
+//     expect(thread.topic_id).to.equal(threadInfo.topicId)
+//     expect(thread.creator_id).to.equal(threadInfo.accountId)
+//     expect(thread.start_time.getTime() - start.getTime()).to.be.within(0,1)
+//     // Check to make sure Thread Invitation with Account ID info is correct
+//     const accountInvitationInfo = {
+//       threadId: thread.id,
+//       inviterAccountId: accountId,
+//       inviteeAccountId: accountId,
+//       inviteeEmail:null,
+//     }
+//     const accountInvitation = await insertThreadInvitation(accountInvitationInfo)
+//     // Insert Thread Invitation with Account ID
+//     expect(accountInvitation.thread_id).to.equal(accountInvitationInfo.threadId)
+//     expect(accountInvitation.inviter_account_id).to.equal(accountInvitationInfo.inviterAccountId)
+//     expect(accountInvitation.invitee_account_id).to.equal(accountInvitationInfo.inviteeAccountId)
+//     should.not.exist(accountInvitation.invitee_email)
+//     // Insert Thread Invitation with Email
+//     const emailInvitationInfo = {
+//       threadId: thread.id,
+//       inviterAccountId: accountId,
+//       inviteeAccountId: null,
+//       inviteeEmail:'invite@test.com',
+//     }
+//     const emailInvitation = await insertThreadInvitation(emailInvitationInfo)
+//     // Check to make sure Thread Invitation with Email is correct
+//     expect(emailInvitation.thread_id).to.equal(emailInvitationInfo.threadId)
+//     expect(emailInvitation.inviter_account_id).to.equal(emailInvitationInfo.inviterAccountId)
+//     expect(emailInvitation.invitee_email).to.equal(emailInvitationInfo.inviteeEmail)
+//     should.not.exist(emailInvitation.invitee_account_id)
+//   })
+// })
