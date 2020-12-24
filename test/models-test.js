@@ -97,7 +97,7 @@ describe('Topics Tests', function() {
     const accountId = accountRow.id
     const topicInfo = {
       accountId:accountId,
-      topic:'What do you want to talk about?',
+      topic:"What's the topic de jour?",
     }
     const topic = await insertTopic(topicInfo)
     // Check to make sure Topic info is correct
