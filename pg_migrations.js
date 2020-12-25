@@ -33,12 +33,13 @@ async function pgMigrate(){
     )`
   )
 
-  await pgTransaction(`DO $$
-                        BEGIN
-                          IF NOT EXISTS (select * from pg_type where typname = 'accessibility') THEN CREATE TYPE accessibility AS ENUM ('invite-only','network-only','public');
-                          END IF;
-                        END; $$
-                      LANGUAGE plpgsql`)
+  await pgTransaction(`
+    DO $$
+      BEGIN
+        IF NOT EXISTS (select * from pg_type where typname = 'accessibility') THEN CREATE TYPE accessibility AS ENUM ('invite-only','network-only','public');
+        END IF;
+      END; $$
+    LANGUAGE plpgsql`)
 
   await pgTransaction(
     `CREATE TABLE IF NOT EXISTS streams (
@@ -59,7 +60,8 @@ async function pgMigrate(){
       stream_id INTEGER NOT NULL REFERENCES streams(id) ON DELETE CASCADE,
       account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
       invitee_account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      UNIQUE (stream_id, account_id, invitee_account_id)
     )`
   )
 
@@ -69,7 +71,8 @@ async function pgMigrate(){
       stream_id INTEGER NOT NULL REFERENCES streams(id) ON DELETE CASCADE,
       account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
       invitee_email VARCHAR(128) NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      UNIQUE (stream_id, account_id, invitee_email)
     )`
   )
 
@@ -81,6 +84,26 @@ async function pgMigrate(){
       start_time TIMESTAMPTZ NOT NULL DEFAULT now(),
       end_time TIMESTAMPTZ,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`
+  )
+
+  await pgTransaction(
+    `CREATE TABLE IF NOT EXISTS connections (
+      id SERIAL PRIMARY KEY NOT NULL,
+      account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      connection_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      UNIQUE (account_id, connection_id)
+    )`
+  )
+
+  await pgTransaction(
+    `CREATE TABLE IF NOT EXISTS connections_email_outreach (
+      id SERIAL PRIMARY KEY NOT NULL,
+      account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      connection_email VARCHAR(128) NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      UNIQUE (account_id, connection_email)
     )`
   )
 }

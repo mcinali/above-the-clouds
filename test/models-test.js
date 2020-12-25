@@ -19,6 +19,11 @@ const {
   updateStreamParticipantEndTime,
   updateStreamEndTime,
 } = require('../models/streams')
+const {
+  insertConnection,
+  removeConnection,
+  insertConnectionEmailOutreach,
+} = require('../models/connections')
 
 const testUsername = 'testAccount'
 
@@ -127,11 +132,11 @@ describe('Streams Tests', function() {
       - Check to make sure Stream Participant End Time was updated correctly
       - Update Stream End Time
       - Check to make sure Stream End Time was updated correctly`, async function() {
-    // Insert Stream
     const accountRow = await getAccountRow()
     const accountId = accountRow.id
     const topic = await getTopicRow()
     const topicId = topic.id
+    // Insert Stream
     const streamInfo = {
       topicId: topicId,
       accountId: accountId,
@@ -220,5 +225,44 @@ describe('Streams Tests', function() {
     // Check to make sure Stream End Time was updated correctly
     expect(streamEnd.id).to.equal(stream.id)
     expect(streamEnd.end_time.getTime() - streamEndBenchmark.getTime()).to.be.within(0,1)
+  })
+})
+
+describe('Connections Tests', function() {
+  it(`Should...
+      - Insert Connection
+      - Check to make sure Connection was inserted correctly
+      - Remove Connection
+      - Check to make sure Connection was removed correctly
+      - Insert Connection Email Outreach
+      - Check to make sure Connection Email Outreach was inserted correctly`, async function() {
+    const accountRow = await getAccountRow()
+    const accountId = accountRow.id
+    // Insert Connection
+    const connectionInfo = {
+      accountId:accountId,
+      connectionId:accountId,
+    }
+    const connection = await insertConnection(connectionInfo)
+    // Check to make sure Connection was inserted correctly
+    expect(connection.account_id).to.equal(connectionInfo.accountId)
+    expect(connection.connection_id).to.equal(connectionInfo.connectionId)
+    // Remove Connection
+    await removeConnection(connectionInfo)
+    // Check to make sure Connection was removed correctly
+    const removedConnection = await pool
+                                      .query(`SELECT * FROM connections WHERE account_id = ${accountId} and connection_id = ${accountId}`)
+                                      .then(result => result.rows[0])
+                                      .catch(error => console.error(error.stack))
+    should.not.exist(removedConnection)
+    // Insert Connection Email Outreach
+    const connectionEmailOutreachInfo = {
+      accountId:accountId,
+      connectionEmail:'connection@test.com',
+    }
+    const connectionEmailOutreach = await insertConnectionEmailOutreach(connectionEmailOutreachInfo)
+    // Check to make sure Connection Email Outreach was inserted correctly
+    expect(connectionEmailOutreach.account_id).to.equal(connectionEmailOutreachInfo.accountId)
+    expect(connectionEmailOutreach.connection_email).to.equal(connectionEmailOutreachInfo.connectionEmail)
   })
 })
