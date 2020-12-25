@@ -1,8 +1,8 @@
 const { pool, pgTransaction } = require('../pg_helpers')
 
-async function insertAccount(account_info){
+async function insertAccount(accountInfo){
   try {
-    const { username, password } = account_info
+    const { username, password } = accountInfo
     const query = `
       INSERT INTO accounts (username, password)
       VALUES ('${username}', '${password}')
@@ -14,9 +14,9 @@ async function insertAccount(account_info){
   }
 }
 
-async function insertAccountDetails(account_details){
+async function insertAccountDetails(accountDetails){
   try {
-    const { accountId, email, phone, firstname, lastname } = account_details
+    const { accountId, email, phone, firstname, lastname } = accountDetails
     const query = `
       INSERT INTO account_details (account_id, email, phone, firstname, lastname)
       VALUES (${accountId}, '${email}', ${phone}, '${firstname}', '${lastname}')

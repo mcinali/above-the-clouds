@@ -31,12 +31,11 @@ async function getStreamDetails(streamId){
 
 async function insertStreamInvitation(inviteInfo){
   try {
-    const { streamId, accountId, inviteeAccountId, inviteeEmail } = inviteInfo
-    const inviteeEmailFormatted = (inviteeEmail) ? `'${inviteeEmail}'` : null
+    const { streamId, accountId, inviteeAccountId } = inviteInfo
     const inviteeAccountIdFormatted = (inviteeAccountId) ? inviteeAccountId : null
     const query = `
-      INSERT INTO stream_invitations (stream_id, account_id, invitee_account_id, invitee_email)
-      VALUES (${streamId}, ${accountId}, ${inviteeAccountIdFormatted}, ${inviteeEmailFormatted})
+      INSERT INTO stream_invitations (stream_id, account_id, invitee_account_id)
+      VALUES (${streamId}, ${accountId}, ${inviteeAccountIdFormatted})
       RETURNING *`
     const result = await pgTransaction(query)
     return result.rows[0]
@@ -49,13 +48,29 @@ async function insertStreamInvitation(inviteInfo){
 async function getStreamInvitations(streamId){
   try {
     const query = `
-      SELECT id, stream_id, account_id, invitee_account_id, invitee_email
+      SELECT id, stream_id, account_id, invitee_account_id
       FROM stream_invitations WHERE stream_id = ${streamId}`
     return pool
             .query(query)
             .then(res => res.rows)
             .catch(error => new Error(error))
   } catch (error) {
+    throw new Error(error)
+  }
+}
+
+async function insertStreamEmailOutreach(inviteInfo){
+  try {
+    const { streamId, accountId, inviteeEmail } = inviteInfo
+    const inviteeEmailFormatted = (inviteeEmail) ? `'${inviteeEmail}'` : null
+    const query = `
+      INSERT INTO stream_email_outreach (stream_id, account_id, invitee_email)
+      VALUES (${streamId}, ${accountId}, ${inviteeEmailFormatted})
+      RETURNING *`
+    const result = await pgTransaction(query)
+    return result.rows[0]
+  } catch (error) {
+    console.error(error.stack)
     throw new Error(error)
   }
 }
@@ -124,6 +139,7 @@ module.exports = {
   getStreamDetails,
   insertStreamInvitation,
   getStreamInvitations,
+  insertStreamEmailOutreach,
   insertStreamParticipant,
   getStreamParticipants,
   updateStreamParticipantEndTime,

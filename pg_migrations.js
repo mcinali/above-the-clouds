@@ -58,8 +58,17 @@ async function pgMigrate(){
       id SERIAL PRIMARY KEY NOT NULL,
       stream_id INTEGER NOT NULL REFERENCES streams(id) ON DELETE CASCADE,
       account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
-      invitee_account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
-      invitee_email VARCHAR(128),
+      invitee_account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`
+  )
+
+  await pgTransaction(
+    `CREATE TABLE IF NOT EXISTS stream_email_outreach (
+      id SERIAL PRIMARY KEY NOT NULL,
+      stream_id INTEGER NOT NULL REFERENCES streams(id) ON DELETE CASCADE,
+      account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      invitee_email VARCHAR(128) NOT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )`
   )
