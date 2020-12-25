@@ -40,6 +40,7 @@ async function getStreamInfo(streamId){
 async function inviteParticipantToStream(inviteInfo){
   try {
     // TO DO: Send invite email
+    // TO DO: Convert username to account id
     const results = insertStreamInvitation(inviteInfo)
     return results
   } catch (error) {

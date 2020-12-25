@@ -13,6 +13,7 @@ const {
   getStreamDetails,
   insertStreamInvitation,
   getStreamInvitations,
+  insertStreamEmailOutreach,
   insertStreamParticipant,
   getStreamParticipants,
   updateStreamParticipantEndTime,
@@ -112,12 +113,12 @@ describe('Streams Tests', function() {
       - Check to make sure Stream info was inserted correctly
       - Fetch Stream Info
       - Check to make sure Stream info was fetched correctly
-      - Insert Stream Email Invite
-      - Check to make sure Stream Email Invite was inserted correctly
-      - Insert Stream Account Invite
-      - Check to make sure Stream Account Invite was inserted correctly
+      - Insert Stream Invite
+      - Check to make sure Stream Invite was inserted correctly
       - Fetch Stream Invitiations
       - Check to make sure Stream Invitations were fetched correctly
+      - Insert Stream Email Outreach
+      - Check to make sure Stream Email Outreach was inserted correctly
       - Insert Stream Participant
       - Check to make sure Stream Participant was inserted correctly
       - Fetch Stream Participants
@@ -156,44 +157,36 @@ describe('Streams Tests', function() {
     expect(stream.capacity).to.equal(fetchedStream.capacity)
     expect(stream.start_time.getTime()).to.equal(fetchedStream.start_time.getTime())
     should.not.exist(fetchedStream.end_time)
-    // Insert Stream Email Invite
-    const emailInviteInfo = {
-      streamId:stream.id,
-      accountId:accountId,
-      inviteeEmail:'test2@email.com',
-    }
-    const emailInvite = await insertStreamInvitation(emailInviteInfo)
-    // Check to make sure Stream Email Invite was inserted correctly
-    expect(emailInvite.stream_id).to.equal(emailInviteInfo.streamId)
-    expect(emailInvite.account_id).to.equal(emailInviteInfo.accountId)
-    expect(emailInvite.invitee_email).to.equal(emailInviteInfo.inviteeEmail)
-    should.not.exist(emailInvite.invitee_account_id)
-    // Insert Stream Account Invite
-    const accountInviteInfo = {
+    // Insert Stream Invite
+    const streamInviteInfo = {
       streamId:stream.id,
       accountId:accountId,
       inviteeAccountId:accountId,
     }
-    const accountInvite = await insertStreamInvitation(accountInviteInfo)
-    // Check to make sure Stream Account Invite was inserted correctly
-    expect(accountInvite.stream_id).to.equal(accountInviteInfo.streamId)
-    expect(accountInvite.account_id).to.equal(accountInviteInfo.accountId)
-    expect(accountInvite.invitee_account_id).to.equal(accountInviteInfo.inviteeAccountId)
-    should.not.exist(accountInvite.invitee_email)
+    const streamInvite = await insertStreamInvitation(streamInviteInfo)
+    // Check to make sure Stream Invite was inserted correctly
+    expect(streamInvite.stream_id).to.equal(streamInviteInfo.streamId)
+    expect(streamInvite.account_id).to.equal(streamInviteInfo.accountId)
+    expect(streamInvite.invitee_account_id).to.equal(streamInviteInfo.inviteeAccountId)
     // Fetch Stream Invitiations
     const invitations = await getStreamInvitations(stream.id)
     // Check to make sure Stream Invitations were fetched correctly
-    expect(invitations.length).to.equal(2)
-    expect(invitations[0].id).to.equal(emailInvite.id)
-    expect(invitations[0].stream_id).to.equal(emailInvite.stream_id)
-    expect(invitations[0].account_id).to.equal(emailInvite.account_id)
-    should.not.exist(invitations[0].invitee_account_id)
-    expect(invitations[0].invitee_email).to.equal(emailInvite.invitee_email)
-    expect(invitations[1].id).to.equal(accountInvite.id)
-    expect(invitations[1].stream_id).to.equal(accountInvite.stream_id)
-    expect(invitations[1].account_id).to.equal(accountInvite.account_id)
-    expect(invitations[1].invitee_account_id).to.equal(accountInvite.invitee_account_id)
-    should.not.exist(invitations[1].invitee_email)
+    expect(invitations.length).to.equal(1)
+    expect(invitations[0].id).to.equal(streamInvite.id)
+    expect(invitations[0].stream_id).to.equal(streamInvite.stream_id)
+    expect(invitations[0].account_id).to.equal(streamInvite.account_id)
+    expect(invitations[0].invitee_account_id).to.equal(streamInvite.invitee_account_id)
+    // Insert Stream Email Outreach
+    const streamEmailOutreachInfo = {
+      streamId:stream.id,
+      accountId:accountId,
+      inviteeEmail:'test2@email.com',
+    }
+    const streamEmailOutreach = await insertStreamEmailOutreach(streamEmailOutreachInfo)
+    // Check to make sure Stream Email Outreach was inserted correctly
+    expect(streamEmailOutreach.stream_id).to.equal(streamEmailOutreachInfo.streamId)
+    expect(streamEmailOutreach.account_id).to.equal(streamEmailOutreachInfo.accountId)
+    expect(streamEmailOutreach.invitee_email).to.equal(streamEmailOutreachInfo.inviteeEmail)
     // Insert Stream Participant
     const streamParticipantInfo = {
       streamId:stream.id,
