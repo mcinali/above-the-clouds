@@ -66,6 +66,19 @@ async function getConnectionsToAccount(accountId){
   }
 }
 
+async function checkConnection(info){
+  try {
+    const { accountId, connectionId } = info
+    const query = `SELECT * FROM connections WHERE account_id = ${accountId} AND connection_id = ${connectionId}`
+    return pool
+            .query(query)
+            .then(res => res.rows[0])
+            .catch(error => new Error(error))
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 async function getAccountConnectionsEmailOutreach(accountId){
   try {
     const query = `SELECT id, connection_email, created_at FROM connections_email_outreach WHERE account_id = ${accountId}`
@@ -96,6 +109,7 @@ module.exports = {
   insertConnectionEmailOutreach,
   getAccountConnections,
   getConnectionsToAccount,
+  checkConnection,
   getAccountConnectionsEmailOutreach,
   getConnectionsEmailOutreachToAccount,
 }

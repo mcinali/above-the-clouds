@@ -5,9 +5,43 @@ const {
   insertConnectionEmailOutreach,
   getAccountConnections,
   getConnectionsToAccount,
+  checkConnection,
   getAccountConnectionsEmailOutreach,
   getConnectionsEmailOutreachToAccount,
 } = require('../models/connections')
+
+
+async function createConnection(info){
+    try {
+      const accountId = info.accountId
+      const email = (info.connectionEmail) ? info.connectionEmail : null
+      const connectionIdRow = await getAccountFromEmail(email)
+      const connectionId = (connectionIdRow) ? connectionIdRow.account_id : info.connectionId
+      if (connectionId) {
+        const connection = await insertConnection({
+          'accountId':accountId,
+          'connectionId':connectionId,
+        })
+        const existingConnection = await checkConnection({
+          'accountId':connectionId,
+          'connectionId':accountId,
+        })
+        connection['state'] = (existingConnection) ? 'connected' : 'pending'
+        return connection
+        // TO DO: Send email
+      } else if (email) {
+        const connection = await insertConnectionEmailOutreach({
+          'accountId':accountId,
+          'connectionEmail':email,
+        })
+        return connection
+      } else {
+        return 'Failed: Connection AccountId and Email Missing from Request'
+      }
+    } catch (error) {
+      throw new Error(error)
+    }
+}
 
 async function getConnections(accountId){
   try {
@@ -81,4 +115,7 @@ async function formatConnectObject(x, dict, accountCol){
   }
 }
 
-module.exports = {getConnections}
+module.exports = {
+  getConnections,
+  createConnection,
+}
