@@ -1,4 +1,8 @@
-const { insertAccount, insertAccountDetails, getAccountDetails } = require('../models/accounts')
+const {
+  insertAccount,
+  insertAccountDetails,
+  getAccountDetails,
+} = require('../models/accounts')
 
 async function registerUser(accountInfo){
   try {

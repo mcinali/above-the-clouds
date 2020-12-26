@@ -19,12 +19,22 @@ const {
   updateStreamParticipantEndTime,
   updateStreamEndTime,
 } = require('../models/streams')
+const {
+  insertConnection,
+  removeConnection,
+  insertConnectionEmailOutreach,
+  getAccountConnections,
+  getConnectionsToAccount,
+  getAccountConnectionsEmailOutreach,
+  getConnectionsEmailOutreachToAccount,
+} = require('../models/connections')
 
 const testUsername = 'testAccount'
 
 async function getAccountRow(){
+  const query = `SELECT id from accounts where username = '${testUsername}'`
   return pool
-          .query(`SELECT id from accounts where username = '${testUsername}'`)
+          .query(query)
           .then(res => res.rows[0])
           .catch(e => e.stack)
 }
@@ -69,7 +79,6 @@ describe('Accounts Tests', function() {
       firstname:'Test',
       lastname:'Account',
     }
-    await pgTransaction(`DELETE FROM account_details WHERE account_id = ${accountDetailsInfo.accountId}`)
     const accountDetails = await insertAccountDetails(accountDetailsInfo)
     // Check to make sure Account details are correct
     expect(accountDetails.account_id).to.equal(accountDetailsInfo.accountId)
@@ -127,11 +136,11 @@ describe('Streams Tests', function() {
       - Check to make sure Stream Participant End Time was updated correctly
       - Update Stream End Time
       - Check to make sure Stream End Time was updated correctly`, async function() {
-    // Insert Stream
     const accountRow = await getAccountRow()
     const accountId = accountRow.id
     const topic = await getTopicRow()
     const topicId = topic.id
+    // Insert Stream
     const streamInfo = {
       topicId: topicId,
       accountId: accountId,
@@ -220,5 +229,93 @@ describe('Streams Tests', function() {
     // Check to make sure Stream End Time was updated correctly
     expect(streamEnd.id).to.equal(stream.id)
     expect(streamEnd.end_time.getTime() - streamEndBenchmark.getTime()).to.be.within(0,1)
+  })
+})
+
+describe('Connections Tests', function() {
+  it(`Should...
+      - Get original AccountId
+      - Insert new test Account
+      - Insert Connection
+      - Check to make sure Connection was inserted correctly
+      - Fetch Account Connections
+      - Check to make sure Account Connections were fetched correctly
+      - Fetch Connections to Account
+      - Check to make sure Connections to Account were fetched correctly
+      - Insert Connection Email Outreach
+      - Check to make sure Connection Email Outreach was inserted correctly
+      - Fetch Account Connections Email Outreach
+      - Check to make sure Account Connections Email Outreach were fetched correctly
+      - Fetch Connections Email Outreach to Account
+      - Check to make sure Connections Email Outreach to Account were fetched correctly
+      - Remove Connection
+      - Check to make sure Connection was removed correctly`, async function() {
+    // Get original AccountId
+    const accountRow = await getAccountRow()
+    const accountId = accountRow.id
+    // Insert new test Account
+    const testConnectionsUsername = 'testAccountConnections'
+    await pgTransaction(`DELETE FROM accounts WHERE username = '${testConnectionsUsername}'`)
+    const connectionAccountInfo = {
+      username:testConnectionsUsername,
+      password:'testConnectionsPassword',
+    }
+    const connectionAccount = await insertAccount(connectionAccountInfo)
+    const connectionAccountId = connectionAccount.id
+    const connectionAccountDetailsInfo = {
+      accountId: connectionAccountId,
+      email: 'testconnections@email.com',
+      phone:2345678901,
+      firstname:'Test',
+      lastname:'Connections',
+    }
+    const connectionAccountDetails = await insertAccountDetails(connectionAccountDetailsInfo)
+    // Insert Connection
+    const connectionInfo = {
+      accountId:accountId,
+      connectionId:connectionAccountId,
+    }
+    const connection = await insertConnection(connectionInfo)
+    // Check to make sure Connection was inserted correctly
+    expect(connection.account_id).to.equal(connectionInfo.accountId)
+    expect(connection.connection_id).to.equal(connectionInfo.connectionId)
+    // Fetch Account Connections
+    const accountConnectionsArrayNonEmpty = await getAccountConnections(accountId)
+    const accountConnectionsArrayEmpty = await getAccountConnections(connectionAccountId)
+    // Check to make sure Account Connections were fetched correctly
+    expect(accountConnectionsArrayNonEmpty[0].connection_id).to.equal(connectionAccountId)
+    should.not.exist(accountConnectionsArrayEmpty[0])
+    // Fetch Connections to Account
+    const connectionsToAccountArrayEmpty = await getConnectionsToAccount(accountId)
+    const connectionsToAccountArrayNonEmpty = await getConnectionsToAccount(connectionAccountId)
+    // Check to make sure Connections to Account were fetched correctly
+    should.not.exist(connectionsToAccountArrayEmpty[0])
+    expect(connectionsToAccountArrayNonEmpty[0].account_id).to.equal(accountId)
+    // Insert Connection Email Outreach
+    const connectionEmailOutreachInfo = {
+      accountId:accountId,
+      connectionEmail:'connection@test.com',
+    }
+    const connectionEmailOutreach = await insertConnectionEmailOutreach(connectionEmailOutreachInfo)
+    // Check to make sure Connection Email Outreach was inserted correctly
+    expect(connectionEmailOutreach.account_id).to.equal(connectionEmailOutreachInfo.accountId)
+    expect(connectionEmailOutreach.connection_email).to.equal(connectionEmailOutreachInfo.connectionEmail)
+    // Fetch Account Connections Email Outreach
+    const accountConnectionsEmailOutreachNonEmpty = await getAccountConnectionsEmailOutreach(accountId)
+    const accountConnectionsEmailOutreachEmpty = await getAccountConnectionsEmailOutreach(connectionAccountId)
+    // Check to make sure Account Connections Email Outreach were fetched correctly
+    expect(accountConnectionsEmailOutreachNonEmpty[0].connection_email).to.equal(connectionEmailOutreachInfo.connectionEmail)
+    should.not.exist(accountConnectionsEmailOutreachEmpty[0])
+    // Fetch Connections Email Outreach to Account
+    const connectionsEmailOutreachToAccountNonEmpty = await getConnectionsEmailOutreachToAccount(connectionEmailOutreachInfo.connectionEmail)
+    const connectionsEmailOutreachToAccountEmpty = await getConnectionsEmailOutreachToAccount(connectionAccountDetailsInfo.email)
+    // Check to make sure Connections Email Outreach to Account were fetched correctly
+    expect(connectionsEmailOutreachToAccountNonEmpty[0].account_id).to.equal(accountId)
+    should.not.exist(connectionsEmailOutreachToAccountEmpty[0])
+    // Remove Connection
+    await removeConnection(connectionInfo)
+    // Check to make sure Connection was removed correctly
+    const removedConnection = await getAccountConnections(accountId)
+    should.not.exist(removedConnection[0])
   })
 })
