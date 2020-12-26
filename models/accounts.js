@@ -55,9 +55,23 @@ async function getAccountUsername(accountId){
   }
 }
 
+async function getAccountFromEmail(email){
+  try {
+    const query = `SELECT account_id FROM account_details where email = '${email}'`
+    console.log(query)
+    return pool
+            .query(query)
+            .then(res => res.rows[0])
+            .catch(error => new Error(error))
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 module.exports = {
   insertAccount,
   insertAccountDetails,
   getAccountDetails,
   getAccountUsername,
+  getAccountFromEmail,
 }

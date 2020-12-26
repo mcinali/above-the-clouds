@@ -1,4 +1,4 @@
-const { getAccountDetails, getAccountUsername } = require('../models/accounts')
+const { getAccountDetails, getAccountUsername, getAccountFromEmail } = require('../models/accounts')
 const {
   insertConnection,
   removeConnection,
@@ -15,38 +15,67 @@ async function getConnections(accountId){
     // Get Account Email
     const accountDetails = await getAccountDetails(accountId)
     const accountEmail = accountDetails.email
-    // Get Account Connections & reformat object
+    // Get Account Connections & reformat list of objects to dict
     const accountConnections = await getAccountConnections(accountId)
-    // Get Connections to Account & reformat object
+    const accountConnectionsDict = Object.assign({}, ...accountConnections.map((x) => ({[x.connection_id]: x.created_at})))
+    // Get Connections to Account & reformat list of objects to dict
     const connectionsToAccount = await getConnectionsToAccount(accountId)
     const connectionsToAccountDict = Object.assign({}, ...connectionsToAccount.map((x) => ({[x.account_id]: x.created_at})))
-    // Get all account ids
+    // Get all account connections
     const connections = accountConnections.filter(function(item){
-      if (connectionsToAccountDict[item.connection_id]) {
-        return item
-      }
+      if (connectionsToAccountDict[item.connection_id]) { return item }
     })
-    const connectionsFrmtd = await Promise.all(connections.map(async (x) => {
-      const ts = Math.max(x.created_at.getTime(), connectionsToAccountDict[x.connection_id].getTime())
-      const connectionUsername = await getAccountUsername(x.connection_id)
-      const connectionDetails = await getAccountDetails(x.connection_id)
+    const connectionsFrmtd = await Promise.all(connections.map(async (item) => formatConnectObject(item, connectionsToAccountDict, 'connection_id')))
+    const connectionsSrtd = connectionsFrmtd.sort(function(a,b) {return b.ts - a.ts})
+    // Get all inbound account connection requests
+    const inboundConnectionRequests = connectionsToAccount.filter(function(item){
+      if (!accountConnectionsDict[item.account_id]) { return item }
+    })
+    const inboundConnectionRequestsFrmtd = await Promise.all(inboundConnectionRequests.map(async (item) => formatConnectObject(item, accountConnectionsDict, 'account_id')))
+    const inboundConnectionRequestsSrtd = inboundConnectionRequestsFrmtd.sort(function(a,b) {return b.ts - a.ts})
+    // Get all outbound account connection requests
+    const outboundConnectionRequests = accountConnections.filter(function(item){
+      if (!connectionsToAccountDict[item.connection_id]) { return item }
+    })
+    const outboundConnectionRequestsFrmtd = await Promise.all(outboundConnectionRequests.map(async (item) => formatConnectObject(item, connectionsToAccountDict, 'connection_id')))
+    const outboundConnectionRequestsSrtd = outboundConnectionRequestsFrmtd.sort(function(a,b) {return b.ts - a.ts})
+    // Get all connections via email outreach
+    const emailOutreachConnections = await getAccountConnectionsEmailOutreach(accountId)
+    const emailOutreachConnectionsAugmented = await Promise.all(emailOutreachConnections.map(async (item) => {
       return {
-        'accountId':x.connection_id,
-        'username':connectionUsername.username,
-        'email':connectionDetails.email,
-        'ts':ts
+        'email':item.connection_email,
+        'accountId':await getAccountFromEmail(item.connection_email),
+        'ts':item.created_at.getTime(),
       }
     }))
-    const sortedConnections = connectionsFrmtd.sort(function(a,b) {
-      return b.ts - a.ts
+    const emailOutreachConnectionsFltrd = emailOutreachConnectionsAugmented.filter(function(item){
+      if (!item.accountId) { return item }
     })
-    console.log(accountConnections)
-    console.log(connectionsToAccount)
-    console.log(connectionsToAccountDict)
-    console.log(connections)
-    console.log(connectionsFrmtd)
-    console.log(sortedConnections)
-    return
+    const emailOutreachConnectionsSrtd = emailOutreachConnectionsFltrd.sort(function(a,b) {return b.ts - a.ts})
+    return {
+      'connections':connectionsSrtd,
+      'inboundRequests':inboundConnectionRequestsSrtd,
+      'outboundRequests':{
+          'in-app':outboundConnectionRequestsSrtd,
+          'email':emailOutreachConnectionsSrtd,
+      }
+    }
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+async function formatConnectObject(x, dict, accountCol){
+  try {
+    const ts = (dict[x[accountCol]]) ? Math.max(x.created_at.getTime(), dict[x[accountCol]].getTime()) : x.created_at.getTime()
+    const connectionUsername = await getAccountUsername(x[accountCol])
+    const connectionDetails = await getAccountDetails(x[accountCol])
+    return {
+      'accountId':x[accountCol],
+      'username':connectionUsername.username,
+      'email':connectionDetails.email,
+      'ts':ts
+    }
   } catch (error) {
     throw new Error(error)
   }
