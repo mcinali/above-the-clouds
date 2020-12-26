@@ -20,7 +20,7 @@ router.get('/:accountId', async function (req, res) {
     return res.send(results)
   } catch (error) {
     console.error(error)
-    return res.status(400).json({error: 'Failed to register new user'})
+    return res.status(400).json({error: 'Failed to fetch user details'})
   }
 })
 

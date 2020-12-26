@@ -42,8 +42,60 @@ async function insertConnectionEmailOutreach(connectionInfo){
   }
 }
 
+async function getAccountConnections(accountId){
+  try {
+    const query = `SELECT connection_id, created_at FROM connections WHERE account_id = ${accountId}`
+    return pool
+            .query(query)
+            .then(res => res.rows)
+            .catch(error => new Error(error))
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+async function getConnectionsToAccount(accountId){
+  try {
+    const query = `SELECT account_id, created_at FROM connections WHERE connection_id = ${accountId}`
+    return pool
+            .query(query)
+            .then(res => res.rows)
+            .catch(error => new Error(error))
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+async function getAccountConnectionsEmailOutreach(accountId){
+  try {
+    const query = `SELECT connection_email, created_at FROM connections_email_outreach WHERE account_id = ${accountId}`
+    return pool
+            .query(query)
+            .then(res => res.rows)
+            .catch(error => new Error(error))
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+async function getConnectionsEmailOutreachToAccount(accountEmail){
+  try {
+    const query = `SELECT account_id, created_at FROM connections_email_outreach WHERE connection_email = '${accountEmail}'`
+    return pool
+            .query(query)
+            .then(res => res.rows)
+            .catch(error => new Error(error))
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 module.exports = {
   insertConnection,
   removeConnection,
   insertConnectionEmailOutreach,
+  getAccountConnections,
+  getConnectionsToAccount,
+  getAccountConnectionsEmailOutreach,
+  getConnectionsEmailOutreachToAccount,
 }

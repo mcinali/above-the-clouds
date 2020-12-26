@@ -17,18 +17,18 @@ router.post('/', async function (req, res) {
     return res.send(results)
   } catch (error) {
     console.error(error)
-    return res.status(400).json({error: ``})
+    return res.status(400).json({error: `Failed to created new stream`})
   }
 })
 
-// Create Stream
+// Get Stream Details
 router.get('/:streamId', async function (req, res) {
   try {
     const results = await getStreamInfo(req.params.streamId)
     return res.send(results)
   } catch (error) {
     console.error(error)
-    return res.status(400).json({error: ``})
+    return res.status(400).json({error: `Failed to fetch stream details`})
   }
 })
 
@@ -39,7 +39,7 @@ router.post('/invite', async function (req, res) {
     return res.send(results)
   } catch (error) {
     console.error(error)
-    return res.status(400).json({error: ``})
+    return res.status(400).json({error: `Failed to send stream invite`})
   }
 })
 
@@ -50,7 +50,7 @@ router.post('/join', async function (req, res) {
     return res.send(results)
   } catch (error) {
     console.error(error)
-    return res.status(400).json({error: ``})
+    return res.status(400).json({error: `Failed to join stream`})
   }
 })
 
@@ -61,7 +61,7 @@ router.post('/leave', async function (req, res) {
     return res.send(results)
   } catch (error) {
     console.error(error)
-    return res.status(400).json({error: ``})
+    return res.status(400).json({error: `Failed to leave stream`})
   }
 })
 
