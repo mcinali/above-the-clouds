@@ -44,7 +44,7 @@ async function insertConnectionEmailOutreach(connectionInfo){
 
 async function getAccountConnections(accountId){
   try {
-    const query = `SELECT connection_id, created_at FROM connections WHERE account_id = ${accountId}`
+    const query = `SELECT id, connection_id, created_at FROM connections WHERE account_id = ${accountId}`
     return pool
             .query(query)
             .then(res => res.rows)
@@ -56,7 +56,7 @@ async function getAccountConnections(accountId){
 
 async function getConnectionsToAccount(accountId){
   try {
-    const query = `SELECT account_id, created_at FROM connections WHERE connection_id = ${accountId}`
+    const query = `SELECT id, account_id, created_at FROM connections WHERE connection_id = ${accountId}`
     return pool
             .query(query)
             .then(res => res.rows)
@@ -68,7 +68,7 @@ async function getConnectionsToAccount(accountId){
 
 async function getAccountConnectionsEmailOutreach(accountId){
   try {
-    const query = `SELECT connection_email, created_at FROM connections_email_outreach WHERE account_id = ${accountId}`
+    const query = `SELECT connection_email FROM connections_email_outreach WHERE account_id = ${accountId}`
     return pool
             .query(query)
             .then(res => res.rows)
@@ -80,7 +80,7 @@ async function getAccountConnectionsEmailOutreach(accountId){
 
 async function getConnectionsEmailOutreachToAccount(accountEmail){
   try {
-    const query = `SELECT account_id, created_at FROM connections_email_outreach WHERE connection_email = '${accountEmail}'`
+    const query = `SELECT account_id FROM connections_email_outreach WHERE connection_email = '${accountEmail}'`
     return pool
             .query(query)
             .then(res => res.rows)
