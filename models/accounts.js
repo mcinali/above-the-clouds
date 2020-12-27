@@ -42,7 +42,7 @@ async function getAccountDetails(accountId){
   }
 }
 
-async function getAccountUsername(accountId){
+async function getUsernameFromAccountId(accountId){
   try {
     const query = `
       SELECT username FROM accounts where id = ${accountId}`
@@ -55,7 +55,7 @@ async function getAccountUsername(accountId){
   }
 }
 
-async function getAccountFromEmail(email){
+async function getAccountIdFromEmail(email){
   try {
     const query = `SELECT account_id FROM account_details where email = '${email}'`
     console.log(query)
@@ -72,6 +72,6 @@ module.exports = {
   insertAccount,
   insertAccountDetails,
   getAccountDetails,
-  getAccountUsername,
-  getAccountFromEmail,
+  getUsernameFromAccountId,
+  getAccountIdFromEmail,
 }

@@ -6,6 +6,8 @@ const {
   insertAccount,
   insertAccountDetails,
   getAccountDetails,
+  getUsernameFromAccountId,
+  getAccountIdFromEmail,
 } = require('../models/accounts')
 const { insertTopic } = require('../models/topics')
 const {
@@ -25,6 +27,7 @@ const {
   insertConnectionEmailOutreach,
   getAccountConnections,
   getConnectionsToAccount,
+  checkConnection,
   getAccountConnectionsEmailOutreach,
   getConnectionsEmailOutreachToAccount,
 } = require('../models/connections')
@@ -56,11 +59,15 @@ describe('DB Migrations Tests', function() {
 describe('Accounts Tests', function() {
   it(`Should...
       - Insert test Account
-      - Check to make sure Account info is correct
+      - Check to make sure Account info was inserted correctly
       - Insert test Account Details
-      - Check to make sure Account details are correct
-      - Get Account Details
-      - Check to make sure Fetched Account Details are correct`, async function() {
+      - Check to make sure Account Details were inserted correctly
+      - Fetch Account Details
+      - Check to make sure Account Details were fetched correctly
+      - Fetch Username from Account
+      - Check to make sure Username from Account was fetched correctly
+      - Fetch Account Id from Email
+      - Check to make sure Account Id from Email was fetched correctly`, async function() {
     // Insert test Account
     const accountInfo = {
       username:testUsername,
@@ -68,7 +75,7 @@ describe('Accounts Tests', function() {
     }
     await pgTransaction(`DELETE FROM accounts WHERE username = '${accountInfo.username}'`)
     const account = await insertAccount(accountInfo)
-    // Check to make sure Account info is correct
+    // Check to make sure Account info was inserted correctly
     expect(account.username).to.equal(accountInfo.username)
     should.exist(account.password)
     // Insert test Account Details
@@ -80,13 +87,13 @@ describe('Accounts Tests', function() {
       lastname:'Account',
     }
     const accountDetails = await insertAccountDetails(accountDetailsInfo)
-    // Check to make sure Account details are correct
+    // Check to make sure Account Details were inserted correctly
     expect(accountDetails.account_id).to.equal(accountDetailsInfo.accountId)
     expect(accountDetails.email).to.equal(accountDetailsInfo.email)
     expect(Number(accountDetails.phone)).to.equal(accountDetailsInfo.phone)
     expect(accountDetails.firstname).to.equal(accountDetailsInfo.firstname)
     expect(accountDetails.lastname).to.equal(accountDetailsInfo.lastname)
-    // Get Account Details
+    // Fetch Account Details
     const accountDetailsFetched = await getAccountDetails(account.id)
     // Check to make sure Fetched Account Details are correct
     expect(accountDetailsFetched.account_id).to.equal(accountDetailsInfo.accountId)
@@ -94,7 +101,14 @@ describe('Accounts Tests', function() {
     expect(Number(accountDetailsFetched.phone)).to.equal(accountDetailsInfo.phone)
     expect(accountDetailsFetched.firstname).to.equal(accountDetailsInfo.firstname)
     expect(accountDetailsFetched.lastname).to.equal(accountDetailsInfo.lastname)
-
+    // Fetch Username from Account
+    const username = await getUsernameFromAccountId(account.id)
+    // Check to make sure Username from Account was fetched correctly
+    expect(username.username).to.equal(accountInfo.username)
+    // Fetch Account Id from Email
+    const acccountIdFromEmail = await getAccountIdFromEmail(accountDetailsInfo.email)
+    // Check to make sure Account Id from Email was fetched correctly
+    expect(acccountIdFromEmail.account_id).to.equal(account.id)
   })
 })
 
@@ -238,7 +252,9 @@ describe('Connections Tests', function() {
       - Insert new test Account
       - Insert Connection
       - Check to make sure Connection was inserted correctly
-      - Fetch Account Connections
+      - Fetch Account Connection
+      - Check to make sure Account Connection was fetched correctly
+      - Fetch all Account Connections
       - Check to make sure Account Connections were fetched correctly
       - Fetch Connections to Account
       - Check to make sure Connections to Account were fetched correctly
@@ -279,7 +295,14 @@ describe('Connections Tests', function() {
     // Check to make sure Connection was inserted correctly
     expect(connection.account_id).to.equal(connectionInfo.accountId)
     expect(connection.connection_id).to.equal(connectionInfo.connectionId)
-    // Fetch Account Connections
+    // Fetch Account Connection
+    const connectionCheck1 = await checkConnection(connectionInfo)
+    const connectionCheck2 = await checkConnection({accountId:connectionAccountId,connectionId:accountId})
+    // Check to make sure Account Connection was fetched correctly
+    expect(connectionCheck1.account_id).to.equal(connectionInfo.accountId)
+    expect(connectionCheck1.connection_id).to.equal(connectionInfo.connectionId)
+    should.not.exist(connectionCheck2)
+    // Fetch all Account Connections
     const accountConnectionsArrayNonEmpty = await getAccountConnections(accountId)
     const accountConnectionsArrayEmpty = await getAccountConnections(connectionAccountId)
     // Check to make sure Account Connections were fetched correctly
