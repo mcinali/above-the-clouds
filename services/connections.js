@@ -1,4 +1,4 @@
-const { getAccountDetails, getAccountUsername, getAccountFromEmail } = require('../models/accounts')
+const { getAccountDetails, getAccountIdFromEmail, getUsernameFromAccountId } = require('../models/accounts')
 const {
   insertConnection,
   removeConnection,
@@ -15,7 +15,7 @@ async function createConnection(info){
     try {
       const accountId = info.accountId
       const email = (info.connectionEmail) ? info.connectionEmail : null
-      const connectionIdRow = await getAccountFromEmail(email)
+      const connectionIdRow = await getAccountIdFromEmail(email)
       const connectionId = (connectionIdRow) ? connectionIdRow.account_id : info.connectionId
       if (connectionId) {
         const connection = await insertConnection({
@@ -78,7 +78,7 @@ async function getConnections(accountId){
     const emailOutreachConnectionsAugmented = await Promise.all(emailOutreachConnections.map(async (item) => {
       return {
         'email':item.connection_email,
-        'accountId':await getAccountFromEmail(item.connection_email),
+        'accountId':await getAccountIdFromEmail(item.connection_email),
         'ts':item.created_at.getTime(),
       }
     }))
@@ -102,7 +102,7 @@ async function getConnections(accountId){
 async function formatConnectObject(x, dict, accountCol){
   try {
     const ts = (dict[x[accountCol]]) ? Math.max(x.created_at.getTime(), dict[x[accountCol]].getTime()) : x.created_at.getTime()
-    const connectionUsername = await getAccountUsername(x[accountCol])
+    const connectionUsername = await getUsernameFromAccountId(x[accountCol])
     const connectionDetails = await getAccountDetails(x[accountCol])
     return {
       'accountId':x[accountCol],
