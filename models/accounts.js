@@ -14,6 +14,19 @@ async function insertAccount(accountInfo){
   }
 }
 
+async function getAccountInfo(accountId){
+  try {
+    const query = `
+      SELECT * FROM accounts where id = ${accountId}`
+    return pool
+            .query(query)
+            .then(res => res.rows[0])
+            .catch(error => new Error(error))
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 async function insertAccountDetails(accountDetails){
   try {
     const { accountId, email, phone, firstname, lastname } = accountDetails
@@ -42,23 +55,9 @@ async function getAccountDetails(accountId){
   }
 }
 
-async function getUsernameFromAccountId(accountId){
-  try {
-    const query = `
-      SELECT username FROM accounts where id = ${accountId}`
-    return pool
-            .query(query)
-            .then(res => res.rows[0])
-            .catch(error => new Error(error))
-  } catch (error) {
-    throw new Error(error)
-  }
-}
-
 async function getAccountIdFromEmail(email){
   try {
     const query = `SELECT account_id FROM account_details where email = '${email}'`
-    console.log(query)
     return pool
             .query(query)
             .then(res => res.rows[0])
@@ -72,6 +71,6 @@ module.exports = {
   insertAccount,
   insertAccountDetails,
   getAccountDetails,
-  getUsernameFromAccountId,
+  getAccountInfo,
   getAccountIdFromEmail,
 }

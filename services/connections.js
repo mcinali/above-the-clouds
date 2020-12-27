@@ -1,4 +1,4 @@
-const { getAccountDetails, getAccountIdFromEmail, getUsernameFromAccountId } = require('../models/accounts')
+const { getAccountDetails, getAccountIdFromEmail, getAccountInfo } = require('../models/accounts')
 const {
   insertConnection,
   removeConnection,
@@ -102,7 +102,7 @@ async function getConnections(accountId){
 async function formatConnectObject(x, dict, accountCol){
   try {
     const ts = (dict[x[accountCol]]) ? Math.max(x.createdAt.getTime(), dict[x[accountCol]].getTime()) : x.createdAt.getTime()
-    const connectionUsername = await getUsernameFromAccountId(x[accountCol])
+    const connectionUsername = await getAccountInfo(x[accountCol])
     const connectionDetails = await getAccountDetails(x[accountCol])
     return {
       'accountId':x[accountCol],

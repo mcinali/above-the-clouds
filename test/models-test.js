@@ -6,7 +6,7 @@ const {
   insertAccount,
   insertAccountDetails,
   getAccountDetails,
-  getUsernameFromAccountId,
+  getAccountInfo,
   getAccountIdFromEmail,
 } = require('../models/accounts')
 const { insertTopic } = require('../models/topics')
@@ -16,6 +16,7 @@ const {
   insertStreamInvitation,
   getStreamInvitations,
   insertStreamEmailOutreach,
+  getStreamInvitationsFromEmailOutreach,
   insertStreamParticipant,
   getStreamParticipants,
   updateStreamParticipantEndTime,
@@ -102,7 +103,7 @@ describe('Accounts Tests', function() {
     expect(accountDetailsFetched.firstname).to.equal(accountDetailsInfo.firstname)
     expect(accountDetailsFetched.lastname).to.equal(accountDetailsInfo.lastname)
     // Fetch Username from Account
-    const username = await getUsernameFromAccountId(account.id)
+    const username = await getAccountInfo(account.id)
     // Check to make sure Username from Account was fetched correctly
     expect(username.username).to.equal(accountInfo.username)
     // Fetch Account Id from Email
@@ -142,6 +143,8 @@ describe('Streams Tests', function() {
       - Check to make sure Stream Invitations were fetched correctly
       - Insert Stream Email Outreach
       - Check to make sure Stream Email Outreach was inserted correctly
+      - Fetch Streams from Email Outreach
+      - Check to make sure Streams from Email Outreach were fetched correctly
       - Insert Stream Participant
       - Check to make sure Stream Participant was inserted correctly
       - Fetch Stream Participants
@@ -210,6 +213,13 @@ describe('Streams Tests', function() {
     expect(streamEmailOutreach.streamId).to.equal(streamEmailOutreachInfo.streamId)
     expect(streamEmailOutreach.accountId).to.equal(streamEmailOutreachInfo.accountId)
     expect(streamEmailOutreach.inviteeEmail).to.equal(streamEmailOutreachInfo.inviteeEmail)
+    // Fetch Streams from Email Outreach
+    const streamInvitationsFromEmailOutreach = await getStreamInvitationsFromEmailOutreach(streamEmailOutreachInfo.inviteeEmail)
+    // Check to make sure Streams from Email Outreach were fetched correctly
+    expect(streamInvitationsFromEmailOutreach[0].id).to.equal(streamEmailOutreach.id)
+    expect(streamInvitationsFromEmailOutreach[0].streamId).to.equal(streamEmailOutreach.streamId)
+    expect(streamInvitationsFromEmailOutreach[0].accountId).to.equal(streamEmailOutreach.accountId)
+    expect(streamInvitationsFromEmailOutreach[0].inviteeEmail).to.equal(streamEmailOutreach.inviteeEmail)
     // Insert Stream Participant
     const streamParticipantInfo = {
       streamId:stream.id,
