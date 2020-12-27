@@ -5,7 +5,7 @@ async function createTopic(topicInfo){
   try {
     const results = await insertTopic(topicInfo)
     return {
-      'id':results.id,
+      'topicId':results.id,
       'accountId':results.accountId,
       'topic':results.topic,
       'createdAt':results.createdAt,

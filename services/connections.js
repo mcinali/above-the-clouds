@@ -13,10 +13,10 @@ const {
 
 async function createConnection(info){
     try {
+      // TO DO: Send connection email
       const accountId = info.accountId
+      const connectionId = connectionId
       const email = (info.connectionEmail) ? info.connectionEmail : null
-      const connectionIdRow = await getAccountIdFromEmail(email)
-      const connectionId = (connectionIdRow) ? connectionIdRow.accountId : info.connectionId
       if (connectionId) {
         const connection = await insertConnection({
           'accountId':accountId,
@@ -28,7 +28,7 @@ async function createConnection(info){
         })
         const state = (existingConnection) ? 'connected' : 'pending'
         return {
-          'id': connection.id,
+          'connectionId': connection.id,
           'accountId': connection.accountId,
           'connectionId': connection.connectionId,
           'state': state,
@@ -41,13 +41,13 @@ async function createConnection(info){
           'connectionEmail':email,
         })
         return {
-          'id':connection.id,
+          'connectionId':connection.id,
           'accountId':connection.accountId,
           'connectionEmail':connection.connectionEmail,
           'createdAt':connection.createdAt,
         }
       } else {
-        return 'Failed: Connection AccountId and Email Missing from Request'
+        return 'Failed: Unable to make connection request'
       }
     } catch (error) {
       throw new Error(error)

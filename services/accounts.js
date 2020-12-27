@@ -10,6 +10,7 @@ const { getStreamInvitationsFromEmailOutreach, insertStreamInvitation } = requir
 
 async function registerUser(accountInfo){
   try {
+    // TO DO: Send registration email
     //  Insert Account
     const account = await insertAccount(accountInfo)
     //  Insert Account Details

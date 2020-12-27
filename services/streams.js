@@ -3,17 +3,28 @@ const {
   getStreamDetails,
   insertStreamInvitation,
   getStreamInvitations,
+  insertStreamEmailOutreach,
+  getStreamInvitationsFromEmailOutreach,
   insertStreamParticipant,
   getStreamParticipants,
   updateStreamParticipantEndTime,
   updateStreamEndTime,
 } = require('../models/streams')
+const { getAccountIdFromEmail } = require('../models/accounts')
 
 // Create Stream
 async function createStream(streamInfo){
   try {
-    const results = insertStream(streamInfo)
-    return results
+    const stream = await insertStream(streamInfo)
+    return {
+      'streamId': stream.id,
+      'topicId': stream.topicId,
+      'creatorId': stream.creatorId,
+      'capacity': stream.capacity,
+      'speakerAccessibility': stream.speakerAccessibility,
+      'startTime': stream.startTime,
+      'endTime': stream.endTime
+    }
   } catch (error) {
     throw new Error(error)
   }
@@ -26,11 +37,30 @@ async function getStreamInfo(streamId){
     const streamParticipants = await getStreamParticipants(streamId)
     const streamInvites = await getStreamInvitations(streamId)
 
-    const results = {}
-    results['info'] = streamDetails
-    results['participants'] = streamParticipants
-    results['invites'] = streamInvites
-    return results
+    const info = {
+      'streamId': streamDetails.id,
+      'topicId': streamDetails.topicId,
+      'creatorId': streamDetails.creatorId,
+      'capacity': streamDetails.capacity,
+      'speakerAccessibility': streamDetails.speakerAccessibility,
+      'startTime': streamDetails.startTime,
+      'endTime': streamDetails.endTime,
+    }
+    const participants = streamParticipants.map((participant) => ({
+      'streamParticipantId': participant.id,
+      'accountId': participant.accountId,
+      'startTime': participant.startTime,
+    }))
+    const invitees = streamInvites.map((invitee) => ({
+      'streamInviteId': invitee.id,
+      'accountId': invitee.accountId,
+      'inviteeAccountId': invitee.inviteeAccountId,
+    }))
+    return {
+      'info': info,
+      'participants': participants,
+      'invitees': invitees,
+    }
   } catch (error) {
     throw new Error(error)
   }
@@ -40,9 +70,28 @@ async function getStreamInfo(streamId){
 async function inviteParticipantToStream(inviteInfo){
   try {
     // TO DO: Send invite email
-    // TO DO: Convert username to account id
-    const results = insertStreamInvitation(inviteInfo)
-    return results
+    const connectionId = inviteInfo.inviteeAccountId
+    const email = inviteInfo.inviteeEmail
+    // Insert connection id into connections if exists
+    if (connectionId) {
+      const streamInvitation = await insertStreamInvitation(inviteInfo)
+      return {
+        'streamInvitationId': streamInvitation.id,
+        'streamId': streamInvitation.streamId,
+        'accountId': streamInvitation.accountId,
+        'inviteeAccountId': streamInvitation.inviteeAccountId,
+      }
+    } else if (email) {
+      const streamEmailOutreach = await insertStreamEmailOutreach(inviteInfo)
+      return {
+        'streamEmailOutreachId': streamEmailOutreach.id,
+        'streamId': streamEmailOutreach.streamId,
+        'accountId': streamEmailOutreach.accountId,
+        'inviteeEmail': streamEmailOutreach.inviteeEmail,
+      }
+    } else {
+      return 'Failed: Unable to invite participant to stream'
+    }
   } catch (error) {
     throw new Error(error)
   }
