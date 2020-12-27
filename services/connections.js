@@ -26,15 +26,26 @@ async function createConnection(info){
           'accountId':connectionId,
           'connectionId':accountId,
         })
-        connection['state'] = (existingConnection) ? 'connected' : 'pending'
-        return connection
+        const state = (existingConnection) ? 'connected' : 'pending'
+        return {
+          'id': connection.id,
+          'accountId': connection.accountId,
+          'connectionId': connection.connectionId,
+          'state': state,
+          'createdAt': connection.createdAt,
+        }
         // TO DO: Send email
       } else if (email) {
         const connection = await insertConnectionEmailOutreach({
           'accountId':accountId,
           'connectionEmail':email,
         })
-        return connection
+        return {
+          'id':connection.id,
+          'accountId':connection.accountId,
+          'connectionEmail':connection.connectionEmail,
+          'createdAt':connection.createdAt,
+        }
       } else {
         return 'Failed: Connection AccountId and Email Missing from Request'
       }

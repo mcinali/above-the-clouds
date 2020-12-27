@@ -10,7 +10,6 @@ async function insertStream(streamInfo){
     const result = await pgTransaction(query)
     return result.rows[0]
   } catch (error) {
-    console.error(error.stack)
     throw new Error(error)
   }
 }
@@ -40,7 +39,6 @@ async function insertStreamInvitation(inviteInfo){
     const result = await pgTransaction(query)
     return result.rows[0]
   } catch (error) {
-    console.error(error.stack)
     throw new Error(error)
   }
 }
@@ -70,7 +68,6 @@ async function insertStreamEmailOutreach(inviteInfo){
     const result = await pgTransaction(query)
     return result.rows[0]
   } catch (error) {
-    console.error(error.stack)
     throw new Error(error)
   }
 }
@@ -78,7 +75,6 @@ async function insertStreamEmailOutreach(inviteInfo){
 async function getStreamInvitationsFromEmailOutreach(email){
   try {
     const query = `SELECT id, stream_id, account_id, invitee_email FROM stream_email_outreach WHERE invitee_email = '${email}'`
-    console.log(query)
     return pool
             .query(query)
             .then(res => res.rows)
@@ -98,7 +94,6 @@ async function insertStreamParticipant(info){
     const result = await pgTransaction(query)
     return result.rows[0]
   } catch (error) {
-    console.error(error.stack)
     throw new Error(error)
   }
 }
@@ -127,7 +122,6 @@ async function updateStreamParticipantEndTime(id){
     const result = await pgTransaction(query)
     return result.rows[0]
   } catch (error) {
-    console.error(error.stack)
     throw new Error(error)
   }
 }
@@ -142,7 +136,6 @@ async function updateStreamEndTime(id){
     const result = await pgTransaction(query)
     return result.rows[0]
   } catch (error) {
-    console.error(error.stack)
     throw new Error(error)
   }
 }
