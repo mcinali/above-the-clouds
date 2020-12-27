@@ -1,4 +1,7 @@
 const { Pool } = require('pg')
+const pg = require('pg')
+const pgCamelCase = require('pg-camelcase')
+const revertCamelCase = pgCamelCase.inject(pg)
 
 const db = {
   user: 'mcinali',
