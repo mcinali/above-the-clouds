@@ -15,8 +15,8 @@ async function createConnection(info){
     try {
       // TO DO: Send connection email
       const accountId = info.accountId
-      const connectionId = connectionId
-      const email = (info.connectionEmail) ? info.connectionEmail : null
+      const connectionId = info.connectionId
+      const email = info.connectionEmail
       if (connectionId) {
         const connection = await insertConnection({
           'accountId':accountId,
@@ -47,7 +47,7 @@ async function createConnection(info){
           'createdAt':connection.createdAt,
         }
       } else {
-        return 'Failed: Unable to make connection request'
+        throw new Error('Failed: Unable to make connection request')
       }
     } catch (error) {
       throw new Error(error)

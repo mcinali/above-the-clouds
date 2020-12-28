@@ -7,10 +7,12 @@ const {
   getStreamInvitationsFromEmailOutreach,
   insertStreamParticipant,
   getStreamParticipants,
+  getActiveAccountStreams,
   updateStreamParticipantEndTime,
   updateStreamEndTime,
 } = require('../models/streams')
 const { getAccountIdFromEmail } = require('../models/accounts')
+const { getAccountConnections, checkConnection } = require('../models/connections')
 
 // Create Stream
 async function createStream(streamInfo){
@@ -90,7 +92,7 @@ async function inviteParticipantToStream(inviteInfo){
         'inviteeEmail': streamEmailOutreach.inviteeEmail,
       }
     } else {
-      return 'Failed: Unable to invite participant to stream'
+      throw new Error('Unable to invite participant to stream')
     }
   } catch (error) {
     throw new Error(error)
@@ -100,10 +102,57 @@ async function inviteParticipantToStream(inviteInfo){
 // Join Stream
 async function joinStream(joinInfo){
   try {
-    // TO DO: Check if user is allowed to join stream
-    // TO DO: Check if user is part of any other streams
-    const results = insertStreamParticipant(joinInfo)
-    return results
+    const streamId = joinInfo.streamId
+    const accountId = joinInfo.accountId
+    // Check if stream is active
+    const streamDetails = await getStreamDetails(streamId)
+    if (streamDetails.endTime){
+      throw new Error('Stream is inactive. Users cannot join inactive streams.')
+    }
+    // Check if user is already active in any other streams
+    const userStreams = await getActiveAccountStreams(accountId)
+    const userStreamsFltrd = userStreams.filter(function(userStream){
+      if (userStream.streamId!==streamId) { return userStream }
+    })
+    if (userStreamsFltrd.length > 0){
+      throw new Error('User already active in another stream')
+    } else if (userStreams.length > 0) {
+      throw new Error('User already active in this stream')
+    } else {
+      // Reject user if they are not allowed to join stream
+      const streamDetails = await getStreamDetails(streamId)
+      const speakerAccessibility = streamDetails.speakerAccessibility
+      const streamCreatorId = streamDetails.creatorId
+      const streamInvitees = await getStreamInvitations(streamId)
+      const streamInviteesFlrtd = streamInvitees.filter(function(streamInvite){
+        if (streamInvite.inviteeAccountId===accountId) {return streamInvite}
+      })
+      if (streamInviteesFlrtd.length==0){
+        if (speakerAccessibility==='invite-only' && streamCreatorId!==accountId){
+          throw new Error('Stream is invite-only. User does not have permission to participate in stream.')
+        } else if (speakerAccessibility==='network-only' && streamCreatorId!==accountId){
+          const streamParticipants = await getStreamParticipants(streamId)
+          const participantConnectionCheck = await Promise.all(streamParticipants.map(async (participant) => {
+            const connection1 = await checkConnection({'accountId':accountId,'connectionId':participant.accountId})
+            const connection2 = await checkConnection({'accountId':participant.accountId,'connectionId':accountId})
+            if (Boolean(connection1) && Boolean(connection2)){
+              return {'speakerId':participant.accountId}
+            }
+          }))
+          const participantConnectionCheckFltrd = participantConnectionCheck.filter(function(x) {if (x) {return x}})
+          if (participantConnectionCheckFltrd.length==0){
+            throw new Error('Stream is network-only. User is not invited & not part of speaker network')
+          }
+        }
+      }
+      const streamParticipant = await insertStreamParticipant(joinInfo)
+      return {
+        'streamParticipantId': streamParticipant.id,
+        'streamId': streamParticipant.streamId,
+        'accountId': streamParticipant.accountId,
+        'startTime': streamParticipant.startTime,
+      }
+    }
   } catch (error) {
     throw new Error(error)
   }
@@ -112,6 +161,7 @@ async function joinStream(joinInfo){
 // Leave Stream
 async function leaveStream(streamParticipantId){
   try {
+    // TO DO: Check if stream is still active
     // TO DO: Check if participant already left stream
     const results = updateStreamParticipantEndTime(streamParticipantId)
     return results

@@ -112,6 +112,18 @@ async function getStreamParticipants(streamId){
   }
 }
 
+async function getActiveAccountStreams(accountId){
+  try {
+    const query = `SELECT * FROM stream_participants WHERE account_id = ${accountId} and end_time is null`
+    return pool
+            .query(query)
+            .then(res => res.rows)
+            .catch(error => new Error(error))
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 async function updateStreamParticipantEndTime(id){
   try {
     const query = `
@@ -149,6 +161,7 @@ module.exports = {
   getStreamInvitationsFromEmailOutreach,
   insertStreamParticipant,
   getStreamParticipants,
+  getActiveAccountStreams,
   updateStreamParticipantEndTime,
   updateStreamEndTime,
 }

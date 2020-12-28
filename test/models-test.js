@@ -19,6 +19,7 @@ const {
   getStreamInvitationsFromEmailOutreach,
   insertStreamParticipant,
   getStreamParticipants,
+  getActiveAccountStreams,
   updateStreamParticipantEndTime,
   updateStreamEndTime,
 } = require('../models/streams')
@@ -149,6 +150,8 @@ describe('Streams Tests', function() {
       - Check to make sure Stream Participant was inserted correctly
       - Fetch Stream Participants
       - Check to make sure Stream Participants were fetched correctly
+      - Fetch Active Streams for Account
+      - Check to make sure Active Streams for Account were fetched correctly
       - Update Stream Participant End Time
       - Check to make sure Stream Participant End Time was updated correctly
       - Update Stream End Time
@@ -241,6 +244,12 @@ describe('Streams Tests', function() {
     expect(participants[0].accountId).to.equal(streamParticipant.accountId)
     expect(participants[0].startTime.getTime()).to.equal(streamParticipant.startTime.getTime())
     should.not.exist(participants[0].endTime)
+    // Fetch Active Streams for Account
+    const activeAccountStreams = await getActiveAccountStreams(accountId)
+    // Check to make sure Active Streams for Account were fetched correctly
+    expect(activeAccountStreams[0].id).to.equal(streamParticipant.id)
+    expect(activeAccountStreams[0].streamId).to.equal(streamParticipant.streamId)
+    expect(activeAccountStreams[0].accountId).to.equal(streamParticipant.accountId)
     // Update Stream Participant End Time
     const streamParticipantEndBenchmark = new Date(new Date().getTime())
     const streamParticipantEnd = await updateStreamParticipantEndTime(streamParticipant.id)
