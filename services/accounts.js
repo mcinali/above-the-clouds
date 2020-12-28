@@ -7,10 +7,11 @@ const {
 } = require('../models/accounts')
 const { getConnectionsEmailOutreachToAccount, insertConnection } = require('../models/connections')
 const { getStreamInvitationsFromEmailOutreach, insertStreamInvitation } = require('../models/streams')
+const { sendEmail } = require('../sendgrid')
 
 async function registerUser(accountInfo){
   try {
-    // TO DO: Send registration email
+    // TO DO: return auth token
     //  Insert Account
     const account = await insertAccount(accountInfo)
     //  Insert Account Details
@@ -35,6 +36,15 @@ async function registerUser(accountInfo){
                                                 inviteeAccountId:account.id,
                                               })
                                             }))
+    // Send Registration Email
+    const msg = {
+      to: accountDetails.email,
+      from: 'abovethecloudsapp@gmail.com',
+      subject: 'Welcome to Above the Clouds!',
+      text: 'Welcome to Above the Clouds! You now have access to meaningful conversations.'
+    }
+    sendEmail(msg)
+    // Return result
     const result = {
       'accountId':account.id,
       'username':account.username,
@@ -44,8 +54,6 @@ async function registerUser(accountInfo){
       'lastname':accountDetails.lastname,
       'createdAt':account.createdAt
     }
-    // TO DO: send registration email
-    // TO DO: return auth token
     return result
   } catch (error) {
     throw new Error(error)
