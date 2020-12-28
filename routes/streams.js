@@ -24,7 +24,11 @@ router.post('/', async function (req, res) {
 // Get Stream Details
 router.get('/:streamId', async function (req, res) {
   try {
-    const results = await getStreamInfo(req.params.streamId)
+    const input = {
+      'streamId':req.params.streamId,
+      'accountId':req.query.accountId,
+    }
+    const results = await getStreamInfo(input)
     return res.send(results)
   } catch (error) {
     console.error(error)

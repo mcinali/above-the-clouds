@@ -34,16 +34,25 @@ async function createStream(streamInfo){
 }
 
 // Get Stream Information
-async function getStreamInfo(streamId){
+async function getStreamInfo(input){
   try {
-    // TO DO: Check to make sure user has permission to access stream
+    const { streamId, accountId } = input
+
     const streamDetails = await getStreamDetails(streamId)
     const streamParticipants = await getStreamParticipants(streamId)
     const streamInvites = await getStreamInvitations(streamId)
-
+    // Check if stream exists
     if(!Boolean(streamDetails)){
       throw new Error('Stream does not exist')
     }
+    // Check to make sure user has permission to get stream details
+    const streamParticipantsFltrd = streamParticipants.filter(function(streamParticipant){
+      if (streamParticipant.accountId==accountId) {return streamParticipant}
+    })
+    if (streamParticipantsFltrd.length==0 && streamDetails.creatorId!=accountId){
+      throw new Error('User must be active in stream or stream creator to get stream details')
+    }
+    //
     const info = {
       'streamId': streamDetails.id,
       'topicId': streamDetails.topicId,
@@ -77,11 +86,18 @@ async function getStreamInfo(streamId){
 async function inviteParticipantToStream(inviteInfo){
   try {
     // TO DO: Send invite email
-    // TO DO: Check to make sure user has permission to access stream
-    const connectionId = inviteInfo.inviteeAccountId
-    const email = inviteInfo.inviteeEmail
+    const { streamId, accountId, inviteeAccountId, inviteeEmail } = inviteInfo
+    // Check to make sure user has permission to invite others to stream
+    const streamDetails = await getStreamDetails(streamId)
+    const streamParticipants = await getStreamParticipants(streamId)
+    const streamParticipantsFltrd = streamParticipants.filter(function(streamParticipant){
+      if (streamParticipant.accountId==accountId) {return streamParticipant}
+    })
+    if (streamParticipantsFltrd.length === 0 && streamDetails.creatorId!=accountId){
+      throw new Error('User must be active in stream or stream creator to invite others to stream')
+    }
     // Insert connection id into connections if exists
-    if (connectionId) {
+    if (inviteeAccountId) {
       const streamInvitation = await insertStreamInvitation(inviteInfo)
       return {
         'streamInvitationId': streamInvitation.id,
@@ -89,7 +105,7 @@ async function inviteParticipantToStream(inviteInfo){
         'accountId': streamInvitation.accountId,
         'inviteeAccountId': streamInvitation.inviteeAccountId,
       }
-    } else if (email) {
+    } else if (inviteeEmail) {
       const streamEmailOutreach = await insertStreamEmailOutreach(inviteInfo)
       return {
         'streamEmailOutreachId': streamEmailOutreach.id,
@@ -108,17 +124,21 @@ async function inviteParticipantToStream(inviteInfo){
 // Join Stream
 async function joinStream(joinInfo){
   try {
-    // TO DO: Checks stream capacity before joining
     const streamId = joinInfo.streamId
     const accountId = joinInfo.accountId
-    // Check if stream is active
     const streamDetails = await getStreamDetails(streamId)
+    const streamParticipants = await getStreamParticipants(streamId)
+    // Check if stream exists
+    // Check if stream is active
+    // Check if stream is at capacity
     if (!Boolean(streamDetails)){
       throw new Error('Stream does not exist')
     } else if (streamDetails.endTime){
       throw new Error('Stream is inactive. Users cannot join inactive streams.')
+    } else if (streamParticipants.length >= streamDetails.capacity){
+      throw new Error('Stream is at capacity. Users cannot join streams without capacity.')
     }
-    // Check if user is already active in any other streams
+    // Check if user is already active in other streams
     const userStreams = await getActiveAccountStreams(accountId)
     const userStreamsFltrd = userStreams.filter(function(userStream){
       if (userStream.streamId!==streamId) { return userStream }
@@ -129,7 +149,6 @@ async function joinStream(joinInfo){
       throw new Error('User already active in this stream')
     } else {
       // Reject user if they are not allowed to join stream
-      const streamDetails = await getStreamDetails(streamId)
       const speakerAccessibility = streamDetails.speakerAccessibility
       const streamCreatorId = streamDetails.creatorId
       const streamInvitees = await getStreamInvitations(streamId)
@@ -140,7 +159,6 @@ async function joinStream(joinInfo){
         if (speakerAccessibility==='invite-only' && streamCreatorId!==accountId){
           throw new Error('Stream is invite-only. User does not have permission to participate in stream.')
         } else if (speakerAccessibility==='network-only' && streamCreatorId!==accountId){
-          const streamParticipants = await getStreamParticipants(streamId)
           const participantConnectionCheck = await Promise.all(streamParticipants.map(async (participant) => {
             const connection1 = await checkConnection({'accountId':accountId,'connectionId':participant.accountId})
             const connection2 = await checkConnection({'accountId':participant.accountId,'connectionId':accountId})
