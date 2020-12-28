@@ -8,6 +8,7 @@ const {
   insertStreamParticipant,
   getStreamParticipants,
   getActiveAccountStreams,
+  getStreamParticipantDetails,
   updateStreamParticipantEndTime,
   updateStreamEndTime,
 } = require('../models/streams')
@@ -161,10 +162,31 @@ async function joinStream(joinInfo){
 // Leave Stream
 async function leaveStream(streamParticipantId){
   try {
-    // TO DO: Check if stream is still active
-    // TO DO: Check if participant already left stream
-    const results = updateStreamParticipantEndTime(streamParticipantId)
-    return results
+    // Check if participant already left stream
+    const streamParticipantDetails = await getStreamParticipantDetails(streamParticipantId)
+    if (!Boolean(streamParticipantDetails)){
+      throw new Error('Stream Participant Id does not exist')
+    } else if (Boolean(streamParticipantDetails.endTime)){
+      throw new Error('User has already left stream')
+    }
+    // Set end time for user participation in stream
+    const streamParticipantEndTime = await updateStreamParticipantEndTime(streamParticipantId)
+    // End stream if no more users remain
+    const streamId = streamParticipantEndTime.streamId
+    const streamParticipants = await getStreamParticipants(streamId)
+    const streamParticipantsFlrtd = streamParticipants.filter(function(participant){
+      if (!participant.endTime) {return participant}
+    })
+    if (streamParticipantsFlrtd.length==0) {
+      const streamEndTime = await updateStreamEndTime(streamId)
+    }
+    const streamDetails = await getStreamDetails(streamId)
+    return {
+      'streamId':streamId,
+      'accountId':streamParticipantEndTime.accountId,
+      'participantEndTime':streamParticipantEndTime.endTime,
+      'streamEndTime':streamDetails.endTime,
+    }
   } catch (error) {
     throw new Error(error)
   }
@@ -173,9 +195,19 @@ async function leaveStream(streamParticipantId){
 // End Stream
 async function endStream(streamId){
   try {
-    // TO DO: Check if stream has already ended
-    const results = updateStreamEndTime(streamId)
-    return results
+    // Check if stream has already ended
+    const streamDetails = await getStreamDetails(streamId)
+    if (!Boolean(streamDetails)){
+      throw new Error('Stream does not exist')
+    }
+    if (Boolean(streamDetails.endTime)){
+      throw new Error('Stream has already ended')
+    }
+    const streamEndTime = updateStreamEndTime(streamId)
+    return {
+      'streamId':streamId,
+      'endTime':streamEndTime.endTime,
+    }
   } catch (error) {
     throw new Error(error)
   }

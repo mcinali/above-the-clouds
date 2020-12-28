@@ -124,6 +124,18 @@ async function getActiveAccountStreams(accountId){
   }
 }
 
+async function getStreamParticipantDetails(streamParticipantId){
+  try {
+    const query = `SELECT * FROM stream_participants WHERE id = ${streamParticipantId}`
+    return pool
+            .query(query)
+            .then(res => res.rows[0])
+            .catch(error => new Error(error))
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 async function updateStreamParticipantEndTime(id){
   try {
     const query = `
@@ -162,6 +174,7 @@ module.exports = {
   insertStreamParticipant,
   getStreamParticipants,
   getActiveAccountStreams,
+  getStreamParticipantDetails,
   updateStreamParticipantEndTime,
   updateStreamEndTime,
 }
