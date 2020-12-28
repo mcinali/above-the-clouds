@@ -98,6 +98,18 @@ async function insertStreamParticipant(info){
   }
 }
 
+async function getStreamParticipantDetails(streamParticipantId){
+  try {
+    const query = `SELECT * FROM stream_participants WHERE id = ${streamParticipantId}`
+    return pool
+            .query(query)
+            .then(res => res.rows[0])
+            .catch(error => new Error(error))
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 async function getStreamParticipants(streamId){
   try {
     const query = `
@@ -118,18 +130,6 @@ async function getActiveAccountStreams(accountId){
     return pool
             .query(query)
             .then(res => res.rows)
-            .catch(error => new Error(error))
-  } catch (error) {
-    throw new Error(error)
-  }
-}
-
-async function getStreamParticipantDetails(streamParticipantId){
-  try {
-    const query = `SELECT * FROM stream_participants WHERE id = ${streamParticipantId}`
-    return pool
-            .query(query)
-            .then(res => res.rows[0])
             .catch(error => new Error(error))
   } catch (error) {
     throw new Error(error)
@@ -172,9 +172,9 @@ module.exports = {
   insertStreamEmailOutreach,
   getStreamInvitationsFromEmailOutreach,
   insertStreamParticipant,
+  getStreamParticipantDetails,
   getStreamParticipants,
   getActiveAccountStreams,
-  getStreamParticipantDetails,
   updateStreamParticipantEndTime,
   updateStreamEndTime,
 }
