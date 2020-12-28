@@ -1,4 +1,4 @@
-const { getAccountDetails, getAccountIdFromEmail, getUsernameFromAccountId } = require('../models/accounts')
+const { getAccountDetails, getAccountIdFromEmail, getAccountInfo } = require('../models/accounts')
 const {
   insertConnection,
   removeConnection,
@@ -13,10 +13,10 @@ const {
 
 async function createConnection(info){
     try {
+      // TO DO: Send connection email
       const accountId = info.accountId
-      const email = (info.connectionEmail) ? info.connectionEmail : null
-      const connectionIdRow = await getAccountIdFromEmail(email)
-      const connectionId = (connectionIdRow) ? connectionIdRow.accountId : info.connectionId
+      const connectionId = info.connectionId
+      const email = info.connectionEmail
       if (connectionId) {
         const connection = await insertConnection({
           'accountId':accountId,
@@ -26,17 +26,28 @@ async function createConnection(info){
           'accountId':connectionId,
           'connectionId':accountId,
         })
-        connection['state'] = (existingConnection) ? 'connected' : 'pending'
-        return connection
+        const state = (existingConnection) ? 'connected' : 'pending'
+        return {
+          'connectionId': connection.id,
+          'accountId': connection.accountId,
+          'connectionId': connection.connectionId,
+          'state': state,
+          'createdAt': connection.createdAt,
+        }
         // TO DO: Send email
       } else if (email) {
         const connection = await insertConnectionEmailOutreach({
           'accountId':accountId,
           'connectionEmail':email,
         })
-        return connection
+        return {
+          'connectionId':connection.id,
+          'accountId':connection.accountId,
+          'connectionEmail':connection.connectionEmail,
+          'createdAt':connection.createdAt,
+        }
       } else {
-        return 'Failed: Connection AccountId and Email Missing from Request'
+        throw new Error('Failed: Unable to make connection request')
       }
     } catch (error) {
       throw new Error(error)
@@ -102,7 +113,7 @@ async function getConnections(accountId){
 async function formatConnectObject(x, dict, accountCol){
   try {
     const ts = (dict[x[accountCol]]) ? Math.max(x.createdAt.getTime(), dict[x[accountCol]].getTime()) : x.createdAt.getTime()
-    const connectionUsername = await getUsernameFromAccountId(x[accountCol])
+    const connectionUsername = await getAccountInfo(x[accountCol])
     const connectionDetails = await getAccountDetails(x[accountCol])
     return {
       'accountId':x[accountCol],

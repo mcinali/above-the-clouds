@@ -10,7 +10,6 @@ async function insertConnection(connectionInfo){
     const result = await pgTransaction(query)
     return result.rows[0]
   } catch (error) {
-    console.error(error.stack)
     throw new Error(error)
   }
 }
@@ -22,7 +21,6 @@ async function removeConnection(connectionInfo){
     const result = await pgTransaction(query)
     return result.rows[0]
   } catch (error) {
-    console.error(error.stack)
     throw new Error(error)
   }
 }
@@ -37,7 +35,6 @@ async function insertConnectionEmailOutreach(connectionInfo){
     const result = await pgTransaction(query)
     return result.rows[0]
   } catch (error) {
-    console.error(error.stack)
     throw new Error(error)
   }
 }

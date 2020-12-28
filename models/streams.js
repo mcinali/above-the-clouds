@@ -10,7 +10,6 @@ async function insertStream(streamInfo){
     const result = await pgTransaction(query)
     return result.rows[0]
   } catch (error) {
-    console.error(error.stack)
     throw new Error(error)
   }
 }
@@ -40,7 +39,6 @@ async function insertStreamInvitation(inviteInfo){
     const result = await pgTransaction(query)
     return result.rows[0]
   } catch (error) {
-    console.error(error.stack)
     throw new Error(error)
   }
 }
@@ -70,7 +68,18 @@ async function insertStreamEmailOutreach(inviteInfo){
     const result = await pgTransaction(query)
     return result.rows[0]
   } catch (error) {
-    console.error(error.stack)
+    throw new Error(error)
+  }
+}
+
+async function getStreamInvitationsFromEmailOutreach(email){
+  try {
+    const query = `SELECT id, stream_id, account_id, invitee_email FROM stream_email_outreach WHERE invitee_email = '${email}'`
+    return pool
+            .query(query)
+            .then(res => res.rows)
+            .catch(error => new Error(error))
+  } catch (error) {
     throw new Error(error)
   }
 }
@@ -85,7 +94,6 @@ async function insertStreamParticipant(info){
     const result = await pgTransaction(query)
     return result.rows[0]
   } catch (error) {
-    console.error(error.stack)
     throw new Error(error)
   }
 }
@@ -104,6 +112,30 @@ async function getStreamParticipants(streamId){
   }
 }
 
+async function getActiveAccountStreams(accountId){
+  try {
+    const query = `SELECT * FROM stream_participants WHERE account_id = ${accountId} and end_time is null`
+    return pool
+            .query(query)
+            .then(res => res.rows)
+            .catch(error => new Error(error))
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+async function getStreamParticipantDetails(streamParticipantId){
+  try {
+    const query = `SELECT * FROM stream_participants WHERE id = ${streamParticipantId}`
+    return pool
+            .query(query)
+            .then(res => res.rows[0])
+            .catch(error => new Error(error))
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 async function updateStreamParticipantEndTime(id){
   try {
     const query = `
@@ -114,7 +146,6 @@ async function updateStreamParticipantEndTime(id){
     const result = await pgTransaction(query)
     return result.rows[0]
   } catch (error) {
-    console.error(error.stack)
     throw new Error(error)
   }
 }
@@ -129,7 +160,6 @@ async function updateStreamEndTime(id){
     const result = await pgTransaction(query)
     return result.rows[0]
   } catch (error) {
-    console.error(error.stack)
     throw new Error(error)
   }
 }
@@ -140,8 +170,11 @@ module.exports = {
   insertStreamInvitation,
   getStreamInvitations,
   insertStreamEmailOutreach,
+  getStreamInvitationsFromEmailOutreach,
   insertStreamParticipant,
   getStreamParticipants,
+  getActiveAccountStreams,
+  getStreamParticipantDetails,
   updateStreamParticipantEndTime,
   updateStreamEndTime,
 }
