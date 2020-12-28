@@ -40,6 +40,9 @@ async function getStreamInfo(streamId){
     const streamParticipants = await getStreamParticipants(streamId)
     const streamInvites = await getStreamInvitations(streamId)
 
+    if(!Boolean(streamDetails)){
+      throw new Error('Stream does not exist')
+    }
     const info = {
       'streamId': streamDetails.id,
       'topicId': streamDetails.topicId,
@@ -107,7 +110,9 @@ async function joinStream(joinInfo){
     const accountId = joinInfo.accountId
     // Check if stream is active
     const streamDetails = await getStreamDetails(streamId)
-    if (streamDetails.endTime){
+    if (!Boolean(streamDetails)){
+      throw new Error('Stream does not exist')
+    } else if (streamDetails.endTime){
       throw new Error('Stream is inactive. Users cannot join inactive streams.')
     }
     // Check if user is already active in any other streams
