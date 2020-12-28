@@ -20,6 +20,7 @@ const {
   insertStreamParticipant,
   getStreamParticipants,
   getActiveAccountStreams,
+  getStreamParticipantDetails,
   updateStreamParticipantEndTime,
   updateStreamEndTime,
 } = require('../models/streams')
@@ -148,6 +149,8 @@ describe('Streams Tests', function() {
       - Check to make sure Streams from Email Outreach were fetched correctly
       - Insert Stream Participant
       - Check to make sure Stream Participant was inserted correctly
+      - Fetch Stream Participant Details
+      - Check to make sure Stream Participant Details were fetched correctly
       - Fetch Stream Participants
       - Check to make sure Stream Participants were fetched correctly
       - Fetch Active Streams for Account
@@ -235,6 +238,14 @@ describe('Streams Tests', function() {
     expect(streamParticipant.accountId).to.equal(streamParticipantInfo.accountId)
     expect(streamParticipant.startTime.getTime() - streamParticipantStart.getTime()).to.be.within(0,1)
     should.not.exist(streamParticipant.endTime)
+    // Fetch Stream Participant Details
+    const streamParticipantDetails = await getStreamParticipantDetails(streamParticipant.id)
+    // Check to make sure Stream Participant Details were fetched correctly
+    expect(streamParticipantDetails.id).to.equal(streamParticipant.id)
+    expect(streamParticipantDetails.streamId).to.equal(streamParticipant.streamId)
+    expect(streamParticipantDetails.accountId).to.equal(streamParticipant.accountId)
+    expect(streamParticipantDetails.startTime.getTime()).to.equal(streamParticipant.startTime.getTime())
+    should.not.exist(streamParticipantDetails.endTime)
     // Fetch Stream Participants
     const participants = await getStreamParticipants(stream.id)
     // Check to make sure Stream Participants were fetched correctly
