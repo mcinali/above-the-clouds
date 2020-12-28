@@ -22,6 +22,7 @@ async function getActivePublicStreams(limit){
       SELECT *
       FROM streams
       WHERE speaker_accessibility = 'public'
+      AND end_time is null
       ORDER BY start_time desc
       LIMIT ${limit}`
     return pool
