@@ -34,6 +34,10 @@ const {
   getAccountConnectionsEmailOutreach,
   getConnectionsEmailOutreachToAccount,
 } = require('../models/connections')
+const {
+  getActiveStreamInvitationsForAccount,
+  getActivePublicStreams,
+} = require('../models/discovery')
 
 const testUsername = 'testAccount'
 
@@ -370,5 +374,84 @@ describe('Connections Tests', function() {
     // Check to make sure Connection was removed correctly
     const removedConnection = await getAccountConnections(accountId)
     should.not.exist(removedConnection[0])
+  })
+})
+
+describe('Connections Tests', function() {
+  it(`Should...
+      - Insert new test Account
+      - Insert new Topic
+      - Insert 2 Public Streams & De-activate one of them
+      - Insert Stream Invitations for Active Stream
+      - Insert Stream Invitations for Inactive Stream
+      - Fetch Active Stream Invitations for Account
+      - Check to make sure Active Stream Invitations for Account were fetched correctly
+      - Fetch Active Public Streams
+      - Check to make sure Active Public Streams were fetched correctly`, async function() {
+    // Insert new test Account
+    const discoveryTestAccountUsername = 'discoveryTestAccount'
+    await pgTransaction(`DELETE FROM accounts WHERE username = '${discoveryTestAccountUsername}'`)
+    const discoveryTestAccountInfo = {
+      username:discoveryTestAccountUsername,
+      password:'discoveryTestAccountPassword',
+    }
+    const discoveryTestAccount = await insertAccount(discoveryTestAccountInfo)
+    const accountId = discoveryTestAccount.id
+    const discoveryTestAccountDetailsInfo = {
+      accountId: accountId,
+      email: 'discovery@test.com',
+      phone:1001001111,
+      firstname:'Test',
+      lastname:'Discovery',
+    }
+    const discoveryTestAccountDetails = await insertAccountDetails(discoveryTestAccountDetailsInfo)
+    // Insert new Topic
+    const topicInfo = {
+      accountId:accountId,
+      topic:"Can we test discovery topics?",
+    }
+    const topic = await insertTopic(topicInfo)
+    // Insert 2 Streams & De-activate one of them
+    const streamInfo = {
+      topicId: topic.id,
+      accountId: accountId,
+      speakerAccessibility:'public',
+      capacity:5,
+    }
+    const activeStream = await insertStream(streamInfo)
+    const inactiveStream = await insertStream(streamInfo)
+    const streamEnd = await updateStreamEndTime(inactiveStream.id)
+    // Insert Stream Invitations for Active Stream
+    const activeStreamInvitationInfo = {
+      streamId:activeStream.id,
+      accountId:accountId,
+      inviteeAccountId:accountId,
+    }
+    const activeStreamInvitation = await insertStreamInvitation(activeStreamInvitationInfo)
+    // Insert Stream Invitations for Inactive Stream
+    const inactiveStreamInvitationInfo = {
+      streamId:inactiveStream.id,
+      accountId:accountId,
+      inviteeAccountId:accountId,
+    }
+    const inactiveStreamInvitation = await insertStreamInvitation(inactiveStreamInvitationInfo)
+    // Fetch Active Stream Invitations for Account
+    const activeStreamInvitationsForAccount = await getActiveStreamInvitationsForAccount(accountId)
+    // Check to make sure Active Stream Invitations for Account were fetched correctly
+    expect(activeStreamInvitationsForAccount.length).to.equal(1)
+    expect(activeStreamInvitationsForAccount[0].id).to.equal(activeStreamInvitation.id)
+    expect(activeStreamInvitationsForAccount[0].streamId).to.equal(activeStreamInvitation.streamId)
+    expect(activeStreamInvitationsForAccount[0].accountId).to.equal(activeStreamInvitation.accountId)
+    expect(activeStreamInvitationsForAccount[0].inviteeAccountId).to.equal(activeStreamInvitation.inviteeAccountId)
+    // Fetch Active Public Streams
+    const activePublicStreams = await getActivePublicStreams(2)
+    // Check to make sure Active Public Streams were fetched correctly
+    expect(activePublicStreams.length).to.equal(1)
+    expect(activePublicStreams[0].id).to.equal(activeStream.id)
+    expect(activePublicStreams[0].topicId).to.equal(activeStream.topicId)
+    expect(activePublicStreams[0].speakerAccessibility).to.equal(activeStream.speakerAccessibility)
+    expect(activePublicStreams[0].capacity).to.equal(activeStream.capacity)
+    expect(activePublicStreams[0].startTime.getTime()).to.equal(activeStream.startTime.getTime())
+    should.not.exist(activePublicStreams[0].endTime)
   })
 })

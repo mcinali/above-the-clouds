@@ -5,6 +5,7 @@ const accounts = require('./routes/accounts')
 const topics = require('./routes/topics')
 const streams = require('./routes/streams')
 const connections = require('./routes/connections')
+const discovery = require('./routes/discovery')
 
 const app = express()
 app.use(cors())
@@ -13,6 +14,7 @@ app.use('/account', accounts)
 app.use('/topic', topics)
 app.use('/stream', streams)
 app.use('/connections', connections)
+app.use('/discovery', discovery)
 
 const hostname = '0.0.0.0';
 const port = 8080;

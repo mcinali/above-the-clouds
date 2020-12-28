@@ -36,6 +36,7 @@ async function createStream(streamInfo){
 // Get Stream Information
 async function getStreamInfo(streamId){
   try {
+    // TO DO: Check to make sure user has permission to access stream
     const streamDetails = await getStreamDetails(streamId)
     const streamParticipants = await getStreamParticipants(streamId)
     const streamInvites = await getStreamInvitations(streamId)
@@ -76,6 +77,7 @@ async function getStreamInfo(streamId){
 async function inviteParticipantToStream(inviteInfo){
   try {
     // TO DO: Send invite email
+    // TO DO: Check to make sure user has permission to access stream
     const connectionId = inviteInfo.inviteeAccountId
     const email = inviteInfo.inviteeEmail
     // Insert connection id into connections if exists
@@ -106,6 +108,7 @@ async function inviteParticipantToStream(inviteInfo){
 // Join Stream
 async function joinStream(joinInfo){
   try {
+    // TO DO: Checks stream capacity before joining
     const streamId = joinInfo.streamId
     const accountId = joinInfo.accountId
     // Check if stream is active
