@@ -28,6 +28,7 @@ async function registerUser(accountInfo){
                                       }))
     // Convert Stream Email Invites to Account Invites
     const streamEmailConnections = await getStreamInvitationsFromEmailOutreach(accountInfo.email)
+    console.log('Stream Email Connections: ', streamEmailConnections)
     const streamEmailToAccountConnections = await Promise.all(streamEmailConnections.map(async (x) => {
                                               console.log(x)
                                               await insertStreamInvitation({
@@ -70,8 +71,25 @@ async function fetchAccountDetails(accountId){
       'email':accountDetails.email,
       'phone':accountDetails.phone,
       'firstname':accountDetails.firstname,
-      'lastname':accountDetails.lastname,
+      'lastnameInitial':accountDetails.lastname.slice(0,1),
       'createdAt':account.createdAt,
+    }
+    return result
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+async function fetchAccountDetailsBasic(accountId){
+  try {
+    const account = await getAccountInfo(accountId)
+    const accountDetails = await getAccountDetails(accountId)
+    const result = {
+      'accountId':accountId,
+      'username':account.username,
+      'firstname':accountDetails.firstname,
+      'lastnameInitial':accountDetails.lastname.slice(0,1),
+      'email':accountDetails.email,
     }
     return result
   } catch (error) {
@@ -82,4 +100,5 @@ async function fetchAccountDetails(accountId){
 module.exports = {
   registerUser,
   fetchAccountDetails,
+  fetchAccountDetailsBasic,
 }

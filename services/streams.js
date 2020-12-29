@@ -12,9 +12,9 @@ const {
   updateStreamParticipantEndTime,
   updateStreamEndTime,
 } = require('../models/streams')
-const { getAccountInfo, getAccountDetails } = require('../models/accounts')
+const { getAccountInfo, getAccountDetails, getAccountIdFromEmail } = require('../models/accounts')
 const { getAccountConnections, checkConnection } = require('../models/connections')
-const { getTopic } = require('../models/topics')
+const { getTopicInfo } = require('../models/topics')
 const { sendEmail } = require('../sendgrid')
 
 // Create Stream
@@ -35,6 +35,94 @@ async function createStream(streamInfo){
   }
 }
 
+// Get Stream Basic Info
+async function getStreamBasicInfo(streamId){
+  try {
+    const streamDetails = await getStreamDetails(streamId)
+    const topicInfo = await getTopicInfo(streamDetails.topicId)
+    return {
+      'streamId': streamDetails.id,
+      'topicId': streamDetails.topicId,
+      'topic': topicInfo.topic,
+      'creatorId': streamDetails.creatorId,
+      'capacity': streamDetails.capacity,
+      'speakerAccessibility': streamDetails.speakerAccessibility,
+      'startTime': streamDetails.startTime,
+      'endTime': streamDetails.endTime,
+    }
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+// Get Stream Participants Info
+async function getStreamParticipantsInfo(streamId){
+  try {
+    const streamParticipants = await getStreamParticipants(streamId)
+    const participants = streamParticipants.map(async (participant) => {
+      const participantInfo = await getAccountInfo(participant.accountId)
+      const participantDetails = await getAccountDetails(participant.accountId)
+      return {
+        'streamParticipantId': participant.id,
+        'accountId': participant.accountId,
+        'username': participantInfo.username,
+        'firstname': participantDetails.firstname,
+        'lastnameInitial': participantDetails.lastname.slice(0,1),
+        'startTime': participant.startTime,
+      }
+    })
+    return participants
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+// Get Stream Invitees Info
+async function getStreamInviteesInfo(streamId){
+  try {
+    const streamInvites = await getStreamInvitations(streamId)
+    const invitees = streamInvites.map(async (invitee) => {
+      const inviteeInfo = await getAccountInfo(invitee.accountId)
+      const inviteeDetails = await getAccountDetails(invitee.accountId)
+      return {
+        'streamInviteId': invitee.id,
+        'accountId': invitee.accountId,
+        'username': inviteeInfo.username,
+        'firstname': inviteeDetails.firstname,
+        'lastnameInitial': inviteeDetails.lastname.slice(0,1),
+        'inviteeAccountId': invitee.inviteeAccountId,
+      }
+    })
+    return invitees
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+// Get Stream Email Outreach Info
+async function getStreamEmailOutreachInfo(streamId){
+  try {
+    const emailOutreach = await getStreamInvitationsFromEmailOutreach(streamId)
+    const emailOutreachFrmtd = await Promise.all(emailOutreach.map(async (outreach) => {
+      const emailAccountId = await getAccountIdFromEmail(outreach.email)
+      return {
+        'emailOutreachId':outreach.id,
+        'invitedBy':outreach.accountId,
+        'inviteeEmail':outreach.email,
+        'createdAt':outreach.createdAt,
+        'emailAccountId':(emailAccountId) ? emailAccountId : null,
+      }
+    }))
+    const emailOutreachFltred = emailOutreachAugmented.filter(function(outreach){
+      if (!outreach.emailAccountId) {return outreach}
+    })
+    return emailOutreachFltred
+    return invitees
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 // Get Stream Information
 async function getStreamInfo(input){
   try {
@@ -42,7 +130,6 @@ async function getStreamInfo(input){
 
     const streamDetails = await getStreamDetails(streamId)
     const streamParticipants = await getStreamParticipants(streamId)
-    const streamInvites = await getStreamInvitations(streamId)
     // Check if stream exists
     if(!Boolean(streamDetails)){
       throw new Error('Stream does not exist')
@@ -54,30 +141,16 @@ async function getStreamInfo(input){
     if (streamParticipantsFltrd.length==0 && streamDetails.creatorId!=accountId){
       throw new Error('User must be active in stream or stream creator to get stream details')
     }
-    //
-    const info = {
-      'streamId': streamDetails.id,
-      'topicId': streamDetails.topicId,
-      'creatorId': streamDetails.creatorId,
-      'capacity': streamDetails.capacity,
-      'speakerAccessibility': streamDetails.speakerAccessibility,
-      'startTime': streamDetails.startTime,
-      'endTime': streamDetails.endTime,
-    }
-    const participants = streamParticipants.map((participant) => ({
-      'streamParticipantId': participant.id,
-      'accountId': participant.accountId,
-      'startTime': participant.startTime,
-    }))
-    const invitees = streamInvites.map((invitee) => ({
-      'streamInviteId': invitee.id,
-      'accountId': invitee.accountId,
-      'inviteeAccountId': invitee.inviteeAccountId,
-    }))
+    // Collection components of stream info: basic + participants + invitees + email outreach
+    const basicInfo = await Promise.all(getStreamBasicInfo(streamId))
+    const participants = await Promise.all(getStreamParticipantsInfo(streamId))
+    const invitees = await Promise.all(getStreamInviteesInfo(streamId))
+    const emailOutreach = await Promise.all(getStreamEmailOutreachInfo(streamId))
     return {
       'info': info,
       'participants': participants,
       'invitees': invitees,
+      'emailOutreach':emailOutreach,
     }
   } catch (error) {
     throw new Error(error)
@@ -104,7 +177,7 @@ async function inviteParticipantToStream(inviteInfo){
     const account = await getAccountInfo(accountId)
     const accountUsername = account.username
     const accountDetails = await getAccountDetails(accountId)
-    const topic = await getTopic(streamDetails.topicId)
+    const topic = await getTopicInfo(streamDetails.topicId)
     const inviteeAccountDetails = await getAccountDetails(inviteeAccountId)
     const msg = {
       from: 'abovethecloudsapp@gmail.com',
@@ -259,6 +332,8 @@ async function endStream(streamId){
 
 module.exports = {
   createStream,
+  getStreamBasicInfo,
+  getStreamParticipantsInfo,
   getStreamInfo,
   inviteParticipantToStream,
   joinStream,

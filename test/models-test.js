@@ -20,10 +20,11 @@ const {
   getStreamInvitations,
   insertStreamEmailOutreach,
   getStreamInvitationsFromEmailOutreach,
+  getStreamInvitationsFromEmailOutreachForEmail,
   insertStreamParticipant,
+  getStreamParticipantDetails,
   getStreamParticipants,
   getActiveAccountStreams,
-  getStreamParticipantDetails,
   updateStreamParticipantEndTime,
   updateStreamEndTime,
 } = require('../models/streams')
@@ -163,6 +164,8 @@ describe('Streams Tests', function() {
       - Check to make sure Stream Email Outreach was inserted correctly
       - Fetch Streams from Email Outreach
       - Check to make sure Streams from Email Outreach were fetched correctly
+      - Fetch Streams from Email Outreach from Email
+      - Check to make sure Streams from Email Outreach from Email were fetched correctly
       - Insert Stream Participant
       - Check to make sure Stream Participant was inserted correctly
       - Fetch Stream Participant Details
@@ -242,6 +245,13 @@ describe('Streams Tests', function() {
     expect(streamInvitationsFromEmailOutreach[0].streamId).to.equal(streamEmailOutreach.streamId)
     expect(streamInvitationsFromEmailOutreach[0].accountId).to.equal(streamEmailOutreach.accountId)
     expect(streamInvitationsFromEmailOutreach[0].inviteeEmail).to.equal(streamEmailOutreach.inviteeEmail)
+    // Fetch Streams from Email Outreach from Email
+    const streamInvitationsFromEmailOutreachEmail = await getStreamInvitationsFromEmailOutreachForEmail(streamEmailOutreachInfo.inviteeEmail)
+    // Check to make sure Streams from Email Outreach from Email were fetched correctly
+    expect(streamInvitationsFromEmailOutreachEmail[0].id).to.equal(streamEmailOutreach.id)
+    expect(streamInvitationsFromEmailOutreachEmail[0].streamId).to.equal(streamEmailOutreach.streamId)
+    expect(streamInvitationsFromEmailOutreachEmail[0].accountId).to.equal(streamEmailOutreach.accountId)
+    expect(streamInvitationsFromEmailOutreachEmail[0].inviteeEmail).to.equal(streamEmailOutreach.inviteeEmail)
     // Insert Stream Participant
     const streamParticipantInfo = {
       streamId:stream.id,
