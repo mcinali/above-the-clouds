@@ -12,8 +12,10 @@ const {
   updateStreamParticipantEndTime,
   updateStreamEndTime,
 } = require('../models/streams')
-const { getAccountIdFromEmail } = require('../models/accounts')
+const { getAccountInfo, getAccountDetails } = require('../models/accounts')
 const { getAccountConnections, checkConnection } = require('../models/connections')
+const { getTopic } = require('../models/topics')
+const { sendEmail } = require('../sendgrid')
 
 // Create Stream
 async function createStream(streamInfo){
@@ -86,7 +88,9 @@ async function getStreamInfo(input){
 async function inviteParticipantToStream(inviteInfo){
   try {
     // TO DO: Send invite email
-    const { streamId, accountId, inviteeAccountId, inviteeEmail } = inviteInfo
+    const { streamId, accountId } = inviteInfo
+    const inviteeAccountId = (inviteInfo.inviteeAccountId) ? inviteInfo.inviteeAccountId : null
+    const inviteeEmail = (inviteInfo.inviteeEmail) ? inviteInfo.inviteeEmail : null
     // Check to make sure user has permission to invite others to stream
     const streamDetails = await getStreamDetails(streamId)
     const streamParticipants = await getStreamParticipants(streamId)
@@ -96,9 +100,22 @@ async function inviteParticipantToStream(inviteInfo){
     if (streamParticipantsFltrd.length === 0 && streamDetails.creatorId!=accountId){
       throw new Error('User must be active in stream or stream creator to invite others to stream')
     }
+    // Instantiate email
+    const account = await getAccountInfo(accountId)
+    const accountUsername = account.username
+    const accountDetails = await getAccountDetails(accountId)
+    const topic = await getTopic(streamDetails.topicId)
+    const inviteeAccountDetails = await getAccountDetails(inviteeAccountId)
+    const msg = {
+      from: 'abovethecloudsapp@gmail.com',
+      to: (inviteeAccountDetails) ? inviteeAccountDetails.email : inviteeEmail,
+      subject: `${accountDetails.firstname} ${accountDetails.lastname.slice(0,1)} (${accountUsername}) invited you to their stream`,
+      text: `${accountDetails.firstname} ${accountDetails.lastname.slice(0,1)} (${accountUsername}) invited you to their stream "${topic.topic}". Join now!`,
+    }
     // Insert connection id into connections if exists
     if (inviteeAccountId) {
       const streamInvitation = await insertStreamInvitation(inviteInfo)
+      sendEmail(msg)
       return {
         'streamInvitationId': streamInvitation.id,
         'streamId': streamInvitation.streamId,
@@ -107,6 +124,7 @@ async function inviteParticipantToStream(inviteInfo){
       }
     } else if (inviteeEmail) {
       const streamEmailOutreach = await insertStreamEmailOutreach(inviteInfo)
+      sendEmail(msg)
       return {
         'streamEmailOutreachId': streamEmailOutreach.id,
         'streamId': streamEmailOutreach.streamId,

@@ -14,6 +14,19 @@ async function insertTopic(info){
   }
 }
 
+async function getTopic(topicId){
+  try {
+    const query = `SELECT * FROM topics WHERE id = ${topicId}`
+    return pool
+            .query(query)
+            .then(res => res.rows[0])
+            .catch(error => new Error(error))
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 module.exports = {
   insertTopic,
+  getTopic,
 }

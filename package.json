@@ -4,6 +4,7 @@
   "description": "Discovery Platform",
   "main": "app.js",
   "dependencies": {
+    "@sendgrid/mail": "^7.4.0",
     "chai": "^4.2.0",
     "cors": "^2.8.5",
     "express": "^4.17.1",
