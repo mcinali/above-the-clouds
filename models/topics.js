@@ -14,7 +14,7 @@ async function insertTopic(info){
   }
 }
 
-async function getTopic(topicId){
+async function getTopicInfo(topicId){
   try {
     const query = `SELECT * FROM topics WHERE id = ${topicId}`
     return pool
@@ -28,5 +28,5 @@ async function getTopic(topicId){
 
 module.exports = {
   insertTopic,
-  getTopic,
+  getTopicInfo,
 }

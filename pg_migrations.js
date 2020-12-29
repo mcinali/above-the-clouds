@@ -91,9 +91,9 @@ async function pgMigrate(){
     `CREATE TABLE IF NOT EXISTS connections (
       id SERIAL PRIMARY KEY NOT NULL,
       account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
-      connection_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      connection_account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-      UNIQUE (account_id, connection_id)
+      UNIQUE (account_id, connection_account_id)
     )`
   )
 

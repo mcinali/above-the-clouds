@@ -72,9 +72,9 @@ async function insertStreamEmailOutreach(inviteInfo){
   }
 }
 
-async function getStreamInvitationsFromEmailOutreach(email){
+async function getStreamInvitationsFromEmailOutreach(streamId){
   try {
-    const query = `SELECT id, stream_id, account_id, invitee_email FROM stream_email_outreach WHERE invitee_email = '${email}'`
+    const query = `SELECT id, stream_id, account_id, invitee_email FROM stream_email_outreach WHERE stream_id = '${streamId}'`
     return pool
             .query(query)
             .then(res => res.rows)
