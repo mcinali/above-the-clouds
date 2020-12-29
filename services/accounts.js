@@ -6,7 +6,7 @@ const {
   getAccountIdFromEmail,
 } = require('../models/accounts')
 const { getConnectionsEmailOutreachToAccount, insertConnection } = require('../models/connections')
-const { getStreamInvitationsFromEmailOutreach, insertStreamInvitation } = require('../models/streams')
+const { getStreamInvitationsFromEmailOutreachForEmail, insertStreamInvitation } = require('../models/streams')
 const { sendEmail } = require('../sendgrid')
 
 async function registerUser(accountInfo){
@@ -27,7 +27,7 @@ async function registerUser(accountInfo){
                                         })
                                       }))
     // Convert Stream Email Invites to Account Invites
-    const streamEmailConnections = await getStreamInvitationsFromEmailOutreach(accountInfo.email)
+    const streamEmailConnections = await getStreamInvitationsFromEmailOutreachForEmail(accountInfo.email)
     console.log('Stream Email Connections: ', streamEmailConnections)
     const streamEmailToAccountConnections = await Promise.all(streamEmailConnections.map(async (x) => {
                                               console.log(x)
