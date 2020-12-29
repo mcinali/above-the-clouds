@@ -321,6 +321,15 @@ async function endStream(streamId){
     if (Boolean(streamDetails.endTime)){
       throw new Error('Stream has already ended')
     }
+    // End participation in stream
+    const streamParticipants = await getStreamParticipants(streamId)
+    const streamParticipantsFltrd = streamParticipants.filter(function(participant){
+      if (!participant.endTime) {return participant}
+    })
+    const streamParticipantEnds = await Promise.all(streamParticipantsFltrd.map(async function(participant){
+      return await updateStreamParticipantEndTime(participant.id)
+    }))
+    // End stream
     const streamEndTime = updateStreamEndTime(streamId)
     return {
       'streamId':streamId,
