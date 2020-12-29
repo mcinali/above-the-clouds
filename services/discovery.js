@@ -1,16 +1,10 @@
 const { getActiveStreamInvitationsForAccount, getActivePublicStreams } = require('../models/discovery')
 const { getAccountConnections, getConnectionsToAccount } = require('../models/connections')
 const { getActiveAccountStreams, getStreamDetails } = require('../models/streams')
+const { getStreamBasicInfo, getStreamParticipantsInfo } = require('../services/streams')
+const { getTopicInfo } = require('../models/topics')
 
-// - Active streams only
-// - Invited first
-// - Network second
-// - Public third
-// - Other factors:
-// -- time elapsed (mins)
-// -- # people
-// -- # connections
-
+// Get discovery streams
 async function getDiscoveryStreams(accountId){
   try {
     // Get active streams user was invited to
@@ -30,11 +24,11 @@ async function getDiscoveryStreams(accountId){
     const connectionsToAccount = await getConnectionsToAccount(accountId)
     const connectionsToAccountDict = Object.assign({}, ...connectionsToAccount.map((x) => ({[x.accountId]: x.createdAt})))
     const connections = accountConnections.filter(function(item){
-      if (connectionsToAccountDict[item.connectionId]) { return item }
+      if (connectionsToAccountDict[item.connectionAccountId.toString()]) { return item }
     })
     // Get active streams for connections
     const inNetworkActiveStreams = await Promise.all(connections.map(async (connection) => {
-      return await getActiveAccountStreams(connection.connectionId)
+      return await getActiveAccountStreams(connection.connectionAccountId)
     }))
     const inNetworkActiveStreamsFlat = inNetworkActiveStreams.flat()
     const inNetworkStreamDict = {}
@@ -48,25 +42,16 @@ async function getDiscoveryStreams(accountId){
     }
     inNetworkActiveStreamsFlat.reduce(inNetworkReducer,inNetworkStreamDict)
     const potentialStreamIds = [...new Set(Object.keys(invitesDict).concat(Object.keys(inNetworkStreamDict)))]
-    const potentialStreams = await Promise.all(potentialStreamIds.map(async (streamId) => {
-      const stream = await getStreamDetails(streamId)
-      return {
-        'streamId':parseInt(streamId),
-        'topicId':stream.topicId,
-        'creatorId':stream.creatorId,
-        'speakerAccessibility':stream.speakerAccessibility,
-        'startTime':stream.startTime,
-        'sumInvites':(invitesDict[streamId]) ? (invitesDict[streamId]) : null,
-        'sumConnections':(inNetworkStreamDict[streamId]) ? inNetworkStreamDict[streamId] : null,
-      }
+    const potentialStreams = await Promise.all(potentialStreamIds.map(async function(streamId){
+      return await formatStreamOutput(parseInt(streamId), invitesDict, inNetworkStreamDict)
     }))
     // Filter out streams user does not have access to
     const streamsAccessible = potentialStreams.filter(function(stream){
-      if (stream.speakerAccessibility==='public'){
+      if (stream.info.speakerAccessibility==='public'){
         return stream
-      } else if (stream.speakerAccessibility==='invite-only' && stream.sumInvites > 0){
+      } else if (stream.info.speakerAccessibility==='invite-only' && stream.info.sumInvites > 0){
         return stream
-      } else if (stream.speakerAccessibility==='network-only' && stream.sumConnections > 0){
+      } else if (stream.info.speakerAccessibility==='network-only' && stream.info.sumConnections > 0){
         return stream
       }
     })
@@ -80,24 +65,16 @@ async function getDiscoveryStreams(accountId){
       }
     })
     // Format stream details
-    const publicStreamsFrmtd = publicStreamsFltrd.map(stream => {
-      return {
-        'streamId':stream.id,
-        'topicId':stream.topicId,
-        'creatorId':stream.creatorId,
-        'speakerAccessibility':stream.speakerAccessibility,
-        'startTime':stream.startTime,
-        'sumInvites':null,
-        'sumConnections':null,
-      }
-    })
+    const publicStreamsFrmtd = await Promise.all(publicStreamsFltrd.map(async function(stream){
+      return await formatStreamOutput(stream.id, invitesDict, inNetworkStreamDict)
+    }))
     // Combine public streams with other accessible streams
     const discoveryStreams = streamsAccessible.concat(publicStreamsFrmtd)
     // Sort streams
     discoveryStreams.sort(function(a,b) {
-      const invitesDiff = 5 * (a.sumInvites - b.sumInvites)
-      const connectionsDiff = (a.sumConnections - b.sumConnections)
-      const timeDiff = a.startTime.getTime() / b.startTime.getTime()
+      const invitesDiff = 5 * (a.info.sumInvites - b.info.sumInvites)
+      const connectionsDiff = (a.info.sumConnections - b.info.sumConnections)
+      const timeDiff = a.info.startTime.getTime() / b.info.startTime.getTime()
       return -1 * (invitesDiff + connectionsDiff + 1) * timeDiff
     })
     return discoveryStreams
@@ -105,6 +82,17 @@ async function getDiscoveryStreams(accountId){
     throw new Error(error)
   }
 
+}
+
+async function formatStreamOutput(streamId, invitesDict, inNetworkStreamDict){
+  const streamBasicInfo = await getStreamBasicInfo(streamId)
+  streamBasicInfo['sumInvites'] = (invitesDict[streamId]) ? (invitesDict[streamId]) : null
+  streamBasicInfo['sumConnections'] = (inNetworkStreamDict[streamId]) ? inNetworkStreamDict[streamId] : null
+  const streamParticipantInfo = await getStreamParticipantsInfo(streamId)
+  return {
+    'info': streamBasicInfo,
+    'participants': streamParticipantInfo,
+  }
 }
 
 module.exports = {
