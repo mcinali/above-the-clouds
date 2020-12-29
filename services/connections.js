@@ -9,14 +9,32 @@ const {
   getAccountConnectionsEmailOutreach,
   getConnectionsEmailOutreachToAccount,
 } = require('../models/connections')
-
+const { sendEmail } = require('../sendgrid')
 
 async function createConnection(info){
     try {
       // TO DO: Send connection email
-      const accountId = info.accountId
-      const connectionId = info.connectionId
-      const email = info.connectionEmail
+      const accountId = (info.accountId) ? info.accountId : null
+      const connectionId = (info.connectionId) ? info.connectionId : null
+      const email = (info.connectionEmail) ? info.connectionEmail : null
+      // Check if info contains either connectionId or email
+      if (!(Boolean(connectionId) || Boolean(email))) {
+        throw new Error('Need either valid connection accountId or email')
+      }
+      const connectionAccountDetails = await getAccountDetails(connectionId)
+      // Check if info contains accountId
+      if (!Boolean(accountId)) {
+        throw new Error('Need valid accountId')
+      }
+      const account = await getAccountInfo(accountId)
+      const accountUsername = account.username
+      const accountDetails = await getAccountDetails(accountId)
+      // Instantiate email message
+      const outgoingEmail = (connectionAccountDetails) ? connectionAccountDetails.email : email
+      const msg = {
+          to: outgoingEmail,
+          from: 'abovethecloudsapp@gmail.com',
+      }
       if (connectionId) {
         const connection = await insertConnection({
           'accountId':accountId,
@@ -27,6 +45,16 @@ async function createConnection(info){
           'connectionId':accountId,
         })
         const state = (existingConnection) ? 'connected' : 'pending'
+        // Send Email
+        if (state=='pending'){
+          msg['subject'] = `${accountDetails.firstname} ${accountDetails.lastname.slice(0,1)} (${accountUsername}) sent you a connection request`
+          msg['text'] = `${accountDetails.firstname} ${accountDetails.lastname.slice(0,1)} (${accountUsername}) sent you a request to connect on Above the Clouds (link below):`
+        } else {
+          msg['subject'] = `You and ${accountDetails.firstname} ${accountDetails.lastname.slice(0,1)} (${accountUsername}) are now connected!`
+          msg['text'] = `${accountDetails.firstname} ${accountDetails.lastname.slice(0,1)} (${accountUsername}) are now connected on Above the Clouds. Enjoy happy times together!`
+        }
+        sendEmail(msg)
+        // Return payload
         return {
           'connectionId': connection.id,
           'accountId': connection.accountId,
@@ -34,12 +62,16 @@ async function createConnection(info){
           'state': state,
           'createdAt': connection.createdAt,
         }
-        // TO DO: Send email
       } else if (email) {
         const connection = await insertConnectionEmailOutreach({
           'accountId':accountId,
           'connectionEmail':email,
         })
+        // Send Email
+        msg['subject'] = `${accountDetails.firstname} ${accountDetails.lastname.slice(0,1)} (${accountUsername}) invited you to connect on Above the Clouds`
+        msg['text'] = `${accountDetails.firstname} ${accountDetails.lastname.slice(0,1)} (${accountUsername}) sent you a request to connect on Above the Clouds (link below):`
+        sendEmail(msg)
+        // Return payload
         return {
           'connectionId':connection.id,
           'accountId':connection.accountId,
