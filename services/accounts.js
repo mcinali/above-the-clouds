@@ -19,21 +19,18 @@ async function registerUser(accountInfo){
     const accountDetails = await insertAccountDetails(accountInfo)
     // Convert Connection Email Invites to Account Invites
     const emailConnections = await getConnectionsEmailOutreachToAccount(accountInfo.email)
-    const emailToAccountConnections = await Promise.all(emailConnections.map(async (x) => {
-                                        console.log(x)
+    const emailToAccountConnections = await Promise.all(emailConnections.map(async (emailOutreach) => {
                                         await insertConnection({
-                                          accountId:x.accountId,
-                                          connectionId:account.id,
+                                          accountId:emailOutreach.accountId,
+                                          connectionAccountId:account.id,
                                         })
                                       }))
     // Convert Stream Email Invites to Account Invites
     const streamEmailConnections = await getStreamInvitationsFromEmailOutreachForEmail(accountInfo.email)
-    console.log('Stream Email Connections: ', streamEmailConnections)
-    const streamEmailToAccountConnections = await Promise.all(streamEmailConnections.map(async (x) => {
-                                              console.log(x)
+    const streamEmailToAccountConnections = await Promise.all(streamEmailConnections.map(async (streamEmailOutreach) => {
                                               await insertStreamInvitation({
-                                                streamId:x.streamId,
-                                                accountId:x.accountId,
+                                                streamId:streamEmailOutreach.streamId,
+                                                accountId:streamEmailOutreach.accountId,
                                                 inviteeAccountId:account.id,
                                               })
                                             }))

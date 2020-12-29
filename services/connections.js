@@ -18,16 +18,16 @@ async function createConnection(info){
       const accountId = (info.accountId) ? info.accountId : null
       const connectionAccountId = (info.connectionAccountId) ? info.connectionAccountId : null
       const email = (info.connectionEmail) ? info.connectionEmail : null
+      const accountDetails = await fetchAccountDetailsBasic(accountId)
       // Check if info contains either connectionAccountId or email
       if (!(Boolean(connectionAccountId) || Boolean(email))) {
         throw new Error('Need either valid connection accountId or email')
       }
-      // Check if info contains accountId
-      if (!Boolean(accountId)) {
+      // Check if info contains valud accountId
+      if (!Boolean(accountDetails)) {
         throw new Error('Need valid accountId')
       }
-      const accountDetails = await fetchAccountDetailsBasic(accountId)
-      if (connectionAccountId) {
+      if (Boolean(connectionAccountId)) {
         const connection = await insertConnection({
           'accountId':accountId,
           'connectionAccountId':connectionAccountId,
@@ -37,21 +37,23 @@ async function createConnection(info){
           'connectionAccountId':accountId,
         })
         const state = (existingConnection) ? 'connected' : 'pending'
-        const connectionAccountDetails = await fetchAccountDetailsBasic(connectionAccountId)
         // Send Email
-        const outgoingEmail = (connectionAccountDetails) ? connectionAccountDetails.email : email
-        const msg = {
-            to: outgoingEmail,
-            from: 'abovethecloudsapp@gmail.com',
-        }
+        const connectionAccountDetails = await fetchAccountDetailsBasic(connectionAccountId)
         if (state=='pending'){
-          msg['subject'] = `${accountDetails.firstname} ${accountDetails.lastnameInitial} (${accountDetails.username}/${accountDetails.email}) sent you a connection request`
-          msg['text'] = `${accountDetails.firstname} ${accountDetails.lastnameInitial} (${accountDetails.username}/${accountDetails.email}) sent you a request to connect on Above the Clouds (link below):`
+          sendEmail({
+            to: connectionAccountDetails.email,
+            from: 'abovethecloudsapp@gmail.com',
+            subject: `${accountDetails.firstname} ${accountDetails.lastnameInitial} (${accountDetails.username}/${accountDetails.email}) sent you a connection request`,
+            text: `${accountDetails.firstname} ${accountDetails.lastnameInitial} (${accountDetails.username}/${accountDetails.email}) sent you a request to connect on Above the Clouds (link below):`,
+          })
         } else {
-          msg['subject'] = `You and ${accountDetails.firstname} ${accountDetails.lastnameInitial} (${accountDetails.username}/${accountDetails.email}) are now connected!`
-          msg['text'] = `${accountDetails.firstname} ${accountDetails.lastnameInitial} (${accountDetails.username}/${accountDetails.email}) are now connected on Above the Clouds. Enjoy happy times together!`
+          sendEmail({
+            to: connectionAccountDetails.email,
+            from: 'abovethecloudsapp@gmail.com',
+            subject: `You and ${accountDetails.firstname} ${accountDetails.lastnameInitial} (${accountDetails.username}/${accountDetails.email}) are now connected!`,
+            text: `${accountDetails.firstname} ${accountDetails.lastnameInitial} (${accountDetails.username}/${accountDetails.email}) are now connected on Above the Clouds. Enjoy happy times together!`,
+          })
         }
-        sendEmail(msg)
         // Return payload
         return {
           'connectionId': connection.id,
@@ -70,9 +72,12 @@ async function createConnection(info){
           'connectionEmail':email,
         })
         // Send Email
-        msg['subject'] = `${accountDetails.firstname} ${accountDetails.lastnameInitial} (${accountDetails.username}/${accountDetails.email}) invited you to connect on Above the Clouds`
-        msg['text'] = `${accountDetails.firstname} ${accountDetails.lastnameInitial} (${accountDetails.username}/${accountDetails.email}) sent you a request to connect on Above the Clouds (link below):`
-        sendEmail(msg)
+        sendEmail({
+            to: email,
+            from: 'abovethecloudsapp@gmail.com',
+            subject: `${accountDetails.firstname} ${accountDetails.lastnameInitial} (${accountDetails.username}/${accountDetails.email}) invited you to connect on Above the Clouds`,
+            text: `${accountDetails.firstname} ${accountDetails.lastnameInitial} (${accountDetails.username}/${accountDetails.email}) sent you a request to connect on Above the Clouds (link below):`
+        })
         // Return payload
         return {
           'emailConnectionOutreachId':connection.id,

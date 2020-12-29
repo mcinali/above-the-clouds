@@ -21,9 +21,11 @@ const { sendEmail } = require('../sendgrid')
 async function createStream(streamInfo){
   try {
     const stream = await insertStream(streamInfo)
+    const topicInfo = await getTopicInfo(streamInfo.topicId)
     return {
       'streamId': stream.id,
       'topicId': stream.topicId,
+      'topic': topicInfo.topic,
       'creatorId': stream.creatorId,
       'capacity': stream.capacity,
       'speakerAccessibility': stream.speakerAccessibility,
@@ -71,7 +73,7 @@ async function getStreamParticipantsInfo(streamId){
         'startTime': participant.startTime,
       }
     })
-    return participants
+    return Promise.all(participants)
   } catch (error) {
     throw new Error(error)
   }
@@ -82,18 +84,18 @@ async function getStreamInviteesInfo(streamId){
   try {
     const streamInvites = await getStreamInvitations(streamId)
     const invitees = streamInvites.map(async (invitee) => {
-      const inviteeInfo = await getAccountInfo(invitee.accountId)
-      const inviteeDetails = await getAccountDetails(invitee.accountId)
+      const inviteeInfo = await getAccountInfo(invitee.inviteeAccountId)
+      const inviteeDetails = await getAccountDetails(invitee.inviteeAccountId)
       return {
         'streamInviteId': invitee.id,
         'accountId': invitee.accountId,
+        'inviteeAccountId': invitee.inviteeAccountId,
         'username': inviteeInfo.username,
         'firstname': inviteeDetails.firstname,
         'lastnameInitial': inviteeDetails.lastname.slice(0,1),
-        'inviteeAccountId': invitee.inviteeAccountId,
       }
     })
-    return invitees
+    return Promise.all(invitees)
   } catch (error) {
     throw new Error(error)
   }
@@ -104,20 +106,19 @@ async function getStreamEmailOutreachInfo(streamId){
   try {
     const emailOutreach = await getStreamInvitationsFromEmailOutreach(streamId)
     const emailOutreachFrmtd = await Promise.all(emailOutreach.map(async (outreach) => {
-      const emailAccountId = await getAccountIdFromEmail(outreach.email)
+      const emailAccountId = await getAccountIdFromEmail(outreach.inviteeEmail)
       return {
         'emailOutreachId':outreach.id,
         'invitedBy':outreach.accountId,
-        'inviteeEmail':outreach.email,
+        'inviteeEmail':outreach.inviteeEmail,
         'createdAt':outreach.createdAt,
         'emailAccountId':(emailAccountId) ? emailAccountId : null,
       }
     }))
-    const emailOutreachFltred = emailOutreachAugmented.filter(function(outreach){
+    const emailOutreachFltred = emailOutreachFrmtd.filter(function(outreach){
       if (!outreach.emailAccountId) {return outreach}
     })
-    return emailOutreachFltred
-    return invitees
+    return Promise.all(emailOutreachFltred)
   } catch (error) {
     throw new Error(error)
   }
@@ -142,12 +143,12 @@ async function getStreamInfo(input){
       throw new Error('User must be active in stream or stream creator to get stream details')
     }
     // Collection components of stream info: basic + participants + invitees + email outreach
-    const basicInfo = await Promise.all(getStreamBasicInfo(streamId))
-    const participants = await Promise.all(getStreamParticipantsInfo(streamId))
-    const invitees = await Promise.all(getStreamInviteesInfo(streamId))
-    const emailOutreach = await Promise.all(getStreamEmailOutreachInfo(streamId))
+    const basicInfo = await getStreamBasicInfo(streamId)
+    const participants = await getStreamParticipantsInfo(streamId)
+    const invitees = await getStreamInviteesInfo(streamId)
+    const emailOutreach = await getStreamEmailOutreachInfo(streamId)
     return {
-      'info': info,
+      'info': basicInfo,
       'participants': participants,
       'invitees': invitees,
       'emailOutreach':emailOutreach,

@@ -88,9 +88,9 @@ async function getAccountConnectionsEmailOutreach(accountId){
   }
 }
 
-async function getConnectionsEmailOutreachToAccount(accountEmail){
+async function getConnectionsEmailOutreachToAccount(email){
   try {
-    const query = `SELECT id, account_id, created_at FROM connections_email_outreach WHERE connection_email = '${accountEmail}'`
+    const query = `SELECT id, account_id, created_at FROM connections_email_outreach WHERE connection_email = '${email}'`
     return pool
             .query(query)
             .then(res => res.rows)
