@@ -9,7 +9,10 @@ const {
   getAccountInfo,
   getAccountIdFromEmail,
 } = require('../models/accounts')
-const { insertTopic } = require('../models/topics')
+const {
+  insertTopic,
+  getTopicInfo,
+} = require('../models/topics')
 const {
   insertStream,
   getStreamDetails,
@@ -17,10 +20,11 @@ const {
   getStreamInvitations,
   insertStreamEmailOutreach,
   getStreamInvitationsFromEmailOutreach,
+  getStreamInvitationsFromEmailOutreachForEmail,
   insertStreamParticipant,
+  getStreamParticipantDetails,
   getStreamParticipants,
   getActiveAccountStreams,
-  getStreamParticipantDetails,
   updateStreamParticipantEndTime,
   updateStreamEndTime,
 } = require('../models/streams')
@@ -122,7 +126,9 @@ describe('Accounts Tests', function() {
 describe('Topics Tests', function() {
   it(`Should...
       - Insert test Topic
-      - Check to make sure Topic info is correct`, async function() {
+      - Check to make sure Topic info is correct
+      - Fetch Topic Info
+      - Check to make sure Topic Info was fetched correctly`, async function() {
     // Insert test topic
     const accountRow = await getAccountRow()
     const accountId = accountRow.id
@@ -134,6 +140,13 @@ describe('Topics Tests', function() {
     // Check to make sure Topic info is correct
     expect(topic.accountId).to.equal(topicInfo.accountId)
     expect(topic.topic).to.equal(topicInfo.topic)
+    // Fetch Topic Info
+    const fetchedTopicInfo = await getTopicInfo(topic.id)
+    // Check to make sure Topic Info was fetched correctly
+    expect(fetchedTopicInfo.id).to.equal(topic.id)
+    expect(fetchedTopicInfo.accountId).to.equal(topic.accountId)
+    expect(fetchedTopicInfo.topic).to.equal(topic.topic)
+    expect(fetchedTopicInfo.createdAt.getTime()).to.equal(topic.createdAt.getTime())
   })
 })
 
@@ -151,6 +164,8 @@ describe('Streams Tests', function() {
       - Check to make sure Stream Email Outreach was inserted correctly
       - Fetch Streams from Email Outreach
       - Check to make sure Streams from Email Outreach were fetched correctly
+      - Fetch Streams from Email Outreach from Email
+      - Check to make sure Streams from Email Outreach from Email were fetched correctly
       - Insert Stream Participant
       - Check to make sure Stream Participant was inserted correctly
       - Fetch Stream Participant Details
@@ -224,12 +239,19 @@ describe('Streams Tests', function() {
     expect(streamEmailOutreach.accountId).to.equal(streamEmailOutreachInfo.accountId)
     expect(streamEmailOutreach.inviteeEmail).to.equal(streamEmailOutreachInfo.inviteeEmail)
     // Fetch Streams from Email Outreach
-    const streamInvitationsFromEmailOutreach = await getStreamInvitationsFromEmailOutreach(streamEmailOutreachInfo.inviteeEmail)
+    const streamInvitationsFromEmailOutreach = await getStreamInvitationsFromEmailOutreach(streamEmailOutreachInfo.streamId)
     // Check to make sure Streams from Email Outreach were fetched correctly
     expect(streamInvitationsFromEmailOutreach[0].id).to.equal(streamEmailOutreach.id)
     expect(streamInvitationsFromEmailOutreach[0].streamId).to.equal(streamEmailOutreach.streamId)
     expect(streamInvitationsFromEmailOutreach[0].accountId).to.equal(streamEmailOutreach.accountId)
     expect(streamInvitationsFromEmailOutreach[0].inviteeEmail).to.equal(streamEmailOutreach.inviteeEmail)
+    // Fetch Streams from Email Outreach from Email
+    const streamInvitationsFromEmailOutreachEmail = await getStreamInvitationsFromEmailOutreachForEmail(streamEmailOutreachInfo.inviteeEmail)
+    // Check to make sure Streams from Email Outreach from Email were fetched correctly
+    expect(streamInvitationsFromEmailOutreachEmail[0].id).to.equal(streamEmailOutreach.id)
+    expect(streamInvitationsFromEmailOutreachEmail[0].streamId).to.equal(streamEmailOutreach.streamId)
+    expect(streamInvitationsFromEmailOutreachEmail[0].accountId).to.equal(streamEmailOutreach.accountId)
+    expect(streamInvitationsFromEmailOutreachEmail[0].inviteeEmail).to.equal(streamEmailOutreach.inviteeEmail)
     // Insert Stream Participant
     const streamParticipantInfo = {
       streamId:stream.id,
@@ -323,24 +345,24 @@ describe('Connections Tests', function() {
     // Insert Connection
     const connectionInfo = {
       accountId:accountId,
-      connectionId:connectionAccountId,
+      connectionAccountId:connectionAccountId,
     }
     const connection = await insertConnection(connectionInfo)
     // Check to make sure Connection was inserted correctly
     expect(connection.accountId).to.equal(connectionInfo.accountId)
-    expect(connection.connectionId).to.equal(connectionInfo.connectionId)
+    expect(connection.connectionAccountId).to.equal(connectionInfo.connectionAccountId)
     // Fetch Account Connection
     const connectionCheck1 = await checkConnection(connectionInfo)
-    const connectionCheck2 = await checkConnection({accountId:connectionAccountId,connectionId:accountId})
+    const connectionCheck2 = await checkConnection({accountId:connectionAccountId,connectionAccountId:accountId})
     // Check to make sure Account Connection was fetched correctly
     expect(connectionCheck1.accountId).to.equal(connectionInfo.accountId)
-    expect(connectionCheck1.connectionId).to.equal(connectionInfo.connectionId)
+    expect(connectionCheck1.connectionAccountId).to.equal(connectionInfo.connectionAccountId)
     should.not.exist(connectionCheck2)
     // Fetch all Account Connections
     const accountConnectionsArrayNonEmpty = await getAccountConnections(accountId)
     const accountConnectionsArrayEmpty = await getAccountConnections(connectionAccountId)
     // Check to make sure Account Connections were fetched correctly
-    expect(accountConnectionsArrayNonEmpty[0].connectionId).to.equal(connectionAccountId)
+    expect(accountConnectionsArrayNonEmpty[0].connectionAccountId).to.equal(connectionAccountId)
     should.not.exist(accountConnectionsArrayEmpty[0])
     // Fetch Connections to Account
     const connectionsToAccountArrayEmpty = await getConnectionsToAccount(accountId)

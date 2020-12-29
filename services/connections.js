@@ -1,4 +1,5 @@
 const { getAccountDetails, getAccountIdFromEmail, getAccountInfo } = require('../models/accounts')
+const { fetchAccountDetailsBasic } = require('../services/accounts')
 const {
   insertConnection,
   removeConnection,
@@ -15,50 +16,53 @@ async function createConnection(info){
     try {
       // TO DO: Send connection email
       const accountId = (info.accountId) ? info.accountId : null
-      const connectionId = (info.connectionId) ? info.connectionId : null
+      const connectionAccountId = (info.connectionAccountId) ? info.connectionAccountId : null
       const email = (info.connectionEmail) ? info.connectionEmail : null
-      // Check if info contains either connectionId or email
-      if (!(Boolean(connectionId) || Boolean(email))) {
+      const accountDetails = await fetchAccountDetailsBasic(accountId)
+      // Check if info contains either connectionAccountId or email
+      if (!(Boolean(connectionAccountId) || Boolean(email))) {
         throw new Error('Need either valid connection accountId or email')
       }
-      const connectionAccountDetails = await getAccountDetails(connectionId)
-      // Check if info contains accountId
-      if (!Boolean(accountId)) {
+      // Check if info contains valud accountId
+      if (!Boolean(accountDetails)) {
         throw new Error('Need valid accountId')
       }
-      const account = await getAccountInfo(accountId)
-      const accountUsername = account.username
-      const accountDetails = await getAccountDetails(accountId)
-      // Instantiate email message
-      const outgoingEmail = (connectionAccountDetails) ? connectionAccountDetails.email : email
-      const msg = {
-          to: outgoingEmail,
-          from: 'abovethecloudsapp@gmail.com',
-      }
-      if (connectionId) {
+      if (Boolean(connectionAccountId)) {
         const connection = await insertConnection({
           'accountId':accountId,
-          'connectionId':connectionId,
+          'connectionAccountId':connectionAccountId,
         })
         const existingConnection = await checkConnection({
-          'accountId':connectionId,
-          'connectionId':accountId,
+          'accountId':connectionAccountId,
+          'connectionAccountId':accountId,
         })
         const state = (existingConnection) ? 'connected' : 'pending'
         // Send Email
+        const connectionAccountDetails = await fetchAccountDetailsBasic(connectionAccountId)
         if (state=='pending'){
-          msg['subject'] = `${accountDetails.firstname} ${accountDetails.lastname.slice(0,1)} (${accountUsername}) sent you a connection request`
-          msg['text'] = `${accountDetails.firstname} ${accountDetails.lastname.slice(0,1)} (${accountUsername}) sent you a request to connect on Above the Clouds (link below):`
+          sendEmail({
+            to: connectionAccountDetails.email,
+            from: 'abovethecloudsapp@gmail.com',
+            subject: `${accountDetails.firstname} ${accountDetails.lastnameInitial} (${accountDetails.username}/${accountDetails.email}) sent you a connection request`,
+            text: `${accountDetails.firstname} ${accountDetails.lastnameInitial} (${accountDetails.username}/${accountDetails.email}) sent you a request to connect on Above the Clouds (link below):`,
+          })
         } else {
-          msg['subject'] = `You and ${accountDetails.firstname} ${accountDetails.lastname.slice(0,1)} (${accountUsername}) are now connected!`
-          msg['text'] = `${accountDetails.firstname} ${accountDetails.lastname.slice(0,1)} (${accountUsername}) are now connected on Above the Clouds. Enjoy happy times together!`
+          sendEmail({
+            to: connectionAccountDetails.email,
+            from: 'abovethecloudsapp@gmail.com',
+            subject: `You and ${accountDetails.firstname} ${accountDetails.lastnameInitial} (${accountDetails.username}/${accountDetails.email}) are now connected!`,
+            text: `${accountDetails.firstname} ${accountDetails.lastnameInitial} (${accountDetails.username}/${accountDetails.email}) are now connected on Above the Clouds. Enjoy happy times together!`,
+          })
         }
-        sendEmail(msg)
         // Return payload
         return {
           'connectionId': connection.id,
           'accountId': connection.accountId,
-          'connectionId': connection.connectionId,
+          'connectionAccountId': connection.connectionAccountId,
+          'connectionUsername': connectionAccountDetails.username,
+          'connectionFirstname': connectionAccountDetails.firstname,
+          'connectionLastnameInitial': connectionAccountDetails.lastnameInitial,
+          'connectionEmail': connectionAccountDetails.email,
           'state': state,
           'createdAt': connection.createdAt,
         }
@@ -68,12 +72,15 @@ async function createConnection(info){
           'connectionEmail':email,
         })
         // Send Email
-        msg['subject'] = `${accountDetails.firstname} ${accountDetails.lastname.slice(0,1)} (${accountUsername}) invited you to connect on Above the Clouds`
-        msg['text'] = `${accountDetails.firstname} ${accountDetails.lastname.slice(0,1)} (${accountUsername}) sent you a request to connect on Above the Clouds (link below):`
-        sendEmail(msg)
+        sendEmail({
+            to: email,
+            from: 'abovethecloudsapp@gmail.com',
+            subject: `${accountDetails.firstname} ${accountDetails.lastnameInitial} (${accountDetails.username}/${accountDetails.email}) invited you to connect on Above the Clouds`,
+            text: `${accountDetails.firstname} ${accountDetails.lastnameInitial} (${accountDetails.username}/${accountDetails.email}) sent you a request to connect on Above the Clouds (link below):`
+        })
         // Return payload
         return {
-          'connectionId':connection.id,
+          'emailConnectionOutreachId':connection.id,
           'accountId':connection.accountId,
           'connectionEmail':connection.connectionEmail,
           'createdAt':connection.createdAt,
@@ -94,15 +101,15 @@ async function getConnections(accountId){
     const accountEmail = accountDetails.email
     // Get Account Connections & reformat list of objects to dict
     const accountConnections = await getAccountConnections(accountId)
-    const accountConnectionsDict = Object.assign({}, ...accountConnections.map((x) => ({[x.connectionId]: x.createdAt})))
+    const accountConnectionsDict = Object.assign({}, ...accountConnections.map((x) => ({[x.connectionAccountId]: x.createdAt})))
     // Get Connections to Account & reformat list of objects to dict
     const connectionsToAccount = await getConnectionsToAccount(accountId)
     const connectionsToAccountDict = Object.assign({}, ...connectionsToAccount.map((x) => ({[x.accountId]: x.createdAt})))
     // Get all account connections
     const connections = accountConnections.filter(function(item){
-      if (connectionsToAccountDict[item.connectionId]) { return item }
+      if (connectionsToAccountDict[item.connectionAccountId]) { return item }
     })
-    const connectionsFrmtd = await Promise.all(connections.map(async (item) => formatConnectObject(item, connectionsToAccountDict, 'connectionId')))
+    const connectionsFrmtd = await Promise.all(connections.map(async (item) => formatConnectObject(item, connectionsToAccountDict, 'connectionAccountId')))
     const connectionsSrtd = connectionsFrmtd.sort(function(a,b) {return b.ts - a.ts})
     // Get all inbound account connection requests
     const inboundConnectionRequests = connectionsToAccount.filter(function(item){
@@ -112,9 +119,9 @@ async function getConnections(accountId){
     const inboundConnectionRequestsSrtd = inboundConnectionRequestsFrmtd.sort(function(a,b) {return b.ts - a.ts})
     // Get all outbound account connection requests
     const outboundConnectionRequests = accountConnections.filter(function(item){
-      if (!connectionsToAccountDict[item.connectionId]) { return item }
+      if (!connectionsToAccountDict[item.connectionAccountId]) { return item }
     })
-    const outboundConnectionRequestsFrmtd = await Promise.all(outboundConnectionRequests.map(async (item) => formatConnectObject(item, connectionsToAccountDict, 'connectionId')))
+    const outboundConnectionRequestsFrmtd = await Promise.all(outboundConnectionRequests.map(async (item) => formatConnectObject(item, connectionsToAccountDict, 'connectionAccountId')))
     const outboundConnectionRequestsSrtd = outboundConnectionRequestsFrmtd.sort(function(a,b) {return b.ts - a.ts})
     // Get all connections via email outreach
     const emailOutreachConnections = await getAccountConnectionsEmailOutreach(accountId)
@@ -145,14 +152,9 @@ async function getConnections(accountId){
 async function formatConnectObject(x, dict, accountCol){
   try {
     const ts = (dict[x[accountCol]]) ? Math.max(x.createdAt.getTime(), dict[x[accountCol]].getTime()) : x.createdAt.getTime()
-    const connectionUsername = await getAccountInfo(x[accountCol])
-    const connectionDetails = await getAccountDetails(x[accountCol])
-    return {
-      'accountId':x[accountCol],
-      'username':connectionUsername.username,
-      'email':connectionDetails.email,
-      'ts':ts
-    }
+    const accountDetailsBasic = await fetchAccountDetailsBasic(x[accountCol])
+    accountDetailsBasic['ts'] = ts
+    return accountDetailsBasic
   } catch (error) {
     throw new Error(error)
   }

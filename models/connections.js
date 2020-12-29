@@ -2,10 +2,10 @@ const { pool, pgTransaction } = require('../pg_helpers')
 
 async function insertConnection(connectionInfo){
   try {
-    const { accountId, connectionId  } = connectionInfo
+    const { accountId, connectionAccountId  } = connectionInfo
     const query = `
-      INSERT INTO connections (account_id, connection_id)
-      VALUES (${accountId}, ${connectionId})
+      INSERT INTO connections (account_id, connection_account_id)
+      VALUES (${accountId}, ${connectionAccountId})
       RETURNING *`
     const result = await pgTransaction(query)
     return result.rows[0]
@@ -16,8 +16,8 @@ async function insertConnection(connectionInfo){
 
 async function removeConnection(connectionInfo){
   try {
-    const { accountId, connectionId  } = connectionInfo
-    const query = `DELETE FROM connections WHERE account_id = ${accountId} and connection_id = ${connectionId}`
+    const { accountId, connectionAccountId  } = connectionInfo
+    const query = `DELETE FROM connections WHERE account_id = ${accountId} and connection_account_id = ${connectionAccountId}`
     const result = await pgTransaction(query)
     return result.rows[0]
   } catch (error) {
@@ -41,7 +41,7 @@ async function insertConnectionEmailOutreach(connectionInfo){
 
 async function getAccountConnections(accountId){
   try {
-    const query = `SELECT id, connection_id, created_at FROM connections WHERE account_id = ${accountId}`
+    const query = `SELECT id, connection_account_id, created_at FROM connections WHERE account_id = ${accountId}`
     return pool
             .query(query)
             .then(res => res.rows)
@@ -51,9 +51,9 @@ async function getAccountConnections(accountId){
   }
 }
 
-async function getConnectionsToAccount(accountId){
+async function getConnectionsToAccount(connectionAccountId){
   try {
-    const query = `SELECT id, account_id, created_at FROM connections WHERE connection_id = ${accountId}`
+    const query = `SELECT id, account_id, created_at FROM connections WHERE connection_account_id = ${connectionAccountId}`
     return pool
             .query(query)
             .then(res => res.rows)
@@ -65,8 +65,8 @@ async function getConnectionsToAccount(accountId){
 
 async function checkConnection(info){
   try {
-    const { accountId, connectionId } = info
-    const query = `SELECT * FROM connections WHERE account_id = ${accountId} AND connection_id = ${connectionId}`
+    const { accountId, connectionAccountId } = info
+    const query = `SELECT * FROM connections WHERE account_id = ${accountId} AND connection_account_id = ${connectionAccountId}`
     return pool
             .query(query)
             .then(res => res.rows[0])
@@ -88,9 +88,9 @@ async function getAccountConnectionsEmailOutreach(accountId){
   }
 }
 
-async function getConnectionsEmailOutreachToAccount(accountEmail){
+async function getConnectionsEmailOutreachToAccount(email){
   try {
-    const query = `SELECT id, account_id, created_at FROM connections_email_outreach WHERE connection_email = '${accountEmail}'`
+    const query = `SELECT id, account_id, created_at FROM connections_email_outreach WHERE connection_email = '${email}'`
     return pool
             .query(query)
             .then(res => res.rows)
