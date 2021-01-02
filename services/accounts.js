@@ -3,7 +3,9 @@ const {
   insertAccountDetails,
   getAccountDetails,
   getAccountInfo,
+  getAccountIdFromUsername,
   getAccountIdFromEmail,
+  getAccountIdFromPhone,
 } = require('../models/accounts')
 const { getConnectionsEmailOutreachToAccount, insertConnection } = require('../models/connections')
 const { getStreamInvitationsFromEmailOutreachForEmail, insertStreamInvitation } = require('../models/streams')
@@ -94,8 +96,25 @@ async function fetchAccountDetailsBasic(accountId){
   }
 }
 
+async function validateAccountFields(info){
+  try {
+    const { username, email, phone } = info
+    const usernameAccountId = await getAccountIdFromUsername(username)
+    const emailAccountId = await getAccountIdFromEmail(email)
+    const phoneAccountId = await getAccountIdFromPhone(phone)
+    return {
+      'username': Boolean(usernameAccountId),
+      'email': Boolean(emailAccountId),
+      'phone': Boolean(phoneAccountId),
+    }
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 module.exports = {
   registerUser,
   fetchAccountDetails,
   fetchAccountDetailsBasic,
+  validateAccountFields,
 }
