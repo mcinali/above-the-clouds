@@ -7,7 +7,9 @@ const {
   insertAccountDetails,
   getAccountDetails,
   getAccountInfo,
+  getAccountIdFromUsername,
   getAccountIdFromEmail,
+  getAccountIdFromPhone,
 } = require('../models/accounts')
 const {
   insertTopic,
@@ -77,8 +79,12 @@ describe('Accounts Tests', function() {
       - Check to make sure Account Details were fetched correctly
       - Fetch Username from Account
       - Check to make sure Username from Account was fetched correctly
+      - Fetch Account Id from Username
+      - Check to make sure Account Id from Username was fetched correctly
       - Fetch Account Id from Email
-      - Check to make sure Account Id from Email was fetched correctly`, async function() {
+      - Check to make sure Account Id from Email was fetched correctly
+      - Fetch Account Id from Phone
+      - Check to make sure Account Id from Phone was fetched correctly`, async function() {
     // Insert test Account
     const accountInfo = {
       username:testUsername,
@@ -116,10 +122,24 @@ describe('Accounts Tests', function() {
     const username = await getAccountInfo(account.id)
     // Check to make sure Username from Account was fetched correctly
     expect(username.username).to.equal(accountInfo.username)
+    // Fetch Account Id from Username
+    const acccountIdFromUsernameValid = await getAccountIdFromUsername(accountInfo.username)
+    const acccountIdFromUsernameInValid = await getAccountIdFromUsername('invalidusername')
+    // Check to make sure Account Id from Username was fetched correctly
+    expect(acccountIdFromUsernameValid.id).to.equal(account.id)
+    should.not.exist(acccountIdFromUsernameInValid)
     // Fetch Account Id from Email
-    const acccountIdFromEmail = await getAccountIdFromEmail(accountDetailsInfo.email)
+    const acccountIdFromEmailValid = await getAccountIdFromEmail(accountDetailsInfo.email)
+    const acccountIdFromEmailInValid = await getAccountIdFromEmail('invalidemail@eamil.com')
     // Check to make sure Account Id from Email was fetched correctly
-    expect(acccountIdFromEmail.accountId).to.equal(account.id)
+    expect(acccountIdFromEmailValid.accountId).to.equal(account.id)
+    should.not.exist(acccountIdFromEmailInValid)
+    // Fetch Account Id from Phone
+    const acccountIdFromPhoneValid = await getAccountIdFromPhone(accountDetailsInfo.phone)
+    const acccountIdFromPhoneInValid = await getAccountIdFromPhone(000)
+    // Check to make sure Account Id from Phone was fetched correctly
+    expect(acccountIdFromPhoneValid.accountId).to.equal(account.id)
+    should.not.exist(acccountIdFromPhoneInValid)
   })
 })
 
