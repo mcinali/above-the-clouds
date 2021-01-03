@@ -1,7 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const { registerUser, fetchAccountDetails } = require('../services/accounts')
-const { validateAccountSchema, validateUniqueAccountFields } = require('../middleware/apiValidation')
+const { validateAccountSchema, validateUniqueAccountFields } = require('../middleware/validation')
 
 // Create new User Account
 router.post('/register', validateAccountSchema, validateUniqueAccountFields, async function (req, res) {
