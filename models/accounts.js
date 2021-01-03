@@ -81,7 +81,7 @@ async function getAccountIdFromEmail(email){
 
 async function getAccountIdFromPhone(phone){
   try {
-    const query = `SELECT account_id FROM account_details where phone = ${phone}`
+    const query = `SELECT account_id FROM account_details where cast(phone as varchar) = '${phone}'`
     return pool
             .query(query)
             .then(res => res.rows[0])

@@ -1,9 +1,10 @@
 const express = require('express')
 const router = express.Router()
-const { registerUser, fetchAccountDetails, validateAccountFields } = require('../services/accounts')
+const { registerUser, fetchAccountDetails } = require('../services/accounts')
+const { validateAccountSchema, validateUniqueAccountFields } = require('../middleware/validation')
 
 // Create new User Account
-router.post('/register', async function (req, res) {
+router.post('/register', validateAccountSchema, validateUniqueAccountFields, async function (req, res) {
   try {
     const results = await registerUser(req.body)
     return res.send(results)
@@ -21,17 +22,6 @@ router.get('/:accountId', async function (req, res) {
   } catch (error) {
     console.error(error)
     return res.status(400).json({error: 'Failed to fetch user details'})
-  }
-})
-
-// Validate Account Fields
-router.post('/validate', async function (req, res) {
-  try {
-    const results = await validateAccountFields(req.body)
-    return res.send(results)
-  } catch (error) {
-    console.error(error)
-    return res.status(400).json({error: 'Failed to validate account fields'})
   }
 })
 
