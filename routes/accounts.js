@@ -1,9 +1,10 @@
 const express = require('express')
 const router = express.Router()
 const { registerUser, fetchAccountDetails } = require('../services/accounts')
+const { validateAccountSchema, validateUniqueAccountFields } = require('../middleware/apiValidation')
 
 // Create new User Account
-router.post('/register', async function (req, res) {
+router.post('/register', validateAccountSchema, validateUniqueAccountFields, async function (req, res) {
   try {
     const results = await registerUser(req.body)
     return res.send(results)
