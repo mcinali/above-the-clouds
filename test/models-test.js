@@ -136,7 +136,7 @@ describe('Accounts Tests', function() {
     should.not.exist(acccountIdFromEmailInValid)
     // Fetch Account Id from Phone
     const acccountIdFromPhoneValid = await getAccountIdFromPhone(accountDetailsInfo.phone)
-    const acccountIdFromPhoneInValid = await getAccountIdFromPhone(000)
+    const acccountIdFromPhoneInValid = await getAccountIdFromPhone(null)
     // Check to make sure Account Id from Phone was fetched correctly
     expect(acccountIdFromPhoneValid.accountId).to.equal(account.id)
     should.not.exist(acccountIdFromPhoneInValid)
