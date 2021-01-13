@@ -91,6 +91,42 @@ async function getAccountIdFromPhone(phone){
   }
 }
 
+async function fuzzyMatchAccountsByUsername(text){
+  try {
+    const query = `SELECT id as account_id FROM accounts WHERE lower(username) LIKE lower('${text}%')`
+    return pool
+            .query(query)
+            .then(res => res.rows)
+            .catch(error => new Error(error))
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+async function fuzzyMatchAccountsByEmail(text){
+  try {
+    const query = `SELECT account_id FROM account_details WHERE lower(email) LIKE lower('${text}%')`
+    return pool
+            .query(query)
+            .then(res => res.rows)
+            .catch(error => new Error(error))
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+async function fuzzyMatchAccountsByFullName(firstname, lastname){
+  try {
+    const query = `SELECT account_id FROM account_details WHERE lower(firstname) LIKE lower('${firstname}%') AND lower(lastname) LIKE lower('${lastname}%')`
+    return pool
+            .query(query)
+            .then(res => res.rows)
+            .catch(error => new Error(error))
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 module.exports = {
   insertAccount,
   insertAccountDetails,
@@ -99,4 +135,7 @@ module.exports = {
   getAccountIdFromUsername,
   getAccountIdFromEmail,
   getAccountIdFromPhone,
+  fuzzyMatchAccountsByUsername,
+  fuzzyMatchAccountsByEmail,
+  fuzzyMatchAccountsByFullName,
 }

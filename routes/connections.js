@@ -3,6 +3,7 @@ const router = express.Router()
 const {
   getConnections,
   createConnection,
+  getConnectionSuggestions,
 } = require('../services/connections')
 
 // Get all connections and requests
@@ -24,6 +25,17 @@ router.post('/new', async function (req, res) {
   } catch (error) {
     console.error(error)
     return res.status(400).json({error: 'Failed to create connection'})
+  }
+})
+
+// Create new connection
+router.get('/search/suggestions', async function (req, res) {
+  try {
+    const results = await getConnectionSuggestions(req.query.text)
+    return res.send(results)
+  } catch (error) {
+    console.error(error)
+    return res.status(400).json({error: 'Failed to get connection suggestions'})
   }
 })
 

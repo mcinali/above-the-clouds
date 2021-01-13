@@ -10,6 +10,9 @@ const {
   getAccountIdFromUsername,
   getAccountIdFromEmail,
   getAccountIdFromPhone,
+  fuzzyMatchAccountsByUsername,
+  fuzzyMatchAccountsByEmail,
+  fuzzyMatchAccountsByFullName,
 } = require('../models/accounts')
 const {
   insertTopic,
@@ -84,7 +87,13 @@ describe('Accounts Tests', function() {
       - Fetch Account Id from Email
       - Check to make sure Account Id from Email was fetched correctly
       - Fetch Account Id from Phone
-      - Check to make sure Account Id from Phone was fetched correctly`, async function() {
+      - Check to make sure Account Id from Phone was fetched correctly
+      - Fetch Account from Fuzzy Match Username
+      - Check to make sure Account from Fuzzy Match Username was fetched correctly
+      - Fetch Account from Fuzzy Match Email
+      - Check to make sure Account from Fuzzy Match Email was fetched correctly
+      - Fetch Account from Fuzzy Match Full Name
+      - Check to make sure Account from Fuzzy Match Full Name was fetched correctly`, async function() {
     // Insert test Account
     const accountInfo = {
       username:testUsername,
@@ -140,6 +149,53 @@ describe('Accounts Tests', function() {
     // Check to make sure Account Id from Phone was fetched correctly
     expect(acccountIdFromPhoneValid.accountId).to.equal(account.id)
     should.not.exist(acccountIdFromPhoneInValid)
+    // Fetch Account from Fuzzy Match Username
+    const fuzzyMatchUsername = testUsername.substring(0,7)
+    const fuzzyMatchUsernameUpper =  fuzzyMatchUsername.toUpperCase()
+    const accountFromFuzzyMatchUsernameGood1 = await fuzzyMatchAccountsByUsername(fuzzyMatchUsername)
+    const accountFromFuzzyMatchUsernameGood2 = await fuzzyMatchAccountsByUsername(fuzzyMatchUsernameUpper)
+    const accountFromFuzzyMatchUsernameBad = await fuzzyMatchAccountsByUsername('bad')
+    // Check to make sure Account from Fuzzy Match Username was fetched correctly
+    expect(accountFromFuzzyMatchUsernameGood1.length).to.equal(1)
+    expect(accountFromFuzzyMatchUsernameGood1[0].accountId).to.equal(account.id)
+    expect(accountFromFuzzyMatchUsernameGood2.length).to.equal(1)
+    expect(accountFromFuzzyMatchUsernameGood2[0].accountId).to.equal(account.id)
+    expect(accountFromFuzzyMatchUsernameBad.length).to.equal(0)
+    // Fetch Account from Fuzzy Match Email
+    const fuzzyMatchEmail = accountDetailsInfo.email.substring(0,7)
+    const fuzzyMatchEmailUpper = fuzzyMatchEmail.toUpperCase()
+    const accountFromFuzzyMatchEmailGood1 = await fuzzyMatchAccountsByEmail(fuzzyMatchEmail)
+    const accountFromFuzzyMatchEmailGood2 = await fuzzyMatchAccountsByEmail(fuzzyMatchEmailUpper)
+    const accountFromFuzzyMatchEmailBad = await fuzzyMatchAccountsByEmail('bad')
+    // Check to make sure Account from Fuzzy Match Email was fetched correctly
+    expect(accountFromFuzzyMatchEmailGood1.length).to.equal(1)
+    expect(accountFromFuzzyMatchEmailGood1[0].accountId).to.equal(account.id)
+    expect(accountFromFuzzyMatchEmailGood2.length).to.equal(1)
+    expect(accountFromFuzzyMatchEmailGood2[0].accountId).to.equal(account.id)
+    expect(accountFromFuzzyMatchEmailBad.length).to.equal(0)
+    // Fetch Account from Fuzzy Match Full Name
+    const fuzzyMatchFirstname = accountDetailsInfo.firstname.substring(0,2)
+    const fuzzyMatchLastname = accountDetailsInfo.lastname.substring(0,2)
+    const fuzzyMatchFirstnameUpper = fuzzyMatchFirstname
+    const fuzzyMatchLastnameUpper = fuzzyMatchLastname
+    const accountFromFuzzyMatchFullNameGood1 = await fuzzyMatchAccountsByFullName(fuzzyMatchFirstname, fuzzyMatchLastname)
+    const accountFromFuzzyMatchFullNameGood2 = await fuzzyMatchAccountsByFullName('', fuzzyMatchLastname)
+    const accountFromFuzzyMatchFullNameGood3 = await fuzzyMatchAccountsByFullName(fuzzyMatchFirstname, '')
+    const accountFromFuzzyMatchFullNameGood4 = await fuzzyMatchAccountsByFullName(fuzzyMatchFirstnameUpper, fuzzyMatchLastnameUpper)
+    const accountFromFuzzyMatchFullNameBad1 = await fuzzyMatchAccountsByFullName('bad','')
+    const accountFromFuzzyMatchFullNameBad2 = await fuzzyMatchAccountsByFullName('','bad')
+    const accountFromFuzzyMatchFullNameBad3 = await fuzzyMatchAccountsByFullName('bad','bad')
+    // Check to make sure Account from Fuzzy Match Full Name was fetched correctly
+    expect(accountFromFuzzyMatchFullNameGood1.length).to.equal(1)
+    expect(accountFromFuzzyMatchFullNameGood1[0].accountId).to.equal(account.id)
+    expect(accountFromFuzzyMatchFullNameGood2.length).to.equal(1)
+    expect(accountFromFuzzyMatchFullNameGood2[0].accountId).to.equal(account.id)
+    expect(accountFromFuzzyMatchFullNameGood3.length).to.be.above(0)
+    expect(accountFromFuzzyMatchFullNameGood4.length).to.equal(1)
+    expect(accountFromFuzzyMatchFullNameGood4[0].accountId).to.equal(account.id)
+    expect(accountFromFuzzyMatchFullNameBad1.length).to.equal(0)
+    expect(accountFromFuzzyMatchFullNameBad2.length).to.equal(0)
+    expect(accountFromFuzzyMatchFullNameBad3.length).to.equal(0)
   })
 })
 
@@ -346,7 +402,7 @@ describe('Connections Tests', function() {
     const accountRow = await getAccountRow()
     const accountId = accountRow.id
     // Insert new test Account
-    const testConnectionsUsername = 'testAccountConnections'
+    const testConnectionsUsername = 'connectionsTestAccount'
     await pgTransaction(`DELETE FROM accounts WHERE username = '${testConnectionsUsername}'`)
     const connectionAccountInfo = {
       username:testConnectionsUsername,
@@ -486,7 +542,7 @@ describe('Connections Tests', function() {
     expect(activeStreamInvitationsForAccount[0].accountId).to.equal(activeStreamInvitation.accountId)
     expect(activeStreamInvitationsForAccount[0].inviteeAccountId).to.equal(activeStreamInvitation.inviteeAccountId)
     // Fetch Active Public Streams
-    const activePublicStreams = await getActivePublicStreams(2)
+    const activePublicStreams = await getActivePublicStreams(1)
     // Check to make sure Active Public Streams were fetched correctly
     expect(activePublicStreams.length).to.equal(1)
     expect(activePublicStreams[0].id).to.equal(activeStream.id)

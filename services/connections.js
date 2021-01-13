@@ -1,4 +1,11 @@
-const { getAccountDetails, getAccountIdFromEmail, getAccountInfo } = require('../models/accounts')
+const {
+  getAccountDetails,
+  getAccountIdFromEmail,
+  getAccountInfo,
+  fuzzyMatchAccountsByUsername,
+  fuzzyMatchAccountsByEmail,
+  fuzzyMatchAccountsByFullName,
+} = require('../models/accounts')
 const { fetchAccountDetailsBasic } = require('../services/accounts')
 const {
   insertConnection,
@@ -160,7 +167,20 @@ async function formatConnectObject(x, dict, accountCol){
   }
 }
 
+async function getConnectionSuggestions(text){
+  const textSplit = text.split(' ')
+  const firstname = textSplit[0]
+  const lastname = (textSplit.length > 1) ? textSplit[1] : ''
+  const usernameOptions = await fuzzyMatchAccountsByUsername(text)
+  const emailOptions = await fuzzyMatchAccountsByEmail(text)
+  const fullNameOptions = await fuzzyMatchAccountsByFullName(firstname, lastname)
+  const optionsAccountIds = [...new Set(usernameOptions.concat(emailOptions).concat(fullNameOptions).map(object => object.accountId))]
+  const options = Promise.all(optionsAccountIds.map(async (accountId) => fetchAccountDetailsBasic(accountId)))
+  return options
+}
+
 module.exports = {
   getConnections,
   createConnection,
+  getConnectionSuggestions,
 }
