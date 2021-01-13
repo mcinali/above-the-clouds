@@ -19,7 +19,7 @@ function validateAccountSchema(req, res, next){
                    }),
 
       password: Joi.string()
-                   .pattern(new RegExp('(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,32}$'))
+                   .pattern(new RegExp('^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,32}$'))
                    .required()
                    .messages({
                      'string.pattern.base': 'password must be between 8-32 characters and must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
