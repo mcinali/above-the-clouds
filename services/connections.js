@@ -167,15 +167,27 @@ async function formatConnectObject(x, dict, accountCol){
   }
 }
 
-async function getConnectionSuggestions(text){
+async function getConnectionSuggestions(text, accountId){
   const textSplit = text.split(' ')
   const firstname = textSplit[0]
   const lastname = (textSplit.length > 1) ? textSplit[1] : ''
   const usernameOptions = await fuzzyMatchAccountsByUsername(text)
   const emailOptions = await fuzzyMatchAccountsByEmail(text)
   const fullNameOptions = await fuzzyMatchAccountsByFullName(firstname, lastname)
-  const optionsAccountIds = [...new Set(usernameOptions.concat(emailOptions).concat(fullNameOptions).map(object => object.accountId))]
-  const options = Promise.all(optionsAccountIds.map(async (accountId) => fetchAccountDetailsBasic(accountId)))
+  const optionsAccountIds = [...new Set(usernameOptions.concat(emailOptions).concat(fullNameOptions).map(object => object.accountId))].splice(0,10)
+  const options = Promise.all(optionsAccountIds.map(async (connectionAccountId) => {
+    const results = await fetchAccountDetailsBasic(connectionAccountId)
+    const outboundRequestExists = await checkConnection({accountId:accountId, connectionAccountId:connectionAccountId})
+    const inboundRequestExists = await checkConnection({accountId:connectionAccountId, connectionAccountId:accountId})
+    if (outboundRequestExists && inboundRequestExists) {
+      results['status'] = 'connected'
+    } else if (outboundRequestExists) {
+      results['status'] = 'pending'
+    } else {
+      results['status'] = null
+    }
+    return results
+  }))
   return options
 }
 

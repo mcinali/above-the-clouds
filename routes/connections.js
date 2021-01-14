@@ -29,9 +29,9 @@ router.post('/new', async function (req, res) {
 })
 
 // Create new connection
-router.get('/search/suggestions', async function (req, res) {
+router.get('/:accountId/suggestions', async function (req, res) {
   try {
-    const results = await getConnectionSuggestions(req.query.text)
+    const results = await getConnectionSuggestions(req.query.text, req.params.accountId)
     return res.send(results)
   } catch (error) {
     console.error(error)
