@@ -21,20 +21,16 @@ const { sendEmail } = require('../sendgrid')
 async function createStream(streamInfo){
   try {
     const stream = await insertStream(streamInfo)
-    const { invitees } = streamInfo
-    const streamInvitees = await Promise.all(invitees.map((invitee) => {
-      return inviteParticipantToStream({
-        streamId: stream.id,
-        accountId: streamInfo.accountId,
-        inviteeAccountId: invitee.accountId,
-        inviteeEmail: invitee.email,
-      })
-    }))
+    const topicInfo = await getTopicInfo(streamInfo.topicId)
     return {
       'streamId': stream.id,
       'topicId': stream.topicId,
+      'topic': topicInfo.topic,
+      'creatorId': stream.creatorId,
+      'capacity': stream.capacity,
+      'speakerAccessibility': stream.speakerAccessibility,
       'startTime': stream.startTime,
-      'endTime': stream.endTime,
+      'endTime': stream.endTime
     }
   } catch (error) {
     throw new Error(error)
