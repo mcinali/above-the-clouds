@@ -16,6 +16,7 @@ const { getAccountInfo, getAccountDetails, getAccountIdFromEmail } = require('..
 const { getAccountConnections, checkConnection } = require('../models/connections')
 const { getTopicInfo } = require('../models/topics')
 const { sendEmail } = require('../sendgrid')
+const { twilioClient } = require('../twilio')
 
 // Create Stream
 async function createStream(streamInfo){
@@ -30,6 +31,10 @@ async function createStream(streamInfo){
         inviteeEmail: invitee.email,
       })
     }))
+    const twilioRoom = await twilioClient.video.rooms.create({
+                              type: 'group-small',
+                              uniqueName: stream.id.toString(),
+                            })
     return {
       'streamId': stream.id,
       'topicId': stream.topicId,
