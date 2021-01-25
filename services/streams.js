@@ -16,7 +16,7 @@ const { getAccountInfo, getAccountDetails, getAccountIdFromEmail } = require('..
 const { getAccountConnections, checkConnection } = require('../models/connections')
 const { getTopicInfo } = require('../models/topics')
 const { sendEmail } = require('../sendgrid')
-const { twilioClient } = require('../twilio')
+const { twilioClient, createTwilioRoomAccessToken } = require('../twilio')
 
 // Create Stream
 async function createStream(streamInfo){
@@ -274,11 +274,16 @@ async function joinStream(joinInfo){
         }
       }
       const streamParticipant = await insertStreamParticipant(joinInfo)
+      // TO DO: Create Twilio video access token
+      const twilioUserId = streamParticipant.accountId.toString()
+      const twilioUniqueRoomName = streamParticipant.streamId.toString()
+      const twilioAccessToken = createTwilioRoomAccessToken(twilioUserId, twilioUniqueRoomName)
       return {
         'streamParticipantId': streamParticipant.id,
         'streamId': streamParticipant.streamId,
         'accountId': streamParticipant.accountId,
         'startTime': streamParticipant.startTime,
+        'twilioAccessToken': twilioAccessToken,
       }
     }
   } catch (error) {
