@@ -96,12 +96,13 @@ async function getStreamInviteesInfo(streamId){
       const inviteeInfo = await getAccountInfo(invitee.inviteeAccountId)
       const inviteeDetails = await getAccountDetails(invitee.inviteeAccountId)
       return {
-        'streamInviteId': invitee.id,
         'accountId': invitee.accountId,
         'inviteeAccountId': invitee.inviteeAccountId,
+        'inviteeEmail': null,
         'username': inviteeInfo.username,
         'firstname': inviteeDetails.firstname,
         'lastnameInitial': inviteeDetails.lastname.slice(0,1),
+        'ts': invitee.createdAt,
       }
     })
     return Promise.all(invitees)
@@ -116,18 +117,22 @@ async function getStreamEmailOutreachInfo(streamId){
     const emailOutreach = await getStreamInvitationsFromEmailOutreach(streamId)
     const emailOutreachFrmtd = await Promise.all(emailOutreach.map(async (outreach) => {
       const emailAccountId = await getAccountIdFromEmail(outreach.inviteeEmail)
-      return {
-        'emailOutreachId':outreach.id,
-        'invitedBy':outreach.accountId,
-        'inviteeEmail':outreach.inviteeEmail,
-        'createdAt':outreach.createdAt,
-        'emailAccountId':(emailAccountId) ? emailAccountId : null,
+      if (!Boolean(emailAccountId)){
+        return {
+          'accountId': outreach.accountId,
+          'inviteeAccountId': null,
+          'inviteeEmail': outreach.inviteeEmail,
+          'username': null,
+          'firstname': null,
+          'lastnameInitial': null,
+          'ts': outreach.createdAt,
+        }
       }
     }))
     const emailOutreachFltred = emailOutreachFrmtd.filter(function(outreach){
-      if (!outreach.emailAccountId) {return outreach}
+      if (outreach) {return outreach}
     })
-    return Promise.all(emailOutreachFltred)
+    return emailOutreachFltred
   } catch (error) {
     throw new Error(error)
   }
@@ -154,13 +159,14 @@ async function getStreamInfo(input){
     // Collection components of stream info: basic + participants + invitees + email outreach
     const basicInfo = await getStreamBasicInfo(streamId)
     const participants = await getStreamParticipantsInfo(streamId)
-    const invitees = await getStreamInviteesInfo(streamId)
-    const emailOutreach = await getStreamEmailOutreachInfo(streamId)
+    const inAppInvitees = await getStreamInviteesInfo(streamId)
+    const emailInvitees = await getStreamEmailOutreachInfo(streamId)
+    const invitees = inAppInvitees.concat(emailInvitees)
+    invitees.sort((a,b) => (a.ts < b.ts) ? 1 : -1)
     return {
       'info': basicInfo,
       'participants': participants,
       'invitees': invitees,
-      'emailOutreach':emailOutreach,
     }
   } catch (error) {
     throw new Error(error)
