@@ -194,6 +194,7 @@ async function inviteParticipantToStream(inviteInfo){
     const accountUsername = account.username
     const accountDetails = await getAccountDetails(accountId)
     const topic = await getTopicInfo(streamDetails.topicId)
+    const inviteeAccount = await getAccountInfo(inviteeAccountId)
     const inviteeAccountDetails = await getAccountDetails(inviteeAccountId)
     const msg = {
       from: 'abovethecloudsapp@gmail.com',
@@ -206,19 +207,25 @@ async function inviteParticipantToStream(inviteInfo){
       const streamInvitation = await insertStreamInvitation(inviteInfo)
       sendEmail(msg)
       return {
-        'streamInvitationId': streamInvitation.id,
-        'streamId': streamInvitation.streamId,
-        'accountId': streamInvitation.accountId,
-        'inviteeAccountId': streamInvitation.inviteeAccountId,
+        'accountId': accountId,
+        'inviteeAccountId': inviteeAccountId,
+        'inviteeEmail': null,
+        'username': inviteeAccount.username,
+        'firstname': inviteeAccountDetails.firstname,
+        'lastnameInitial': inviteeAccountDetails.lastname.slice(0,1),
+        'ts': streamInvitation.createdAt,
       }
     } else if (inviteeEmail) {
       const streamEmailOutreach = await insertStreamEmailOutreach(inviteInfo)
       sendEmail(msg)
       return {
-        'streamEmailOutreachId': streamEmailOutreach.id,
-        'streamId': streamEmailOutreach.streamId,
-        'accountId': streamEmailOutreach.accountId,
-        'inviteeEmail': streamEmailOutreach.inviteeEmail,
+        'accountId': accountId,
+        'inviteeAccountId': null,
+        'inviteeEmail': inviteeEmail,
+        'username': null,
+        'firstname': null,
+        'lastnameInitial': null,
+        'ts': streamEmailOutreach.createdAt,
       }
     } else {
       throw new Error('Unable to invite participant to stream')
@@ -253,7 +260,18 @@ async function joinStream(joinInfo){
     if (userStreamsFltrd.length > 0){
       throw new Error('User already active in another stream')
     } else if (userStreams.length > 0) {
-      throw new Error('User already active in this stream')
+      const streamInfo = userStreams[0]
+      const twilioUserId = streamInfo.accountId.toString()
+      const twilioUniqueRoomName = streamInfo.streamId.toString()
+      const twilioAccessToken = createTwilioRoomAccessToken(twilioUserId, twilioUniqueRoomName)
+      return {
+        'streamParticipantId': streamInfo.id,
+        'streamId': streamInfo.streamId,
+        'accountId': streamInfo.accountId,
+        'startTime': streamInfo.startTime,
+        'twilioAccessToken': twilioAccessToken,
+      }
+      // throw new Error('User already active in this stream')
     } else {
       // Reject user if they are not allowed to join stream
       const speakerAccessibility = streamDetails.speakerAccessibility
