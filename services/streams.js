@@ -16,6 +16,7 @@ const { getAccountInfo, getAccountDetails, getAccountIdFromEmail } = require('..
 const { getAccountConnections, checkConnection } = require('../models/connections')
 const { getTopicInfo } = require('../models/topics')
 const { sendEmail } = require('../sendgrid')
+const { twilioClient, createTwilioRoomAccessToken } = require('../twilio')
 
 // Create Stream
 async function createStream(streamInfo){
@@ -30,6 +31,10 @@ async function createStream(streamInfo){
         inviteeEmail: invitee.email,
       })
     }))
+    const twilioRoom = await twilioClient.video.rooms.create({
+                              type: 'group-small',
+                              uniqueName: stream.id.toString(),
+                            })
     return {
       'streamId': stream.id,
       'topicId': stream.topicId,
@@ -91,12 +96,13 @@ async function getStreamInviteesInfo(streamId){
       const inviteeInfo = await getAccountInfo(invitee.inviteeAccountId)
       const inviteeDetails = await getAccountDetails(invitee.inviteeAccountId)
       return {
-        'streamInviteId': invitee.id,
         'accountId': invitee.accountId,
         'inviteeAccountId': invitee.inviteeAccountId,
+        'inviteeEmail': null,
         'username': inviteeInfo.username,
         'firstname': inviteeDetails.firstname,
         'lastnameInitial': inviteeDetails.lastname.slice(0,1),
+        'ts': invitee.createdAt,
       }
     })
     return Promise.all(invitees)
@@ -111,18 +117,22 @@ async function getStreamEmailOutreachInfo(streamId){
     const emailOutreach = await getStreamInvitationsFromEmailOutreach(streamId)
     const emailOutreachFrmtd = await Promise.all(emailOutreach.map(async (outreach) => {
       const emailAccountId = await getAccountIdFromEmail(outreach.inviteeEmail)
-      return {
-        'emailOutreachId':outreach.id,
-        'invitedBy':outreach.accountId,
-        'inviteeEmail':outreach.inviteeEmail,
-        'createdAt':outreach.createdAt,
-        'emailAccountId':(emailAccountId) ? emailAccountId : null,
+      if (!Boolean(emailAccountId)){
+        return {
+          'accountId': outreach.accountId,
+          'inviteeAccountId': null,
+          'inviteeEmail': outreach.inviteeEmail,
+          'username': null,
+          'firstname': null,
+          'lastnameInitial': null,
+          'ts': outreach.createdAt,
+        }
       }
     }))
     const emailOutreachFltred = emailOutreachFrmtd.filter(function(outreach){
-      if (!outreach.emailAccountId) {return outreach}
+      if (outreach) {return outreach}
     })
-    return Promise.all(emailOutreachFltred)
+    return emailOutreachFltred
   } catch (error) {
     throw new Error(error)
   }
@@ -149,13 +159,14 @@ async function getStreamInfo(input){
     // Collection components of stream info: basic + participants + invitees + email outreach
     const basicInfo = await getStreamBasicInfo(streamId)
     const participants = await getStreamParticipantsInfo(streamId)
-    const invitees = await getStreamInviteesInfo(streamId)
-    const emailOutreach = await getStreamEmailOutreachInfo(streamId)
+    const inAppInvitees = await getStreamInviteesInfo(streamId)
+    const emailInvitees = await getStreamEmailOutreachInfo(streamId)
+    const invitees = inAppInvitees.concat(emailInvitees)
+    invitees.sort((a,b) => (a.ts < b.ts) ? 1 : -1)
     return {
       'info': basicInfo,
       'participants': participants,
       'invitees': invitees,
-      'emailOutreach':emailOutreach,
     }
   } catch (error) {
     throw new Error(error)
@@ -183,6 +194,7 @@ async function inviteParticipantToStream(inviteInfo){
     const accountUsername = account.username
     const accountDetails = await getAccountDetails(accountId)
     const topic = await getTopicInfo(streamDetails.topicId)
+    const inviteeAccount = await getAccountInfo(inviteeAccountId)
     const inviteeAccountDetails = await getAccountDetails(inviteeAccountId)
     const msg = {
       from: 'abovethecloudsapp@gmail.com',
@@ -195,19 +207,25 @@ async function inviteParticipantToStream(inviteInfo){
       const streamInvitation = await insertStreamInvitation(inviteInfo)
       sendEmail(msg)
       return {
-        'streamInvitationId': streamInvitation.id,
-        'streamId': streamInvitation.streamId,
-        'accountId': streamInvitation.accountId,
-        'inviteeAccountId': streamInvitation.inviteeAccountId,
+        'accountId': accountId,
+        'inviteeAccountId': inviteeAccountId,
+        'inviteeEmail': null,
+        'username': inviteeAccount.username,
+        'firstname': inviteeAccountDetails.firstname,
+        'lastnameInitial': inviteeAccountDetails.lastname.slice(0,1),
+        'ts': streamInvitation.createdAt,
       }
     } else if (inviteeEmail) {
       const streamEmailOutreach = await insertStreamEmailOutreach(inviteInfo)
       sendEmail(msg)
       return {
-        'streamEmailOutreachId': streamEmailOutreach.id,
-        'streamId': streamEmailOutreach.streamId,
-        'accountId': streamEmailOutreach.accountId,
-        'inviteeEmail': streamEmailOutreach.inviteeEmail,
+        'accountId': accountId,
+        'inviteeAccountId': null,
+        'inviteeEmail': inviteeEmail,
+        'username': null,
+        'firstname': null,
+        'lastnameInitial': null,
+        'ts': streamEmailOutreach.createdAt,
       }
     } else {
       throw new Error('Unable to invite participant to stream')
@@ -242,7 +260,18 @@ async function joinStream(joinInfo){
     if (userStreamsFltrd.length > 0){
       throw new Error('User already active in another stream')
     } else if (userStreams.length > 0) {
-      throw new Error('User already active in this stream')
+      const streamInfo = userStreams[0]
+      const twilioUserId = streamInfo.accountId.toString()
+      const twilioUniqueRoomName = streamInfo.streamId.toString()
+      const twilioAccessToken = createTwilioRoomAccessToken(twilioUserId, twilioUniqueRoomName)
+      return {
+        'streamParticipantId': streamInfo.id,
+        'streamId': streamInfo.streamId,
+        'accountId': streamInfo.accountId,
+        'startTime': streamInfo.startTime,
+        'twilioAccessToken': twilioAccessToken,
+      }
+      // throw new Error('User already active in this stream')
     } else {
       // Reject user if they are not allowed to join stream
       const speakerAccessibility = streamDetails.speakerAccessibility
@@ -269,11 +298,16 @@ async function joinStream(joinInfo){
         }
       }
       const streamParticipant = await insertStreamParticipant(joinInfo)
+      // TO DO: Create Twilio video access token
+      const twilioUserId = streamParticipant.accountId.toString()
+      const twilioUniqueRoomName = streamParticipant.streamId.toString()
+      const twilioAccessToken = createTwilioRoomAccessToken(twilioUserId, twilioUniqueRoomName)
       return {
         'streamParticipantId': streamParticipant.id,
         'streamId': streamParticipant.streamId,
         'accountId': streamParticipant.accountId,
         'startTime': streamParticipant.startTime,
+        'twilioAccessToken': twilioAccessToken,
       }
     }
   } catch (error) {
