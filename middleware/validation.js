@@ -50,17 +50,34 @@ function validateAccountSchema(req, res, next){
                      'any.required':'password is a required field',
                    }),
 
-      // phone: Joi.number()
-      //           .integer()
-      //           .min(201000000)
-      //           .max(9899999999)
-      //           .required()
-      //           .messages({
-      //             'number.base':'phone number must be a valid (10-digit) US phone number',
-      //             'number.min': 'phone number must be a valid (10-digit) US phone number',
-      //             'number.max': 'phone number must be a valid (10-digit) US phone number',
-      //             'any.required':'phone number is a required field',
-      //           })
+
+    })
+    const validation = accountSchema.validate(req.body)
+    if (validation.error){
+      const errorMessages = validation.error.details.map(item => item.message)
+      res.status(400).json({errors: errorMessages})
+    } else {
+      next()
+    }
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+function validatePhoneNumberSchema(req, res, next){
+  try {
+    const accountSchema = Joi.object({
+      phone: Joi.number()
+                .integer()
+                .min(201000000)
+                .max(9899999999)
+                .required()
+                .messages({
+                  'number.base':'phone number must be a valid (10-digit) US phone number',
+                  'number.min': 'phone number must be a valid (10-digit) US phone number',
+                  'number.max': 'phone number must be a valid (10-digit) US phone number',
+                  'any.required':'phone number is a required field',
+                })
     })
     const validation = accountSchema.validate(req.body)
     if (validation.error){
@@ -76,7 +93,7 @@ function validateAccountSchema(req, res, next){
 
 async function validateUniqueAccountFields(req, res, next){
   try {
-    const { username, email, phone } = req.body
+    const { username, email } = req.body
     const usernameAccountId = await getAccountIdFromUsername(username)
     if (Boolean(usernameAccountId)) {
       return res.status(400).json({errors: ['An account with this username already exists']})
@@ -85,10 +102,19 @@ async function validateUniqueAccountFields(req, res, next){
     if (Boolean(emailAccountId)) {
       return res.status(400).json({errors: ['An account with this email already exists']})
     }
-    // const phoneAccountId = await getAccountIdFromPhone(phone)
-    // if (Boolean(phoneAccountId)) {
-    //   return res.status(400).json({errors: ['An account with this phone number already exists']})
-    // }
+    return next()
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+async function validateUniquePhoneNumber(req, res, next){
+  try{
+    const { phone } = req.body
+    const phoneAccountId = await getAccountIdFromPhone(phone)
+    if (Boolean(phoneAccountId)) {
+      return res.status(400).json({errors: ['An account with this phone number already exists']})
+    }
     return next()
   } catch (error) {
     throw new Error(error)
@@ -97,5 +123,7 @@ async function validateUniqueAccountFields(req, res, next){
 
 module.exports = {
   validateAccountSchema,
+  validatePhoneNumberSchema,
   validateUniqueAccountFields,
+  validateUniquePhoneNumber,
 }
