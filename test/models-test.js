@@ -93,14 +93,16 @@ describe('Pre-Registration Tests', function() {
       const emailAccessCodeInfo = {
         email: 'test@email.com',
         accessCode: 123456,
+        accessCodeTTL: 1,
         accessToken: 'testToken',
-        ttl: 1
+        accessTokenTTL: 5,
       }
       const expiredEmailAccessCodeInfo = {
         email: 'expiredtest@email.com',
         accessCode: 123456,
+        accessCodeTTL: 0,
         accessToken: 'testToken',
-        ttl: 0
+        accessTokenTTL: 0,
       }
       await pgTransaction(`DELETE FROM registration_email_access_codes WHERE email = '${emailAccessCodeInfo.email}' OR email = '${expiredEmailAccessCodeInfo.email}'`)
       // Insert email access codes
@@ -109,8 +111,10 @@ describe('Pre-Registration Tests', function() {
       // Verify email access codes
       expect(emailAccessCodes.email).to.equal(emailAccessCodeInfo.email)
       expect(emailAccessCodes.accessCode).to.equal(emailAccessCodeInfo.accessCode)
+      expect(emailAccessCodes.accessToken).to.equal(emailAccessCodeInfo.accessToken)
       expect(expiredEmailAccessCodes.email).to.equal(expiredEmailAccessCodeInfo.email)
       expect(expiredEmailAccessCodes.accessCode).to.equal(expiredEmailAccessCodeInfo.accessCode)
+      expect(expiredEmailAccessCodes.accessToken).to.equal(expiredEmailAccessCodeInfo.accessToken)
       // Fetch email access token using email access code
       const emailAccessToken = await fetchEmailAccessTokenFromAccessCode(emailAccessCodeInfo)
       const expiredEmailAccessToken = await fetchEmailAccessTokenFromAccessCode(expiredEmailAccessCodeInfo)
@@ -131,14 +135,16 @@ describe('Pre-Registration Tests', function() {
       const phoneAccessCodeInfo = {
         phone: 1234567890,
         accessCode: 123456,
+        accessCodeTTL: 1,
         accessToken: 'testToken',
-        ttl: 1
+        accessTokenTTL: 5,
       }
       const expiredPhoneAccessCodeInfo = {
         phone: 1234567891,
         accessCode: 123456,
+        accessCodeTTL: 0,
         accessToken: 'testToken',
-        ttl: 0
+        accessTokenTTL: 0,
       }
       await pgTransaction(`DELETE FROM registration_phone_access_codes WHERE phone = ${phoneAccessCodeInfo.phone} OR phone = ${expiredPhoneAccessCodeInfo.phone}`)
       // Insert phone access codes
