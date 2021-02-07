@@ -55,7 +55,7 @@ function validateAccountSchema(req, res, next){
     const validation = accountSchema.validate(req.body)
     if (validation.error){
       const errorMessages = validation.error.details.map(item => item.message)
-      res.status(400).json({errors: errorMessages})
+      res.status(400).json({error: errorMessages})
     } else {
       next()
     }
@@ -82,7 +82,7 @@ function validatePhoneNumberSchema(req, res, next){
     const validation = accountSchema.validate(req.body)
     if (validation.error){
       const errorMessages = validation.error.details.map(item => item.message)
-      res.status(400).json({errors: errorMessages})
+      res.status(400).json({error: errorMessages})
     } else {
       next()
     }
@@ -96,11 +96,11 @@ async function validateUniqueAccountFields(req, res, next){
     const { username, email } = req.body
     const usernameAccountId = await getAccountIdFromUsername(username)
     if (Boolean(usernameAccountId)) {
-      return res.status(400).json({errors: ['An account with this username already exists']})
+      return res.status(400).json({error: ['An account with this username already exists']})
     }
     const emailAccountId = await getAccountIdFromEmail(email)
     if (Boolean(emailAccountId)) {
-      return res.status(400).json({errors: ['An account with this email already exists']})
+      return res.status(400).json({error: ['An account with this email already exists']})
     }
     return next()
   } catch (error) {
@@ -113,7 +113,7 @@ async function validateUniquePhoneNumber(req, res, next){
     const { phone } = req.body
     const phoneAccountId = await getAccountIdFromPhone(phone)
     if (Boolean(phoneAccountId)) {
-      return res.status(400).json({errors: ['An account with this phone number already exists']})
+      return res.status(400).json({error: ['An account with this phone number already exists']})
     }
     return next()
   } catch (error) {
