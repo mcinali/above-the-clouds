@@ -92,14 +92,14 @@ describe('Pre-Registration Tests', function() {
     - Verify phone access token`, async function() {
       const emailAccessCodeInfo = {
         email: 'test@email.com',
-        accessCode: 123456,
+        accessCode: `123456`,
         accessCodeTTL: 1,
         accessToken: 'testToken',
         accessTokenTTL: 5,
       }
       const expiredEmailAccessCodeInfo = {
         email: 'expiredtest@email.com',
-        accessCode: 123456,
+        accessCode: `123456`,
         accessCodeTTL: 0,
         accessToken: 'testToken',
         accessTokenTTL: 0,
@@ -134,14 +134,14 @@ describe('Pre-Registration Tests', function() {
 
       const phoneAccessCodeInfo = {
         phone: 1234567890,
-        accessCode: 123456,
+        accessCode: `000000`,
         accessCodeTTL: 1,
         accessToken: 'testToken',
         accessTokenTTL: 5,
       }
       const expiredPhoneAccessCodeInfo = {
         phone: 1234567891,
-        accessCode: 123456,
+        accessCode: '001000',
         accessCodeTTL: 0,
         accessToken: 'testToken',
         accessTokenTTL: 0,
@@ -153,8 +153,10 @@ describe('Pre-Registration Tests', function() {
       // Verify email access codes
       expect(parseInt(phoneAccessCodes.phone)).to.equal(phoneAccessCodeInfo.phone)
       expect(phoneAccessCodes.accessCode).to.equal(phoneAccessCodeInfo.accessCode)
+      expect(phoneAccessCodes.accessToken).to.equal(phoneAccessCodeInfo.accessToken)
       expect(parseInt(expiredPhoneAccessCodes.phone)).to.equal(expiredPhoneAccessCodeInfo.phone)
       expect(expiredPhoneAccessCodes.accessCode).to.equal(expiredPhoneAccessCodeInfo.accessCode)
+      expect(expiredPhoneAccessCodes.accessToken).to.equal(expiredPhoneAccessCodeInfo.accessToken)
       // Fetch phone access token using email access code
       const phoneAccessToken = await fetchPhoneAccessTokenFromAccessCode(phoneAccessCodeInfo)
       const expiredPhoneAccessToken = await fetchPhoneAccessTokenFromAccessCode(expiredPhoneAccessCodeInfo)

@@ -6,13 +6,12 @@ const {
 } = require('../services/accounts')
 const {
   validateAccountSchema,
-  validatePhoneNumberSchema,
   validateUniqueAccountFields,
-  validateUniquePhoneNumber,
+  validateRegistrationAccessTokens,
 } = require('../middleware/validation')
 
 // Create new User Account
-router.post('/register', async function (req, res) {
+router.post('/register', validateAccountSchema, validateUniqueAccountFields, validateRegistrationAccessTokens, async function (req, res) {
   try {
     const results = await registerUser(req.body)
     return res.send(results)

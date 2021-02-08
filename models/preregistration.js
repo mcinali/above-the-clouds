@@ -5,7 +5,7 @@ async function insertEmailAccessCodes(emailAccessCodeInfo){
     const { email, accessCode, accessCodeTTL, accessToken, accessTokenTTL } = emailAccessCodeInfo
     const query = `
       INSERT INTO registration_email_access_codes (email, access_code, access_code_expiration, access_token, access_token_expiration)
-      VALUES ('${email}', ${accessCode}, now() + INTERVAL '${accessCodeTTL} minute', '${accessToken}', now() + INTERVAL '${accessTokenTTL} minute')
+      VALUES ('${email}', '${accessCode}', now() + INTERVAL '${accessCodeTTL} minute', '${accessToken}', now() + INTERVAL '${accessTokenTTL} minute')
       RETURNING email, access_code, encode(access_token, 'escape') as access_token`
     const result = await pgTransaction(query)
     return result.rows[0]
@@ -20,7 +20,7 @@ async function fetchEmailAccessTokenFromAccessCode(emailAccessCodeInfo){
     const query = `
       SELECT encode(access_token, 'escape') as access_token, access_code_expiration < now() as expired
       FROM registration_email_access_codes
-      WHERE email = '${email}' AND access_code = ${accessCode}`
+      WHERE email = '${email}' AND access_code = '${accessCode}'`
     const result = await pgTransaction(query)
     return result.rows
   } catch (error) {
@@ -47,7 +47,7 @@ async function insertPhoneAccessCodes(phoneAccessCodeInfo){
     const { phone, accessCode, accessCodeTTL, accessToken, accessTokenTTL } = phoneAccessCodeInfo
     const query = `
       INSERT INTO registration_phone_access_codes (phone, access_code, access_code_expiration, access_token, access_token_expiration)
-      VALUES (${phone}, ${accessCode}, now() + INTERVAL '${accessCodeTTL} minute', '${accessToken}', now() + INTERVAL '${accessTokenTTL} minute')
+      VALUES (${phone}, '${accessCode}', now() + INTERVAL '${accessCodeTTL} minute', '${accessToken}', now() + INTERVAL '${accessTokenTTL} minute')
       RETURNING phone, access_code, encode(access_token, 'escape') as access_token`
     const result = await pgTransaction(query)
     return result.rows[0]
@@ -62,7 +62,7 @@ async function fetchPhoneAccessTokenFromAccessCode(phoneAccessCodeInfo){
     const query = `
       SELECT encode(access_token, 'escape') as access_token, access_code_expiration < now() as expired
       FROM registration_phone_access_codes
-      WHERE phone = ${phone} AND access_code = ${accessCode}`
+      WHERE phone = ${phone} AND access_code = '${accessCode}'`
     const result = await pgTransaction(query)
     return result.rows
   } catch (error) {

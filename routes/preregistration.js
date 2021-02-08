@@ -1,9 +1,10 @@
 const express = require('express')
 const router = express.Router()
 const {
-  validateAccountSchema,
+  validatePreRegistrationAccountSchema,
   validatePhoneNumberSchema,
-  validateUniqueAccountFields,
+  validateAccessCodeSchema,
+  validateUniquePreRegistrationAccountFields,
   validateUniquePhoneNumber,
 } = require('../middleware/validation')
 const {
@@ -14,7 +15,7 @@ const {
 } = require('../services/preregistration')
 
 // Check User Account form info
-router.post('/accountDetails/check', validateAccountSchema, validateUniqueAccountFields, async function (req, res) {
+router.post('/accountDetails/check', validatePreRegistrationAccountSchema, validateUniquePreRegistrationAccountFields, async function (req, res) {
   try {
     await createEmailAccessCodes(req.body)
     return res.send('OK')
@@ -25,7 +26,7 @@ router.post('/accountDetails/check', validateAccountSchema, validateUniqueAccoun
 })
 
 // Verify email access code
-router.post('/verify/email', async function (req, res) {
+router.post('/verify/email', validateAccessCodeSchema, async function (req, res) {
   try {
     const result = await verifyEmailAccessCode(req.body)
     return res.send(result)
@@ -47,7 +48,7 @@ router.post('/phone/code', validatePhoneNumberSchema, validateUniquePhoneNumber,
 })
 
 // Verify phone access code
-router.post('/verify/phone', async function (req, res) {
+router.post('/verify/phone', validateAccessCodeSchema, async function (req, res) {
   try {
     const result = await verifyPhoneAccessCode(req.body)
     return res.send(result)

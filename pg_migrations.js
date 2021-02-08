@@ -7,7 +7,7 @@ async function pgMigrate(){
     `CREATE TABLE iF NOT EXISTS registration_email_access_codes (
       id SERIAL PRIMARY KEY NOT NULL,
       email VARCHAR(128) NOT NULL,
-      access_code INTEGER NOT NULL,
+      access_code VARCHAR(6) NOT NULL,
       access_code_expiration TIMESTAMPTZ NOT NULL,
       access_token BYTEA NOT NULL,
       access_token_expiration TIMESTAMPTZ NOT NULL,
@@ -19,7 +19,7 @@ async function pgMigrate(){
     `CREATE TABLE iF NOT EXISTS registration_phone_access_codes (
       id SERIAL PRIMARY KEY NOT NULL,
       phone BIGINT NOT NULL,
-      access_code INTEGER NOT NULL,
+      access_code VARCHAR(6) NOT NULL,
       access_code_expiration TIMESTAMPTZ NOT NULL,
       access_token BYTEA NOT NULL,
       access_token_expiration TIMESTAMPTZ NOT NULL,
@@ -121,7 +121,7 @@ async function pgMigrate(){
       UNIQUE (account_id, connection_email)
     )`
   )
-  
+
   await pgTransaction(
     `CREATE TABLE IF NOT EXISTS connections (
       id SERIAL PRIMARY KEY NOT NULL,
