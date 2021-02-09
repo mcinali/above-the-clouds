@@ -1,4 +1,5 @@
 const { pool, pgTransaction } = require('../pg_helpers')
+const fs = require('fs')
 
 async function insertAccount(accountInfo){
   try {
@@ -46,6 +47,32 @@ async function getAccountDetails(accountId){
     const query = `
       SELECT account_id, email, phone, firstname, lastname
       FROM account_details where account_id = ${accountId}`
+    return pool
+            .query(query)
+            .then(res => res.rows[0])
+            .catch(error => new Error(error))
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+async function insertProfilePic(picInfo){
+  try {
+    const { accountId, imageData } = picInfo
+    const query = `
+      INSERT INTO account_profile_pictures ( account_id, profile_picture )
+      VALUES (${accountId}, '${imageData}')
+      RETURNING id, account_id, encode(profile_picture, 'escape') as profile_picture`
+    const results = await pgTransaction(query)
+    return results.rows[0]
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+async function getProfilePic(accountId){
+  try {
+    const query = `SELECT encode(profile_picture, 'escape') as profile_picture FROM account_profile_pictures WHERE account_id = ${accountId}`
     return pool
             .query(query)
             .then(res => res.rows[0])
@@ -129,9 +156,11 @@ async function fuzzyMatchAccountsByFullName(firstname, lastname){
 
 module.exports = {
   insertAccount,
+  getAccountInfo,
   insertAccountDetails,
   getAccountDetails,
-  getAccountInfo,
+  insertProfilePic,
+  getProfilePic,
   getAccountIdFromUsername,
   getAccountIdFromEmail,
   getAccountIdFromPhone,

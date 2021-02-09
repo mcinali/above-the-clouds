@@ -12,9 +12,11 @@ const {
 } = require('../models/preregistration')
 const {
   insertAccount,
+  getAccountInfo,
   insertAccountDetails,
   getAccountDetails,
-  getAccountInfo,
+  insertProfilePic,
+  getProfilePic,
   getAccountIdFromUsername,
   getAccountIdFromEmail,
   getAccountIdFromPhone,
@@ -184,6 +186,10 @@ describe('Accounts Tests', function() {
     - Check to make sure Account Details were inserted correctly
     - Fetch Account Details
     - Check to make sure Account Details were fetched correctly
+    - Insert profile pic into db
+    - Check to make sure profile pic was inserted correctly
+    - Fetch profile pic
+    - Check to make sure profile pic was fetched correctly
     - Fetch Username from Account
     - Check to make sure Username from Account was fetched correctly
     - Fetch Account Id from Username
@@ -225,12 +231,25 @@ describe('Accounts Tests', function() {
       expect(accountDetails.lastname).to.equal(accountDetailsInfo.lastname)
       // Fetch Account Details
       const accountDetailsFetched = await getAccountDetails(account.id)
-      // Check to make sure Fetched Account Details are correct
+      // Check to make sure Account Details were fetched correctly
       expect(accountDetailsFetched.accountId).to.equal(accountDetailsInfo.accountId)
       expect(accountDetailsFetched.email).to.equal(accountDetailsInfo.email)
       expect(Number(accountDetailsFetched.phone)).to.equal(accountDetailsInfo.phone)
       expect(accountDetailsFetched.firstname).to.equal(accountDetailsInfo.firstname)
       expect(accountDetailsFetched.lastname).to.equal(accountDetailsInfo.lastname)
+      // Insert profile pic into db
+      const profilePicInfo = {
+        accountId: account.id,
+        imageData: [0, 0, 0, 1, 2, 3, 4 , 5, 6],
+      }
+      const profilePic = await insertProfilePic(profilePicInfo)
+      // Check to make sure profile pic was inserted correctly
+      expect(profilePic.accountId).to.equal(profilePicInfo.accountId)
+      expect(profilePic.profilePicture).to.equal(profilePicInfo.imageData.toString())
+      // Fetch profile pic
+      const fetchedProfilePic = await getProfilePic(account.id)
+      // Check to make sure profile pic was fetched correctly
+      expect(fetchedProfilePic.profilePicture).to.equal(profilePicInfo.imageData.toString())
       // Fetch Username from Account
       const username = await getAccountInfo(account.id)
       // Check to make sure Username from Account was fetched correctly

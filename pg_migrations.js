@@ -49,6 +49,15 @@ async function pgMigrate(){
   )
 
   await pgTransaction(
+    `CREATE TABLE IF NOT EXISTS account_profile_pictures (
+      id SERIAL PRIMARY KEY NOT NULL,
+      account_id INTEGER UNIQUE NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      profile_picture BYTEA NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`
+  )
+
+  await pgTransaction(
     `CREATE TABLE IF NOT EXISTS topics (
       id SERIAL PRIMARY KEY NOT NULL,
       account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
