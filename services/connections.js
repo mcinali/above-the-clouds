@@ -10,12 +10,9 @@ const { fetchAccountDetailsBasic } = require('../services/accounts')
 const {
   insertConnection,
   removeConnection,
-  insertConnectionEmailOutreach,
   getAccountConnections,
   getConnectionsToAccount,
   checkConnection,
-  getAccountConnectionsEmailOutreach,
-  getConnectionsEmailOutreachToAccount,
 } = require('../models/connections')
 const { sendEmail } = require('../sendgrid')
 
@@ -24,11 +21,10 @@ async function createConnection(info){
       // TO DO: Send connection email
       const accountId = (info.accountId) ? info.accountId : null
       const connectionAccountId = (info.connectionAccountId) ? info.connectionAccountId : null
-      const email = (info.connectionEmail) ? info.connectionEmail : null
       const accountDetails = await fetchAccountDetailsBasic(accountId)
       // Check if info contains either connectionAccountId or email
-      if (!(Boolean(connectionAccountId) || Boolean(email))) {
-        throw new Error('Need either valid connection accountId or email')
+      if (!(Boolean(connectionAccountId) )) {
+        throw new Error('Need valid connection accountId')
       }
       // Check if info contains valud accountId
       if (!Boolean(accountDetails)) {
@@ -73,25 +69,6 @@ async function createConnection(info){
           'state': state,
           'createdAt': connection.createdAt,
         }
-      } else if (email) {
-        const connection = await insertConnectionEmailOutreach({
-          'accountId':accountId,
-          'connectionEmail':email,
-        })
-        // Send Email
-        sendEmail({
-            to: email,
-            from: 'abovethecloudsapp@gmail.com',
-            subject: `${accountDetails.firstname} ${accountDetails.lastnameInitial} (${accountDetails.username}/${accountDetails.email}) invited you to connect on Above the Clouds`,
-            text: `${accountDetails.firstname} ${accountDetails.lastnameInitial} (${accountDetails.username}/${accountDetails.email}) sent you a request to connect on Above the Clouds (link below):`
-        })
-        // Return payload
-        return {
-          'emailConnectionOutreachId':connection.id,
-          'accountId':connection.accountId,
-          'connectionEmail':connection.connectionEmail,
-          'createdAt':connection.createdAt,
-        }
       } else {
         throw new Error('Failed: Unable to make connection request')
       }
@@ -130,26 +107,10 @@ async function getConnections(accountId){
     })
     const outboundConnectionRequestsFrmtd = await Promise.all(outboundConnectionRequests.map(async (item) => formatConnectObject(item, connectionsToAccountDict, 'connectionAccountId')))
     const outboundConnectionRequestsSrtd = outboundConnectionRequestsFrmtd.sort(function(a,b) {return b.ts - a.ts})
-    // Get all connections via email outreach
-    const emailOutreachConnections = await getAccountConnectionsEmailOutreach(accountId)
-    const emailOutreachConnectionsAugmented = await Promise.all(emailOutreachConnections.map(async (item) => {
-      return {
-        'email':item.connectionEmail,
-        'accountId':await getAccountIdFromEmail(item.connectionEmail),
-        'ts':item.createdAt.getTime(),
-      }
-    }))
-    const emailOutreachConnectionsFltrd = emailOutreachConnectionsAugmented.filter(function(item){
-      if (!item.accountId) { return item }
-    })
-    const emailOutreachConnectionsSrtd = emailOutreachConnectionsFltrd.sort(function(a,b) {return b.ts - a.ts})
     return {
       'connections':connectionsSrtd,
       'inboundRequests':inboundConnectionRequestsSrtd,
-      'outboundRequests':{
-          'in-app':outboundConnectionRequestsSrtd,
-          'email':emailOutreachConnectionsSrtd,
-      }
+      'outboundRequests': outboundConnectionRequestsSrtd,
     }
   } catch (error) {
     throw new Error(error)

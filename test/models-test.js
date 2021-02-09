@@ -33,9 +33,6 @@ const {
   getStreamDetails,
   insertStreamInvitation,
   getStreamInvitations,
-  insertStreamEmailOutreach,
-  getStreamInvitationsFromEmailOutreach,
-  getStreamInvitationsFromEmailOutreachForEmail,
   insertStreamParticipant,
   getStreamParticipantDetails,
   getStreamParticipants,
@@ -46,12 +43,9 @@ const {
 const {
   insertConnection,
   removeConnection,
-  insertConnectionEmailOutreach,
   getAccountConnections,
   getConnectionsToAccount,
   checkConnection,
-  getAccountConnectionsEmailOutreach,
-  getConnectionsEmailOutreachToAccount,
 } = require('../models/connections')
 const {
   getActiveStreamInvitationsForAccount,
@@ -359,12 +353,6 @@ describe('Streams Tests', function() {
     - Check to make sure Stream Invite was inserted correctly
     - Fetch Stream Invitiations
     - Check to make sure Stream Invitations were fetched correctly
-    - Insert Stream Email Outreach
-    - Check to make sure Stream Email Outreach was inserted correctly
-    - Fetch Streams from Email Outreach
-    - Check to make sure Streams from Email Outreach were fetched correctly
-    - Fetch Streams from Email Outreach from Email
-    - Check to make sure Streams from Email Outreach from Email were fetched correctly
     - Insert Stream Participant
     - Check to make sure Stream Participant was inserted correctly
     - Fetch Stream Participant Details
@@ -426,31 +414,6 @@ describe('Streams Tests', function() {
       expect(invitations[0].streamId).to.equal(streamInvite.streamId)
       expect(invitations[0].accountId).to.equal(streamInvite.accountId)
       expect(invitations[0].inviteeAccountId).to.equal(streamInvite.inviteeAccountId)
-      // Insert Stream Email Outreach
-      const streamEmailOutreachInfo = {
-        streamId:stream.id,
-        accountId:accountId,
-        inviteeEmail:'test2@email.com',
-      }
-      const streamEmailOutreach = await insertStreamEmailOutreach(streamEmailOutreachInfo)
-      // Check to make sure Stream Email Outreach was inserted correctly
-      expect(streamEmailOutreach.streamId).to.equal(streamEmailOutreachInfo.streamId)
-      expect(streamEmailOutreach.accountId).to.equal(streamEmailOutreachInfo.accountId)
-      expect(streamEmailOutreach.inviteeEmail).to.equal(streamEmailOutreachInfo.inviteeEmail)
-      // Fetch Streams from Email Outreach
-      const streamInvitationsFromEmailOutreach = await getStreamInvitationsFromEmailOutreach(streamEmailOutreachInfo.streamId)
-      // Check to make sure Streams from Email Outreach were fetched correctly
-      expect(streamInvitationsFromEmailOutreach[0].id).to.equal(streamEmailOutreach.id)
-      expect(streamInvitationsFromEmailOutreach[0].streamId).to.equal(streamEmailOutreach.streamId)
-      expect(streamInvitationsFromEmailOutreach[0].accountId).to.equal(streamEmailOutreach.accountId)
-      expect(streamInvitationsFromEmailOutreach[0].inviteeEmail).to.equal(streamEmailOutreach.inviteeEmail)
-      // Fetch Streams from Email Outreach from Email
-      const streamInvitationsFromEmailOutreachEmail = await getStreamInvitationsFromEmailOutreachForEmail(streamEmailOutreachInfo.inviteeEmail)
-      // Check to make sure Streams from Email Outreach from Email were fetched correctly
-      expect(streamInvitationsFromEmailOutreachEmail[0].id).to.equal(streamEmailOutreach.id)
-      expect(streamInvitationsFromEmailOutreachEmail[0].streamId).to.equal(streamEmailOutreach.streamId)
-      expect(streamInvitationsFromEmailOutreachEmail[0].accountId).to.equal(streamEmailOutreach.accountId)
-      expect(streamInvitationsFromEmailOutreachEmail[0].inviteeEmail).to.equal(streamEmailOutreach.inviteeEmail)
       // Insert Stream Participant
       const streamParticipantInfo = {
         streamId:stream.id,
@@ -513,12 +476,6 @@ describe('Connections Tests', function() {
     - Check to make sure Account Connections were fetched correctly
     - Fetch Connections to Account
     - Check to make sure Connections to Account were fetched correctly
-    - Insert Connection Email Outreach
-    - Check to make sure Connection Email Outreach was inserted correctly
-    - Fetch Account Connections Email Outreach
-    - Check to make sure Account Connections Email Outreach were fetched correctly
-    - Fetch Connections Email Outreach to Account
-    - Check to make sure Connections Email Outreach to Account were fetched correctly
     - Remove Connection
     - Check to make sure Connection was removed correctly`, async function() {
       // Get original AccountId
@@ -569,27 +526,6 @@ describe('Connections Tests', function() {
       // Check to make sure Connections to Account were fetched correctly
       should.not.exist(connectionsToAccountArrayEmpty[0])
       expect(connectionsToAccountArrayNonEmpty[0].accountId).to.equal(accountId)
-      // Insert Connection Email Outreach
-      const connectionEmailOutreachInfo = {
-        accountId:accountId,
-        connectionEmail:'connection@test.com',
-      }
-      const connectionEmailOutreach = await insertConnectionEmailOutreach(connectionEmailOutreachInfo)
-      // Check to make sure Connection Email Outreach was inserted correctly
-      expect(connectionEmailOutreach.accountId).to.equal(connectionEmailOutreachInfo.accountId)
-      expect(connectionEmailOutreach.connectionEmail).to.equal(connectionEmailOutreachInfo.connectionEmail)
-      // Fetch Account Connections Email Outreach
-      const accountConnectionsEmailOutreachNonEmpty = await getAccountConnectionsEmailOutreach(accountId)
-      const accountConnectionsEmailOutreachEmpty = await getAccountConnectionsEmailOutreach(connectionAccountId)
-      // Check to make sure Account Connections Email Outreach were fetched correctly
-      expect(accountConnectionsEmailOutreachNonEmpty[0].connectionEmail).to.equal(connectionEmailOutreachInfo.connectionEmail)
-      should.not.exist(accountConnectionsEmailOutreachEmpty[0])
-      // Fetch Connections Email Outreach to Account
-      const connectionsEmailOutreachToAccountNonEmpty = await getConnectionsEmailOutreachToAccount(connectionEmailOutreachInfo.connectionEmail)
-      const connectionsEmailOutreachToAccountEmpty = await getConnectionsEmailOutreachToAccount(connectionAccountDetailsInfo.email)
-      // Check to make sure Connections Email Outreach to Account were fetched correctly
-      expect(connectionsEmailOutreachToAccountNonEmpty[0].accountId).to.equal(accountId)
-      should.not.exist(connectionsEmailOutreachToAccountEmpty[0])
       // Remove Connection
       await removeConnection(connectionInfo)
       // Check to make sure Connection was removed correctly

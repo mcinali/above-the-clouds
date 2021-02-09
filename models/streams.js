@@ -57,47 +57,6 @@ async function getStreamInvitations(streamId){
   }
 }
 
-async function insertStreamEmailOutreach(inviteInfo){
-  try {
-    const { streamId, accountId, inviteeEmail } = inviteInfo
-    const inviteeEmailFormatted = (inviteeEmail) ? `'${inviteeEmail}'` : null
-    const query = `
-      INSERT INTO stream_email_outreach (stream_id, account_id, invitee_email)
-      VALUES (${streamId}, ${accountId}, ${inviteeEmailFormatted})
-      RETURNING *`
-    const result = await pgTransaction(query)
-    return result.rows[0]
-  } catch (error) {
-    throw new Error(error)
-  }
-}
-
-async function getStreamInvitationsFromEmailOutreach(streamId){
-  try {
-    const query = `
-      SELECT id, stream_id, account_id, invitee_email, created_at 
-      FROM stream_email_outreach WHERE stream_id = '${streamId}'`
-    return pool
-            .query(query)
-            .then(res => res.rows)
-            .catch(error => new Error(error))
-  } catch (error) {
-    throw new Error(error)
-  }
-}
-
-async function getStreamInvitationsFromEmailOutreachForEmail(email){
-  try {
-    const query = `SELECT id, stream_id, account_id, invitee_email FROM stream_email_outreach WHERE invitee_email = '${email}'`
-    return pool
-            .query(query)
-            .then(res => res.rows)
-            .catch(error => new Error(error))
-  } catch (error) {
-    throw new Error(error)
-  }
-}
-
 async function insertStreamParticipant(info){
   try {
     const { streamId, accountId } = info
@@ -183,9 +142,6 @@ module.exports = {
   getStreamDetails,
   insertStreamInvitation,
   getStreamInvitations,
-  insertStreamEmailOutreach,
-  getStreamInvitationsFromEmailOutreach,
-  getStreamInvitationsFromEmailOutreachForEmail,
   insertStreamParticipant,
   getStreamParticipantDetails,
   getStreamParticipants,

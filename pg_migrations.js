@@ -58,6 +58,15 @@ async function pgMigrate(){
   )
 
   await pgTransaction(
+    `CREATE TABLE IF NOT EXISTS app_invitations (
+      id SERIAL PRIMARY KEY NOT NULL,
+      account_id INTEGER UNIQUE NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      email VARCHAR(128) NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`
+  )
+
+  await pgTransaction(
     `CREATE TABLE IF NOT EXISTS topics (
       id SERIAL PRIMARY KEY NOT NULL,
       account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
@@ -99,17 +108,6 @@ async function pgMigrate(){
   )
 
   await pgTransaction(
-    `CREATE TABLE IF NOT EXISTS stream_email_outreach (
-      id SERIAL PRIMARY KEY NOT NULL,
-      stream_id INTEGER NOT NULL REFERENCES streams(id) ON DELETE CASCADE,
-      account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
-      invitee_email VARCHAR(128) NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-      UNIQUE (stream_id, account_id, invitee_email)
-    )`
-  )
-
-  await pgTransaction(
     `CREATE TABLE IF NOT EXISTS stream_participants (
       id SERIAL PRIMARY KEY NOT NULL,
       stream_id INTEGER NOT NULL REFERENCES streams(id) ON DELETE CASCADE,
@@ -117,17 +115,6 @@ async function pgMigrate(){
       start_time TIMESTAMPTZ NOT NULL DEFAULT now(),
       end_time TIMESTAMPTZ,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-    )`
-  )
-
-  // TO DO: Re-write connections logic
-  await pgTransaction(
-    `CREATE TABLE IF NOT EXISTS connections_email_outreach (
-      id SERIAL PRIMARY KEY NOT NULL,
-      account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
-      connection_email VARCHAR(128) NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-      UNIQUE (account_id, connection_email)
     )`
   )
 
