@@ -1,8 +1,10 @@
 const {
   insertAccount,
+  getAccountInfo,
   insertAccountDetails,
   getAccountDetails,
-  getAccountInfo,
+  insertProfilePic,
+  getProfilePic,
   getAccountIdFromUsername,
   getAccountIdFromEmail,
   getAccountIdFromPhone,
@@ -60,10 +62,23 @@ async function registerUser(accountInfo){
   }
 }
 
+async function uploadProfilePic(picInfo){
+  try {
+    const { accountId, file } = picInfo
+    const imageData = new Uint8Array(file.buffer)
+    const picDBInput = { accountId: accountId, imageData: imageData }
+    const result = await insertProfilePic(picDBInput)
+    return result
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 async function fetchAccountDetails(accountId){
   try {
     const account = await getAccountInfo(accountId)
     const accountDetails = await getAccountDetails(accountId)
+    const profilePic = await getProfilePic(accountId)
     const result = {
       'accountId':accountId,
       'username':account.username,
@@ -71,6 +86,7 @@ async function fetchAccountDetails(accountId){
       'phone':accountDetails.phone,
       'firstname':accountDetails.firstname,
       'lastnameInitial':accountDetails.lastname.slice(0,1),
+      'profilePicture': profilePic.profilePicture,
       'createdAt':account.createdAt,
     }
     return result
@@ -83,12 +99,14 @@ async function fetchAccountDetailsBasic(accountId){
   try {
     const account = await getAccountInfo(accountId)
     const accountDetails = await getAccountDetails(accountId)
+    const profilePic = await getProfilePic(accountId)
     const result = {
       'accountId':accountId,
       'username':account.username,
       'firstname':accountDetails.firstname,
       'lastnameInitial':accountDetails.lastname.slice(0,1),
       'email':accountDetails.email,
+      'profilePicture': profilePic.profilePicture,
     }
     return result
   } catch (error) {
@@ -98,6 +116,7 @@ async function fetchAccountDetailsBasic(accountId){
 
 module.exports = {
   registerUser,
+  uploadProfilePic,
   fetchAccountDetails,
   fetchAccountDetailsBasic,
 }

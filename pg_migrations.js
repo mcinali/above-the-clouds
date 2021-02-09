@@ -4,6 +4,30 @@ async function pgMigrate(){
   await pgTransaction(`ALTER DATABASE above_the_clouds SET timezone TO 'GMT'`)
 
   await pgTransaction(
+    `CREATE TABLE iF NOT EXISTS registration_email_access_codes (
+      id SERIAL PRIMARY KEY NOT NULL,
+      email VARCHAR(128) NOT NULL,
+      access_code VARCHAR(6) NOT NULL,
+      access_code_expiration TIMESTAMPTZ NOT NULL,
+      access_token BYTEA NOT NULL,
+      access_token_expiration TIMESTAMPTZ NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`
+  )
+
+  await pgTransaction(
+    `CREATE TABLE iF NOT EXISTS registration_phone_access_codes (
+      id SERIAL PRIMARY KEY NOT NULL,
+      phone BIGINT NOT NULL,
+      access_code VARCHAR(6) NOT NULL,
+      access_code_expiration TIMESTAMPTZ NOT NULL,
+      access_token BYTEA NOT NULL,
+      access_token_expiration TIMESTAMPTZ NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`
+  )
+
+  await pgTransaction(
     `CREATE TABLE iF NOT EXISTS accounts (
       id SERIAL PRIMARY KEY NOT NULL,
       username VARCHAR(32) UNIQUE NOT NULL,
@@ -20,6 +44,15 @@ async function pgMigrate(){
       phone BIGINT UNIQUE NOT NULL,
       firstname VARCHAR(32) NOT NULL,
       lastname VARCHAR(32) NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`
+  )
+
+  await pgTransaction(
+    `CREATE TABLE IF NOT EXISTS account_profile_pictures (
+      id SERIAL PRIMARY KEY NOT NULL,
+      account_id INTEGER UNIQUE NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      profile_picture BYTEA NOT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )`
   )
@@ -87,6 +120,17 @@ async function pgMigrate(){
     )`
   )
 
+  // TO DO: Re-write connections logic
+  await pgTransaction(
+    `CREATE TABLE IF NOT EXISTS connections_email_outreach (
+      id SERIAL PRIMARY KEY NOT NULL,
+      account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      connection_email VARCHAR(128) NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      UNIQUE (account_id, connection_email)
+    )`
+  )
+
   await pgTransaction(
     `CREATE TABLE IF NOT EXISTS connections (
       id SERIAL PRIMARY KEY NOT NULL,
@@ -97,15 +141,6 @@ async function pgMigrate(){
     )`
   )
 
-  await pgTransaction(
-    `CREATE TABLE IF NOT EXISTS connections_email_outreach (
-      id SERIAL PRIMARY KEY NOT NULL,
-      account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
-      connection_email VARCHAR(128) NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-      UNIQUE (account_id, connection_email)
-    )`
-  )
 }
 
 module.exports = {
