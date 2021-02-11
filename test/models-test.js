@@ -26,6 +26,7 @@ const {
 } = require('../models/accounts')
 const {
   insertInvitation,
+  getEmailFromInvitationCode,
   getInvitationsToEmail,
   getInvitationsFromAccount,
 } = require('../models/invitations')
@@ -324,6 +325,8 @@ describe('Invitations Tests', function() {
   it(`Should...
     - Insert invitation
     - Verify invitation was inserted correctly
+    - Check invitation code
+    - Make sure invitation code check was successful
     - Fetch invitations to email
     - Verify invitations to email were fetched correctly
     - Fetch invitations from account
@@ -334,11 +337,19 @@ describe('Invitations Tests', function() {
       const invitationInfo = {
         accountId: accountId,
         email: 'invitation@test.com',
+        invitationCode: 'xyz123abc456'
       }
       const invitation = await insertInvitation(invitationInfo)
       // Verify invitation was inserted correctly
       expect(invitation.accountId).to.equal(accountId)
       expect(invitation.email).to.equal(invitationInfo.email)
+      expect(invitation.invitationCode).to.equal(invitationInfo.invitationCode)
+      // Check invitation code
+      const goodInvitationCodeCheck = await getEmailFromInvitationCode(invitationInfo.invitationCode)
+      const badInvitationCodeCheck = await getEmailFromInvitationCode('badInvitationCode')
+      // Make sure invitation code check was successful
+      expect(goodInvitationCodeCheck[0].email).to.equal(invitationInfo.email)
+      should.not.exist(badInvitationCodeCheck[0])
       // Fetch invitations to email
       const goodEmailFetch = await getInvitationsToEmail(invitationInfo.email)
       const badEmailFetch = await getInvitationsToEmail('bad@email.com')
