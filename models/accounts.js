@@ -1,5 +1,4 @@
 const { pool, pgTransaction } = require('../pg_helpers')
-const fs = require('fs')
 
 async function insertAccount(accountInfo){
   try {

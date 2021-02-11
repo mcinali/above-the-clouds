@@ -25,6 +25,11 @@ const {
   fuzzyMatchAccountsByFullName,
 } = require('../models/accounts')
 const {
+  insertInvitation,
+  getInvitationsToEmail,
+  getInvitationsFromAccount,
+} = require('../models/invitations')
+const {
   insertTopic,
   getTopicInfo,
 } = require('../models/topics')
@@ -314,6 +319,43 @@ describe('Accounts Tests', function() {
       expect(accountFromFuzzyMatchFullNameBad2.length).to.equal(0)
       expect(accountFromFuzzyMatchFullNameBad3.length).to.equal(0)
   })
+})
+
+describe('Invitations Tests', function() {
+  it(`Should...
+    - Insert invitation
+    - Verify invitation was inserted correctly
+    - Fetch invitations to email
+    - Verify invitations to email were fetched correctly
+    - Fetch invitations from account
+    - Verify invitations from account were fetched correctly`, async function() {
+      // Insert invitation
+      const accountRow = await getAccountRow()
+      const accountId = accountRow.id
+      const invitationInfo = {
+        accountId: accountId,
+        email: 'invitation@test.com',
+      }
+      const invitation = await insertInvitation(invitationInfo)
+      // Verify invitation was inserted correctly
+      expect(invitation.accountId).to.equal(accountId)
+      expect(invitation.email).to.equal(invitationInfo.email)
+      // Fetch invitations to email
+      const goodEmailFetch = await getInvitationsToEmail(invitationInfo.email)
+      const badEmailFetch = await getInvitationsToEmail('bad@email.com')
+      console.log(goodEmailFetch)
+      console.log(badEmailFetch)
+      // Verify invitations to email were fetched correctly
+      expect(goodEmailFetch[0].accountId).to.equal(accountId)
+      should.not.exist(badEmailFetch[0])
+      // Fetch invitations from account
+      const goodAccountIdFetch = await getInvitationsFromAccount(accountId)
+      const badAccountIdFetch = await getInvitationsFromAccount(-1)
+      // Verify invitations from account were fetched correctly
+      expect(goodAccountIdFetch[0].email).to.equal(invitationInfo.email)
+      should.not.exist(badAccountIdFetch[0])
+    }
+  )
 })
 
 describe('Topics Tests', function() {
