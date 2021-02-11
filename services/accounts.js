@@ -67,7 +67,7 @@ async function fetchAccountDetails(accountId){
       'email':accountDetails.email,
       'phone':accountDetails.phone,
       'firstname':accountDetails.firstname,
-      'lastnameInitial':accountDetails.lastname.slice(0,1),
+      'lastname':accountDetails.lastname,
       'profilePicture': profilePicture,
       'createdAt':account.createdAt,
     }
@@ -87,7 +87,7 @@ async function fetchAccountDetailsBasic(accountId){
       'accountId':accountId,
       'username':account.username,
       'firstname':accountDetails.firstname,
-      'lastnameInitial':accountDetails.lastname.slice(0,1),
+      'lastname':accountDetails.lastname,
       'email':accountDetails.email,
       'profilePicture': profilePicture,
     }
