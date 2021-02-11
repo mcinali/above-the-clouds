@@ -46,12 +46,11 @@ const {
   updateStreamEndTime,
 } = require('../models/streams')
 const {
-  insertConnection,
-  removeConnection,
-  getAccountConnections,
-  getConnectionsToAccount,
-  checkConnection,
-} = require('../models/connections')
+  insertFollower,
+  removeFollower,
+  getAccountFollowing,
+  getAccountFollowers,
+} = require('../models/followers')
 const {
   getActiveStreamInvitationsForAccount,
   getActivePublicStreams,
@@ -343,8 +342,6 @@ describe('Invitations Tests', function() {
       // Fetch invitations to email
       const goodEmailFetch = await getInvitationsToEmail(invitationInfo.email)
       const badEmailFetch = await getInvitationsToEmail('bad@email.com')
-      console.log(goodEmailFetch)
-      console.log(badEmailFetch)
       // Verify invitations to email were fetched correctly
       expect(goodEmailFetch[0].accountId).to.equal(accountId)
       should.not.exist(badEmailFetch[0])
@@ -506,77 +503,66 @@ describe('Streams Tests', function() {
   })
 })
 
-describe('Connections Tests', function() {
+describe('Followers Tests', function() {
   it(`Should...
-    - Get original AccountId
-    - Insert new test Account
-    - Insert Connection
-    - Check to make sure Connection was inserted correctly
-    - Fetch Account Connection
-    - Check to make sure Account Connection was fetched correctly
-    - Fetch all Account Connections
-    - Check to make sure Account Connections were fetched correctly
-    - Fetch Connections to Account
-    - Check to make sure Connections to Account were fetched correctly
-    - Remove Connection
-    - Check to make sure Connection was removed correctly`, async function() {
-      // Get original AccountId
+    - Create Follower Test Account
+    - Insert Follower
+    - Check to make sure Follower was inserted correctly
+    - Fetch Account Following
+    - Check to make sure Account Following were fetched correctly
+    - Fetch Account Followers
+    - Check to make sure Account Followers were fetched correctly
+    - Remove Follower
+    - Check to make sure Follower was removed correctly`, async function() {
       const accountRow = await getAccountRow()
       const accountId = accountRow.id
-      // Insert new test Account
-      const testConnectionsUsername = 'connectionsTestAccount'
-      await pgTransaction(`DELETE FROM accounts WHERE username = '${testConnectionsUsername}'`)
-      const connectionAccountInfo = {
-        username:testConnectionsUsername,
-        password:'testConnectionsPassword',
+      // Create Follower Test Account
+      const testFollowerUsername = 'connectionsTestAccount'
+      await pgTransaction(`DELETE FROM accounts WHERE username = '${testFollowerUsername}'`)
+      const testFollowerAccountInfo = {
+        username:testFollowerUsername,
+        password:'testFollowerPassword',
       }
-      const connectionAccount = await insertAccount(connectionAccountInfo)
-      const connectionAccountId = connectionAccount.id
-      const connectionAccountDetailsInfo = {
-        accountId: connectionAccountId,
-        email: 'testconnections@email.com',
+      const followerAccount = await insertAccount(testFollowerAccountInfo)
+      const followerAccountId = followerAccount.id
+      const followerAccountDetailsInfo = {
+        accountId: followerAccountId,
+        email: 'testfollowers@email.com',
         phone:2345678901,
         firstname:'Test',
-        lastname:'Connections',
+        lastname:'Followers',
       }
-      const connectionAccountDetails = await insertAccountDetails(connectionAccountDetailsInfo)
-      // Insert Connection
-      const connectionInfo = {
+      const followerAccountDetails = await insertAccountDetails(followerAccountDetailsInfo)
+      // Insert Follower
+      const followerInfo = {
         accountId:accountId,
-        connectionAccountId:connectionAccountId,
+        followerAccountId:followerAccountId,
       }
-      const connection = await insertConnection(connectionInfo)
+      const follower = await insertFollower(followerInfo)
       // Check to make sure Connection was inserted correctly
-      expect(connection.accountId).to.equal(connectionInfo.accountId)
-      expect(connection.connectionAccountId).to.equal(connectionInfo.connectionAccountId)
-      // Fetch Account Connection
-      const connectionCheck1 = await checkConnection(connectionInfo)
-      const connectionCheck2 = await checkConnection({accountId:connectionAccountId,connectionAccountId:accountId})
-      // Check to make sure Account Connection was fetched correctly
-      expect(connectionCheck1.accountId).to.equal(connectionInfo.accountId)
-      expect(connectionCheck1.connectionAccountId).to.equal(connectionInfo.connectionAccountId)
-      should.not.exist(connectionCheck2)
-      // Fetch all Account Connections
-      const accountConnectionsArrayNonEmpty = await getAccountConnections(accountId)
-      const accountConnectionsArrayEmpty = await getAccountConnections(connectionAccountId)
-      // Check to make sure Account Connections were fetched correctly
-      expect(accountConnectionsArrayNonEmpty[0].connectionAccountId).to.equal(connectionAccountId)
-      should.not.exist(accountConnectionsArrayEmpty[0])
-      // Fetch Connections to Account
-      const connectionsToAccountArrayEmpty = await getConnectionsToAccount(accountId)
-      const connectionsToAccountArrayNonEmpty = await getConnectionsToAccount(connectionAccountId)
-      // Check to make sure Connections to Account were fetched correctly
-      should.not.exist(connectionsToAccountArrayEmpty[0])
-      expect(connectionsToAccountArrayNonEmpty[0].accountId).to.equal(accountId)
-      // Remove Connection
-      await removeConnection(connectionInfo)
-      // Check to make sure Connection was removed correctly
-      const removedConnection = await getAccountConnections(accountId)
-      should.not.exist(removedConnection[0])
+      expect(follower.accountId).to.equal(followerInfo.accountId)
+      expect(follower.followerAccountId).to.equal(followerInfo.followerAccountId)
+      // Fetch Account Following
+      const goodAccountFollowing = await getAccountFollowing(followerAccountId)
+      const badAccountFollowing = await getAccountFollowing(accountId)
+      // Check to make sure Account Following were fetched correctly
+      expect(goodAccountFollowing[0].accountId).to.equal(accountId)
+      should.not.exist(badAccountFollowing[0])
+      // Fetch Account Followers
+      const goodAccountFollowers = await getAccountFollowers(accountId)
+      const badAccountFollowers = await getAccountFollowers(followerAccountId)
+      // Check to make sure Account Followers were fetched correctly
+      expect(goodAccountFollowers[0].accountId).to.equal(followerAccountId)
+      should.not.exist(badAccountFollowers[0])
+      // Remove Follower
+      await removeFollower(followerInfo)
+      // Check to make sure Follower was removed correctly
+      const removedFollower = await getAccountFollowers(accountId)
+      should.not.exist(removedFollower[0])
   })
 })
 
-describe('Connections Tests', function() {
+describe('Discovery Tests', function() {
   it(`Should...
     - Insert new test Account
     - Insert new Topic
