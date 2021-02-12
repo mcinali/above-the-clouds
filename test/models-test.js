@@ -26,9 +26,13 @@ const {
 } = require('../models/accounts')
 const {
   insertInvitation,
-  getEmailFromInvitationCode,
+  checkInvitationCode,
+  getEmailFromInvitationId,
   getInvitationsToEmail,
   getInvitationsFromAccount,
+  insertInvitationCodeConversion,
+  checkInvitationCodeConversion,
+  getInvitationCodeIdForConvertedAccount,
 } = require('../models/invitations')
 const {
   insertTopic,
@@ -325,29 +329,55 @@ describe('Invitations Tests', function() {
   it(`Should...
     - Insert invitation
     - Verify invitation was inserted correctly
+    - Insert expired invitation Code
     - Check invitation code
     - Make sure invitation code check was successful
+    - Fetch email from invitation code
+    - Make sure email from invitation code was fetched correctly
     - Fetch invitations to email
     - Verify invitations to email were fetched correctly
     - Fetch invitations from account
-    - Verify invitations from account were fetched correctly`, async function() {
+    - Verify invitations from account were fetched correctly
+    - Insert invitation code conversion
+    - Make sure invitation code conversion was inserted correctly
+    - Check invitation code conversion
+    - Make sure invitation code conversion check was successful
+    - Fetch invitation code id from converted account id
+    - Make sure invitation code id from converted account id was fetched correctly `, async function() {
       // Insert invitation
       const accountRow = await getAccountRow()
       const accountId = accountRow.id
       const invitationInfo = {
         accountId: accountId,
         email: 'invitation@test.com',
-        invitationCode: 'xyz123abc456'
+        invitationCode: '-1',
+        invitationCodeTTL: 1,
       }
       const invitation = await insertInvitation(invitationInfo)
       // Verify invitation was inserted correctly
       expect(invitation.accountId).to.equal(accountId)
       expect(invitation.email).to.equal(invitationInfo.email)
       expect(invitation.invitationCode).to.equal(invitationInfo.invitationCode)
+      // Insert expired invitation Code
+      const expiredInvitationInfo = {
+        accountId: accountId,
+        email: 'expiredinvitation@test.com',
+        invitationCode: '-2',
+        invitationCodeTTL: 0,
+      }
+      const expiredInvitation = await insertInvitation(expiredInvitationInfo)
       // Check invitation code
-      const goodInvitationCodeCheck = await getEmailFromInvitationCode(invitationInfo.invitationCode)
-      const badInvitationCodeCheck = await getEmailFromInvitationCode('badInvitationCode')
+      const goodInvitationCodeIdRow = await checkInvitationCode(invitationInfo.invitationCode)
+      const badInvitationCodeIdRow = await checkInvitationCode('badInvitationCode')
+      const expiredInvitationCodeIdRow = await checkInvitationCode(expiredInvitationInfo.invitationCode)
       // Make sure invitation code check was successful
+      expect(goodInvitationCodeIdRow[0].id).to.equal(invitation.id)
+      should.not.exist(badInvitationCodeIdRow[0])
+      should.not.exist(expiredInvitationCodeIdRow[0])
+      // Fetch email from invitation code
+      const goodInvitationCodeCheck = await getEmailFromInvitationId(invitation.id)
+      const badInvitationCodeCheck = await getEmailFromInvitationId(-1)
+      // Make sure email from invitation code was fetched correctly
       expect(goodInvitationCodeCheck[0].email).to.equal(invitationInfo.email)
       should.not.exist(badInvitationCodeCheck[0])
       // Fetch invitations to email
@@ -362,6 +392,27 @@ describe('Invitations Tests', function() {
       // Verify invitations from account were fetched correctly
       expect(goodAccountIdFetch[0].email).to.equal(invitationInfo.email)
       should.not.exist(badAccountIdFetch[0])
+      // Insert invitation code conversion
+      const invitationCodeConversionInfo = {
+        accountId: accountId,
+        invitationCodeId: invitation.id,
+      }
+      const invitationCodeConversion = await insertInvitationCodeConversion(invitationCodeConversionInfo)
+      // Make sure invitation code conversion was inserted correctly
+      expect(invitationCodeConversion.accountId).to.equal(invitationCodeConversionInfo.accountId)
+      expect(invitationCodeConversion.invitationCodeId).to.equal(invitationCodeConversionInfo.invitationCodeId)
+      // Check invitation code conversion
+      const goodInvitationCodeConversionCheck = await checkInvitationCodeConversion(invitationCodeConversion.id)
+      const badInvitationCodeConversionCheck = await checkInvitationCodeConversion(-1)
+      // Make sure invitation code conversion check was successful
+      expect(goodInvitationCodeConversionCheck[0].id).to.equal(invitationCodeConversion.id)
+      should.not.exist(badInvitationCodeConversionCheck[0])
+      // Fetch invitation code id from converted account id
+      const goodInvitationCodeIdForConvertedAccount = await getInvitationCodeIdForConvertedAccount(accountId)
+      const badInvitationCodeIdForConvertedAccount = await getInvitationCodeIdForConvertedAccount(-1)
+      // Make sure invitation code id from converted account id was fetched correctly
+      expect(goodInvitationCodeIdForConvertedAccount[0].invitationCodeId).to.equal(invitation.id)
+      should.not.exist(badInvitationCodeIdForConvertedAccount[0])
     }
   )
 })
