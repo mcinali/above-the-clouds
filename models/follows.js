@@ -4,7 +4,7 @@ async function insertFollower(followerInfo){
   try {
     const { accountId, followerAccountId  } = followerInfo
     const query = `
-      INSERT INTO followers (account_id, follower_account_id)
+      INSERT INTO follows (account_id, follower_account_id)
       VALUES (${accountId}, ${followerAccountId})
       RETURNING *`
     const result = await pgTransaction(query)
@@ -17,7 +17,7 @@ async function insertFollower(followerInfo){
 async function removeFollower(followerInfo){
   try {
     const { accountId, followerAccountId  } = followerInfo
-    const query = `DELETE FROM followers WHERE account_id = ${accountId} and follower_account_id = ${followerAccountId}`
+    const query = `DELETE FROM follows WHERE account_id = ${accountId} and follower_account_id = ${followerAccountId}`
     const result = await pgTransaction(query)
     return result.rows[0]
   } catch (error) {
@@ -27,7 +27,7 @@ async function removeFollower(followerInfo){
 
 async function getAccountFollowing(accountId){
   try {
-    const query = `SELECT account_id FROM followers WHERE follower_account_id = ${accountId}`
+    const query = `SELECT account_id FROM follows WHERE follower_account_id = ${accountId}`
     return pool.query(query)
             .then(res => res.rows)
             .catch(error => new Error(error))
@@ -38,7 +38,7 @@ async function getAccountFollowing(accountId){
 
 async function getAccountFollowers(accountId){
   try {
-    const query = `SELECT follower_account_id as account_id FROM followers WHERE account_id = ${accountId}`
+    const query = `SELECT follower_account_id as account_id FROM follows WHERE account_id = ${accountId}`
     return pool.query(query)
             .then(res => res.rows)
             .catch(error => new Error(error))

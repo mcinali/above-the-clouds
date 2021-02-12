@@ -32,8 +32,14 @@ const {
   getInvitationsFromAccount,
   insertInvitationCodeConversion,
   checkInvitationCodeConversion,
-  getInvitationCodeIdForConvertedAccount,
+  getInvitationIdForConvertedAccount,
 } = require('../models/invitations')
+const {
+  insertFollower,
+  removeFollower,
+  getAccountFollowing,
+  getAccountFollowers,
+} = require('../models/follows')
 const {
   insertTopic,
   getTopicInfo,
@@ -50,12 +56,6 @@ const {
   updateStreamParticipantEndTime,
   updateStreamEndTime,
 } = require('../models/streams')
-const {
-  insertFollower,
-  removeFollower,
-  getAccountFollowing,
-  getAccountFollowers,
-} = require('../models/followers')
 const {
   getActiveStreamInvitationsForAccount,
   getActivePublicStreams,
@@ -402,19 +402,78 @@ describe('Invitations Tests', function() {
       expect(invitationCodeConversion.accountId).to.equal(invitationCodeConversionInfo.accountId)
       expect(invitationCodeConversion.invitationCodeId).to.equal(invitationCodeConversionInfo.invitationCodeId)
       // Check invitation code conversion
-      const goodInvitationCodeConversionCheck = await checkInvitationCodeConversion(invitationCodeConversion.id)
+      const goodInvitationCodeConversionCheck = await checkInvitationCodeConversion(invitationCodeConversion.invitationCodeId)
       const badInvitationCodeConversionCheck = await checkInvitationCodeConversion(-1)
       // Make sure invitation code conversion check was successful
       expect(goodInvitationCodeConversionCheck[0].id).to.equal(invitationCodeConversion.id)
       should.not.exist(badInvitationCodeConversionCheck[0])
       // Fetch invitation code id from converted account id
-      const goodInvitationCodeIdForConvertedAccount = await getInvitationCodeIdForConvertedAccount(accountId)
-      const badInvitationCodeIdForConvertedAccount = await getInvitationCodeIdForConvertedAccount(-1)
+      const goodInvitationCodeIdForConvertedAccount = await getInvitationIdForConvertedAccount(accountId)
+      const badInvitationCodeIdForConvertedAccount = await getInvitationIdForConvertedAccount(-1)
       // Make sure invitation code id from converted account id was fetched correctly
       expect(goodInvitationCodeIdForConvertedAccount[0].invitationCodeId).to.equal(invitation.id)
       should.not.exist(badInvitationCodeIdForConvertedAccount[0])
     }
   )
+})
+
+describe('Followers Tests', function() {
+  it(`Should...
+    - Create Follower Test Account
+    - Insert Follower
+    - Check to make sure Follower was inserted correctly
+    - Fetch Account Following
+    - Check to make sure Account Following were fetched correctly
+    - Fetch Account Followers
+    - Check to make sure Account Followers were fetched correctly
+    - Remove Follower
+    - Check to make sure Follower was removed correctly`, async function() {
+      const accountRow = await getAccountRow()
+      const accountId = accountRow.id
+      // Create Follower Test Account
+      const testFollowerUsername = 'connectionsTestAccount'
+      await pgTransaction(`DELETE FROM accounts WHERE username = '${testFollowerUsername}'`)
+      const testFollowerAccountInfo = {
+        username:testFollowerUsername,
+        password:'testFollowerPassword',
+      }
+      const followerAccount = await insertAccount(testFollowerAccountInfo)
+      const followerAccountId = followerAccount.id
+      const followerAccountDetailsInfo = {
+        accountId: followerAccountId,
+        email: 'testfollows@email.com',
+        phone:2345678901,
+        firstname:'Test',
+        lastname:'Follows',
+      }
+      const followerAccountDetails = await insertAccountDetails(followerAccountDetailsInfo)
+      // Insert Follower
+      const followerInfo = {
+        accountId:accountId,
+        followerAccountId:followerAccountId,
+      }
+      const follower = await insertFollower(followerInfo)
+      // Check to make sure Connection was inserted correctly
+      expect(follower.accountId).to.equal(followerInfo.accountId)
+      expect(follower.followerAccountId).to.equal(followerInfo.followerAccountId)
+      // Fetch Account Following
+      const goodAccountFollowing = await getAccountFollowing(followerAccountId)
+      const badAccountFollowing = await getAccountFollowing(accountId)
+      // Check to make sure Account Following were fetched correctly
+      expect(goodAccountFollowing[0].accountId).to.equal(accountId)
+      should.not.exist(badAccountFollowing[0])
+      // Fetch Account Followers
+      const goodAccountFollowers = await getAccountFollowers(accountId)
+      const badAccountFollowers = await getAccountFollowers(followerAccountId)
+      // Check to make sure Account Followers were fetched correctly
+      expect(goodAccountFollowers[0].accountId).to.equal(followerAccountId)
+      should.not.exist(badAccountFollowers[0])
+      // Remove Follower
+      await removeFollower(followerInfo)
+      // Check to make sure Follower was removed correctly
+      const removedFollower = await getAccountFollowers(accountId)
+      should.not.exist(removedFollower[0])
+  })
 })
 
 describe('Topics Tests', function() {
@@ -562,65 +621,6 @@ describe('Streams Tests', function() {
       // Check to make sure Stream End Time was updated correctly
       expect(streamEnd.id).to.equal(stream.id)
       expect(streamEnd.endTime.getTime() - streamEndBenchmark.getTime()).to.be.within(0,1)
-  })
-})
-
-describe('Followers Tests', function() {
-  it(`Should...
-    - Create Follower Test Account
-    - Insert Follower
-    - Check to make sure Follower was inserted correctly
-    - Fetch Account Following
-    - Check to make sure Account Following were fetched correctly
-    - Fetch Account Followers
-    - Check to make sure Account Followers were fetched correctly
-    - Remove Follower
-    - Check to make sure Follower was removed correctly`, async function() {
-      const accountRow = await getAccountRow()
-      const accountId = accountRow.id
-      // Create Follower Test Account
-      const testFollowerUsername = 'connectionsTestAccount'
-      await pgTransaction(`DELETE FROM accounts WHERE username = '${testFollowerUsername}'`)
-      const testFollowerAccountInfo = {
-        username:testFollowerUsername,
-        password:'testFollowerPassword',
-      }
-      const followerAccount = await insertAccount(testFollowerAccountInfo)
-      const followerAccountId = followerAccount.id
-      const followerAccountDetailsInfo = {
-        accountId: followerAccountId,
-        email: 'testfollowers@email.com',
-        phone:2345678901,
-        firstname:'Test',
-        lastname:'Followers',
-      }
-      const followerAccountDetails = await insertAccountDetails(followerAccountDetailsInfo)
-      // Insert Follower
-      const followerInfo = {
-        accountId:accountId,
-        followerAccountId:followerAccountId,
-      }
-      const follower = await insertFollower(followerInfo)
-      // Check to make sure Connection was inserted correctly
-      expect(follower.accountId).to.equal(followerInfo.accountId)
-      expect(follower.followerAccountId).to.equal(followerInfo.followerAccountId)
-      // Fetch Account Following
-      const goodAccountFollowing = await getAccountFollowing(followerAccountId)
-      const badAccountFollowing = await getAccountFollowing(accountId)
-      // Check to make sure Account Following were fetched correctly
-      expect(goodAccountFollowing[0].accountId).to.equal(accountId)
-      should.not.exist(badAccountFollowing[0])
-      // Fetch Account Followers
-      const goodAccountFollowers = await getAccountFollowers(accountId)
-      const badAccountFollowers = await getAccountFollowers(followerAccountId)
-      // Check to make sure Account Followers were fetched correctly
-      expect(goodAccountFollowers[0].accountId).to.equal(followerAccountId)
-      should.not.exist(badAccountFollowers[0])
-      // Remove Follower
-      await removeFollower(followerInfo)
-      // Check to make sure Follower was removed correctly
-      const removedFollower = await getAccountFollowers(accountId)
-      should.not.exist(removedFollower[0])
   })
 })
 

@@ -83,7 +83,7 @@ async function checkInvitationCodeConversion(invitationCodeId){
  }
 }
 
-async function getInvitationCodeIdForConvertedAccount(accountId){
+async function getInvitationIdForConvertedAccount(accountId){
   try {
     const query = `SELECT invitation_code_id FROM app_invitation_conversions WHERE account_id = ${accountId}`
     return pool.query(query)
@@ -102,5 +102,5 @@ module.exports = {
   getInvitationsFromAccount,
   insertInvitationCodeConversion,
   checkInvitationCodeConversion,
-  getInvitationCodeIdForConvertedAccount,
+  getInvitationIdForConvertedAccount,
 }
