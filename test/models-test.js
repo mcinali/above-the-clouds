@@ -25,6 +25,16 @@ const {
   fuzzyMatchAccountsByFullName,
 } = require('../models/accounts')
 const {
+  insertInvitation,
+  checkInvitationCode,
+  getEmailFromInvitationId,
+  getInvitationsToEmail,
+  getInvitationsFromAccount,
+  insertInvitationCodeConversion,
+  checkInvitationCodeConversion,
+  getInvitationCodeIdForConvertedAccount,
+} = require('../models/invitations')
+const {
   insertTopic,
   getTopicInfo,
 } = require('../models/topics')
@@ -33,9 +43,6 @@ const {
   getStreamDetails,
   insertStreamInvitation,
   getStreamInvitations,
-  insertStreamEmailOutreach,
-  getStreamInvitationsFromEmailOutreach,
-  getStreamInvitationsFromEmailOutreachForEmail,
   insertStreamParticipant,
   getStreamParticipantDetails,
   getStreamParticipants,
@@ -44,15 +51,11 @@ const {
   updateStreamEndTime,
 } = require('../models/streams')
 const {
-  insertConnection,
-  removeConnection,
-  insertConnectionEmailOutreach,
-  getAccountConnections,
-  getConnectionsToAccount,
-  checkConnection,
-  getAccountConnectionsEmailOutreach,
-  getConnectionsEmailOutreachToAccount,
-} = require('../models/connections')
+  insertFollower,
+  removeFollower,
+  getAccountFollowing,
+  getAccountFollowers,
+} = require('../models/followers')
 const {
   getActiveStreamInvitationsForAccount,
   getActivePublicStreams,
@@ -322,6 +325,98 @@ describe('Accounts Tests', function() {
   })
 })
 
+describe('Invitations Tests', function() {
+  it(`Should...
+    - Insert invitation
+    - Verify invitation was inserted correctly
+    - Insert expired invitation Code
+    - Check invitation code
+    - Make sure invitation code check was successful
+    - Fetch email from invitation code
+    - Make sure email from invitation code was fetched correctly
+    - Fetch invitations to email
+    - Verify invitations to email were fetched correctly
+    - Fetch invitations from account
+    - Verify invitations from account were fetched correctly
+    - Insert invitation code conversion
+    - Make sure invitation code conversion was inserted correctly
+    - Check invitation code conversion
+    - Make sure invitation code conversion check was successful
+    - Fetch invitation code id from converted account id
+    - Make sure invitation code id from converted account id was fetched correctly `, async function() {
+      // Insert invitation
+      const accountRow = await getAccountRow()
+      const accountId = accountRow.id
+      const invitationInfo = {
+        accountId: accountId,
+        email: 'invitation@test.com',
+        invitationCode: '-1',
+        invitationCodeTTL: 1,
+      }
+      const invitation = await insertInvitation(invitationInfo)
+      // Verify invitation was inserted correctly
+      expect(invitation.accountId).to.equal(accountId)
+      expect(invitation.email).to.equal(invitationInfo.email)
+      expect(invitation.invitationCode).to.equal(invitationInfo.invitationCode)
+      // Insert expired invitation Code
+      const expiredInvitationInfo = {
+        accountId: accountId,
+        email: 'expiredinvitation@test.com',
+        invitationCode: '-2',
+        invitationCodeTTL: 0,
+      }
+      const expiredInvitation = await insertInvitation(expiredInvitationInfo)
+      // Check invitation code
+      const goodInvitationCodeIdRow = await checkInvitationCode(invitationInfo.invitationCode)
+      const badInvitationCodeIdRow = await checkInvitationCode('badInvitationCode')
+      const expiredInvitationCodeIdRow = await checkInvitationCode(expiredInvitationInfo.invitationCode)
+      // Make sure invitation code check was successful
+      expect(goodInvitationCodeIdRow[0].id).to.equal(invitation.id)
+      should.not.exist(badInvitationCodeIdRow[0])
+      should.not.exist(expiredInvitationCodeIdRow[0])
+      // Fetch email from invitation code
+      const goodInvitationCodeCheck = await getEmailFromInvitationId(invitation.id)
+      const badInvitationCodeCheck = await getEmailFromInvitationId(-1)
+      // Make sure email from invitation code was fetched correctly
+      expect(goodInvitationCodeCheck[0].email).to.equal(invitationInfo.email)
+      should.not.exist(badInvitationCodeCheck[0])
+      // Fetch invitations to email
+      const goodEmailFetch = await getInvitationsToEmail(invitationInfo.email)
+      const badEmailFetch = await getInvitationsToEmail('bad@email.com')
+      // Verify invitations to email were fetched correctly
+      expect(goodEmailFetch[0].accountId).to.equal(accountId)
+      should.not.exist(badEmailFetch[0])
+      // Fetch invitations from account
+      const goodAccountIdFetch = await getInvitationsFromAccount(accountId)
+      const badAccountIdFetch = await getInvitationsFromAccount(-1)
+      // Verify invitations from account were fetched correctly
+      expect(goodAccountIdFetch[0].email).to.equal(invitationInfo.email)
+      should.not.exist(badAccountIdFetch[0])
+      // Insert invitation code conversion
+      const invitationCodeConversionInfo = {
+        accountId: accountId,
+        invitationCodeId: invitation.id,
+      }
+      const invitationCodeConversion = await insertInvitationCodeConversion(invitationCodeConversionInfo)
+      // Make sure invitation code conversion was inserted correctly
+      expect(invitationCodeConversion.accountId).to.equal(invitationCodeConversionInfo.accountId)
+      expect(invitationCodeConversion.invitationCodeId).to.equal(invitationCodeConversionInfo.invitationCodeId)
+      // Check invitation code conversion
+      const goodInvitationCodeConversionCheck = await checkInvitationCodeConversion(invitationCodeConversion.id)
+      const badInvitationCodeConversionCheck = await checkInvitationCodeConversion(-1)
+      // Make sure invitation code conversion check was successful
+      expect(goodInvitationCodeConversionCheck[0].id).to.equal(invitationCodeConversion.id)
+      should.not.exist(badInvitationCodeConversionCheck[0])
+      // Fetch invitation code id from converted account id
+      const goodInvitationCodeIdForConvertedAccount = await getInvitationCodeIdForConvertedAccount(accountId)
+      const badInvitationCodeIdForConvertedAccount = await getInvitationCodeIdForConvertedAccount(-1)
+      // Make sure invitation code id from converted account id was fetched correctly
+      expect(goodInvitationCodeIdForConvertedAccount[0].invitationCodeId).to.equal(invitation.id)
+      should.not.exist(badInvitationCodeIdForConvertedAccount[0])
+    }
+  )
+})
+
 describe('Topics Tests', function() {
   it(`Should...
     - Insert test Topic
@@ -359,12 +454,6 @@ describe('Streams Tests', function() {
     - Check to make sure Stream Invite was inserted correctly
     - Fetch Stream Invitiations
     - Check to make sure Stream Invitations were fetched correctly
-    - Insert Stream Email Outreach
-    - Check to make sure Stream Email Outreach was inserted correctly
-    - Fetch Streams from Email Outreach
-    - Check to make sure Streams from Email Outreach were fetched correctly
-    - Fetch Streams from Email Outreach from Email
-    - Check to make sure Streams from Email Outreach from Email were fetched correctly
     - Insert Stream Participant
     - Check to make sure Stream Participant was inserted correctly
     - Fetch Stream Participant Details
@@ -426,31 +515,6 @@ describe('Streams Tests', function() {
       expect(invitations[0].streamId).to.equal(streamInvite.streamId)
       expect(invitations[0].accountId).to.equal(streamInvite.accountId)
       expect(invitations[0].inviteeAccountId).to.equal(streamInvite.inviteeAccountId)
-      // Insert Stream Email Outreach
-      const streamEmailOutreachInfo = {
-        streamId:stream.id,
-        accountId:accountId,
-        inviteeEmail:'test2@email.com',
-      }
-      const streamEmailOutreach = await insertStreamEmailOutreach(streamEmailOutreachInfo)
-      // Check to make sure Stream Email Outreach was inserted correctly
-      expect(streamEmailOutreach.streamId).to.equal(streamEmailOutreachInfo.streamId)
-      expect(streamEmailOutreach.accountId).to.equal(streamEmailOutreachInfo.accountId)
-      expect(streamEmailOutreach.inviteeEmail).to.equal(streamEmailOutreachInfo.inviteeEmail)
-      // Fetch Streams from Email Outreach
-      const streamInvitationsFromEmailOutreach = await getStreamInvitationsFromEmailOutreach(streamEmailOutreachInfo.streamId)
-      // Check to make sure Streams from Email Outreach were fetched correctly
-      expect(streamInvitationsFromEmailOutreach[0].id).to.equal(streamEmailOutreach.id)
-      expect(streamInvitationsFromEmailOutreach[0].streamId).to.equal(streamEmailOutreach.streamId)
-      expect(streamInvitationsFromEmailOutreach[0].accountId).to.equal(streamEmailOutreach.accountId)
-      expect(streamInvitationsFromEmailOutreach[0].inviteeEmail).to.equal(streamEmailOutreach.inviteeEmail)
-      // Fetch Streams from Email Outreach from Email
-      const streamInvitationsFromEmailOutreachEmail = await getStreamInvitationsFromEmailOutreachForEmail(streamEmailOutreachInfo.inviteeEmail)
-      // Check to make sure Streams from Email Outreach from Email were fetched correctly
-      expect(streamInvitationsFromEmailOutreachEmail[0].id).to.equal(streamEmailOutreach.id)
-      expect(streamInvitationsFromEmailOutreachEmail[0].streamId).to.equal(streamEmailOutreach.streamId)
-      expect(streamInvitationsFromEmailOutreachEmail[0].accountId).to.equal(streamEmailOutreach.accountId)
-      expect(streamInvitationsFromEmailOutreachEmail[0].inviteeEmail).to.equal(streamEmailOutreach.inviteeEmail)
       // Insert Stream Participant
       const streamParticipantInfo = {
         streamId:stream.id,
@@ -501,104 +565,66 @@ describe('Streams Tests', function() {
   })
 })
 
-describe('Connections Tests', function() {
+describe('Followers Tests', function() {
   it(`Should...
-    - Get original AccountId
-    - Insert new test Account
-    - Insert Connection
-    - Check to make sure Connection was inserted correctly
-    - Fetch Account Connection
-    - Check to make sure Account Connection was fetched correctly
-    - Fetch all Account Connections
-    - Check to make sure Account Connections were fetched correctly
-    - Fetch Connections to Account
-    - Check to make sure Connections to Account were fetched correctly
-    - Insert Connection Email Outreach
-    - Check to make sure Connection Email Outreach was inserted correctly
-    - Fetch Account Connections Email Outreach
-    - Check to make sure Account Connections Email Outreach were fetched correctly
-    - Fetch Connections Email Outreach to Account
-    - Check to make sure Connections Email Outreach to Account were fetched correctly
-    - Remove Connection
-    - Check to make sure Connection was removed correctly`, async function() {
-      // Get original AccountId
+    - Create Follower Test Account
+    - Insert Follower
+    - Check to make sure Follower was inserted correctly
+    - Fetch Account Following
+    - Check to make sure Account Following were fetched correctly
+    - Fetch Account Followers
+    - Check to make sure Account Followers were fetched correctly
+    - Remove Follower
+    - Check to make sure Follower was removed correctly`, async function() {
       const accountRow = await getAccountRow()
       const accountId = accountRow.id
-      // Insert new test Account
-      const testConnectionsUsername = 'connectionsTestAccount'
-      await pgTransaction(`DELETE FROM accounts WHERE username = '${testConnectionsUsername}'`)
-      const connectionAccountInfo = {
-        username:testConnectionsUsername,
-        password:'testConnectionsPassword',
+      // Create Follower Test Account
+      const testFollowerUsername = 'connectionsTestAccount'
+      await pgTransaction(`DELETE FROM accounts WHERE username = '${testFollowerUsername}'`)
+      const testFollowerAccountInfo = {
+        username:testFollowerUsername,
+        password:'testFollowerPassword',
       }
-      const connectionAccount = await insertAccount(connectionAccountInfo)
-      const connectionAccountId = connectionAccount.id
-      const connectionAccountDetailsInfo = {
-        accountId: connectionAccountId,
-        email: 'testconnections@email.com',
+      const followerAccount = await insertAccount(testFollowerAccountInfo)
+      const followerAccountId = followerAccount.id
+      const followerAccountDetailsInfo = {
+        accountId: followerAccountId,
+        email: 'testfollowers@email.com',
         phone:2345678901,
         firstname:'Test',
-        lastname:'Connections',
+        lastname:'Followers',
       }
-      const connectionAccountDetails = await insertAccountDetails(connectionAccountDetailsInfo)
-      // Insert Connection
-      const connectionInfo = {
+      const followerAccountDetails = await insertAccountDetails(followerAccountDetailsInfo)
+      // Insert Follower
+      const followerInfo = {
         accountId:accountId,
-        connectionAccountId:connectionAccountId,
+        followerAccountId:followerAccountId,
       }
-      const connection = await insertConnection(connectionInfo)
+      const follower = await insertFollower(followerInfo)
       // Check to make sure Connection was inserted correctly
-      expect(connection.accountId).to.equal(connectionInfo.accountId)
-      expect(connection.connectionAccountId).to.equal(connectionInfo.connectionAccountId)
-      // Fetch Account Connection
-      const connectionCheck1 = await checkConnection(connectionInfo)
-      const connectionCheck2 = await checkConnection({accountId:connectionAccountId,connectionAccountId:accountId})
-      // Check to make sure Account Connection was fetched correctly
-      expect(connectionCheck1.accountId).to.equal(connectionInfo.accountId)
-      expect(connectionCheck1.connectionAccountId).to.equal(connectionInfo.connectionAccountId)
-      should.not.exist(connectionCheck2)
-      // Fetch all Account Connections
-      const accountConnectionsArrayNonEmpty = await getAccountConnections(accountId)
-      const accountConnectionsArrayEmpty = await getAccountConnections(connectionAccountId)
-      // Check to make sure Account Connections were fetched correctly
-      expect(accountConnectionsArrayNonEmpty[0].connectionAccountId).to.equal(connectionAccountId)
-      should.not.exist(accountConnectionsArrayEmpty[0])
-      // Fetch Connections to Account
-      const connectionsToAccountArrayEmpty = await getConnectionsToAccount(accountId)
-      const connectionsToAccountArrayNonEmpty = await getConnectionsToAccount(connectionAccountId)
-      // Check to make sure Connections to Account were fetched correctly
-      should.not.exist(connectionsToAccountArrayEmpty[0])
-      expect(connectionsToAccountArrayNonEmpty[0].accountId).to.equal(accountId)
-      // Insert Connection Email Outreach
-      const connectionEmailOutreachInfo = {
-        accountId:accountId,
-        connectionEmail:'connection@test.com',
-      }
-      const connectionEmailOutreach = await insertConnectionEmailOutreach(connectionEmailOutreachInfo)
-      // Check to make sure Connection Email Outreach was inserted correctly
-      expect(connectionEmailOutreach.accountId).to.equal(connectionEmailOutreachInfo.accountId)
-      expect(connectionEmailOutreach.connectionEmail).to.equal(connectionEmailOutreachInfo.connectionEmail)
-      // Fetch Account Connections Email Outreach
-      const accountConnectionsEmailOutreachNonEmpty = await getAccountConnectionsEmailOutreach(accountId)
-      const accountConnectionsEmailOutreachEmpty = await getAccountConnectionsEmailOutreach(connectionAccountId)
-      // Check to make sure Account Connections Email Outreach were fetched correctly
-      expect(accountConnectionsEmailOutreachNonEmpty[0].connectionEmail).to.equal(connectionEmailOutreachInfo.connectionEmail)
-      should.not.exist(accountConnectionsEmailOutreachEmpty[0])
-      // Fetch Connections Email Outreach to Account
-      const connectionsEmailOutreachToAccountNonEmpty = await getConnectionsEmailOutreachToAccount(connectionEmailOutreachInfo.connectionEmail)
-      const connectionsEmailOutreachToAccountEmpty = await getConnectionsEmailOutreachToAccount(connectionAccountDetailsInfo.email)
-      // Check to make sure Connections Email Outreach to Account were fetched correctly
-      expect(connectionsEmailOutreachToAccountNonEmpty[0].accountId).to.equal(accountId)
-      should.not.exist(connectionsEmailOutreachToAccountEmpty[0])
-      // Remove Connection
-      await removeConnection(connectionInfo)
-      // Check to make sure Connection was removed correctly
-      const removedConnection = await getAccountConnections(accountId)
-      should.not.exist(removedConnection[0])
+      expect(follower.accountId).to.equal(followerInfo.accountId)
+      expect(follower.followerAccountId).to.equal(followerInfo.followerAccountId)
+      // Fetch Account Following
+      const goodAccountFollowing = await getAccountFollowing(followerAccountId)
+      const badAccountFollowing = await getAccountFollowing(accountId)
+      // Check to make sure Account Following were fetched correctly
+      expect(goodAccountFollowing[0].accountId).to.equal(accountId)
+      should.not.exist(badAccountFollowing[0])
+      // Fetch Account Followers
+      const goodAccountFollowers = await getAccountFollowers(accountId)
+      const badAccountFollowers = await getAccountFollowers(followerAccountId)
+      // Check to make sure Account Followers were fetched correctly
+      expect(goodAccountFollowers[0].accountId).to.equal(followerAccountId)
+      should.not.exist(badAccountFollowers[0])
+      // Remove Follower
+      await removeFollower(followerInfo)
+      // Check to make sure Follower was removed correctly
+      const removedFollower = await getAccountFollowers(accountId)
+      should.not.exist(removedFollower[0])
   })
 })
 
-describe('Connections Tests', function() {
+describe('Discovery Tests', function() {
   it(`Should...
     - Insert new test Account
     - Insert new Topic

@@ -3,8 +3,6 @@ const {
   getStreamDetails,
   insertStreamInvitation,
   getStreamInvitations,
-  insertStreamEmailOutreach,
-  getStreamInvitationsFromEmailOutreach,
   insertStreamParticipant,
   getStreamParticipants,
   getActiveAccountStreams,
@@ -111,33 +109,6 @@ async function getStreamInviteesInfo(streamId){
   }
 }
 
-// Get Stream Email Outreach Info
-async function getStreamEmailOutreachInfo(streamId){
-  try {
-    const emailOutreach = await getStreamInvitationsFromEmailOutreach(streamId)
-    const emailOutreachFrmtd = await Promise.all(emailOutreach.map(async (outreach) => {
-      const emailAccountId = await getAccountIdFromEmail(outreach.inviteeEmail)
-      if (!Boolean(emailAccountId)){
-        return {
-          'accountId': outreach.accountId,
-          'inviteeAccountId': null,
-          'inviteeEmail': outreach.inviteeEmail,
-          'username': null,
-          'firstname': null,
-          'lastnameInitial': null,
-          'ts': outreach.createdAt,
-        }
-      }
-    }))
-    const emailOutreachFltred = emailOutreachFrmtd.filter(function(outreach){
-      if (outreach) {return outreach}
-    })
-    return emailOutreachFltred
-  } catch (error) {
-    throw new Error(error)
-  }
-}
-
 // Get Stream Information
 async function getStreamInfo(input){
   try {
@@ -160,8 +131,7 @@ async function getStreamInfo(input){
     const basicInfo = await getStreamBasicInfo(streamId)
     const participants = await getStreamParticipantsInfo(streamId)
     const inAppInvitees = await getStreamInviteesInfo(streamId)
-    const emailInvitees = await getStreamEmailOutreachInfo(streamId)
-    const invitees = inAppInvitees.concat(emailInvitees)
+    const invitees = inAppInvitees
     invitees.sort((a,b) => (a.ts < b.ts) ? 1 : -1)
     return {
       'info': basicInfo,
@@ -214,18 +184,6 @@ async function inviteParticipantToStream(inviteInfo){
         'firstname': inviteeAccountDetails.firstname,
         'lastnameInitial': inviteeAccountDetails.lastname.slice(0,1),
         'ts': streamInvitation.createdAt,
-      }
-    } else if (inviteeEmail) {
-      const streamEmailOutreach = await insertStreamEmailOutreach(inviteInfo)
-      sendEmail(msg)
-      return {
-        'accountId': accountId,
-        'inviteeAccountId': null,
-        'inviteeEmail': inviteeEmail,
-        'username': null,
-        'firstname': null,
-        'lastnameInitial': null,
-        'ts': streamEmailOutreach.createdAt,
       }
     } else {
       throw new Error('Unable to invite participant to stream')

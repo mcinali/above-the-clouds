@@ -58,6 +58,26 @@ async function pgMigrate(){
   )
 
   await pgTransaction(
+    `CREATE TABLE IF NOT EXISTS app_invitations (
+      id SERIAL PRIMARY KEY NOT NULL,
+      account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      email VARCHAR(128) NOT NULL,
+      invitation_code BYTEA NOT NULL,
+      invitation_code_expiration TIMESTAMPTZ NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`
+  )
+
+  await pgTransaction(
+    `CREATE TABLE IF NOT EXISTS app_invitation_conversions (
+      id SERIAL PRIMARY KEY NOT NULL,
+      account_id INTEGER UNIQUE NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      invitation_code_id INTEGER UNIQUE NOT NULL REFERENCES app_invitations(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`
+  )
+
+  await pgTransaction(
     `CREATE TABLE IF NOT EXISTS topics (
       id SERIAL PRIMARY KEY NOT NULL,
       account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
@@ -99,17 +119,6 @@ async function pgMigrate(){
   )
 
   await pgTransaction(
-    `CREATE TABLE IF NOT EXISTS stream_email_outreach (
-      id SERIAL PRIMARY KEY NOT NULL,
-      stream_id INTEGER NOT NULL REFERENCES streams(id) ON DELETE CASCADE,
-      account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
-      invitee_email VARCHAR(128) NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-      UNIQUE (stream_id, account_id, invitee_email)
-    )`
-  )
-
-  await pgTransaction(
     `CREATE TABLE IF NOT EXISTS stream_participants (
       id SERIAL PRIMARY KEY NOT NULL,
       stream_id INTEGER NOT NULL REFERENCES streams(id) ON DELETE CASCADE,
@@ -120,24 +129,13 @@ async function pgMigrate(){
     )`
   )
 
-  // TO DO: Re-write connections logic
   await pgTransaction(
-    `CREATE TABLE IF NOT EXISTS connections_email_outreach (
+    `CREATE TABLE IF NOT EXISTS followers (
       id SERIAL PRIMARY KEY NOT NULL,
       account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
-      connection_email VARCHAR(128) NOT NULL,
+      follower_account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-      UNIQUE (account_id, connection_email)
-    )`
-  )
-
-  await pgTransaction(
-    `CREATE TABLE IF NOT EXISTS connections (
-      id SERIAL PRIMARY KEY NOT NULL,
-      account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
-      connection_account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-      UNIQUE (account_id, connection_account_id)
+      UNIQUE (account_id, follower_account_id)
     )`
   )
 
