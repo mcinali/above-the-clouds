@@ -12,10 +12,11 @@ const {
   verifyEmailAccessCode,
   createPhoneAccessCodes,
   verifyPhoneAccessCode,
+  validateInvitationCode,
 } = require('../services/preregistration')
 
 // Check User Account form info
-router.post('/accountDetails/check', validatePreRegistrationAccountSchema, validateUniquePreRegistrationAccountFields, async function (req, res) {
+router.post('/accountDetails/check', validateInvitationCode, validatePreRegistrationAccountSchema, validateUniquePreRegistrationAccountFields, async function (req, res) {
   try {
     await createEmailAccessCodes(req.body)
     return res.send('OK')
@@ -26,7 +27,7 @@ router.post('/accountDetails/check', validatePreRegistrationAccountSchema, valid
 })
 
 // Verify email access code
-router.post('/verify/email', validateAccessCodeSchema, async function (req, res) {
+router.post('/verify/email', validateInvitationCode, validateAccessCodeSchema, async function (req, res) {
   try {
     const result = await verifyEmailAccessCode(req.body)
     return res.send(result)
@@ -37,7 +38,7 @@ router.post('/verify/email', validateAccessCodeSchema, async function (req, res)
 })
 
 // Send user access code text message
-router.post('/phone/code', validatePhoneNumberSchema, validateUniquePhoneNumber, async function (req, res) {
+router.post('/phone/code', validateInvitationCode, validatePhoneNumberSchema, validateUniquePhoneNumber, async function (req, res) {
   try {
     await createPhoneAccessCodes(req.body)
     return res.send('OK')
@@ -48,7 +49,7 @@ router.post('/phone/code', validatePhoneNumberSchema, validateUniquePhoneNumber,
 })
 
 // Verify phone access code
-router.post('/verify/phone', validateAccessCodeSchema, async function (req, res) {
+router.post('/verify/phone', validateInvitationCode, validateAccessCodeSchema, async function (req, res) {
   try {
     const result = await verifyPhoneAccessCode(req.body)
     return res.send(result)
