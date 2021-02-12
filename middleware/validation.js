@@ -9,6 +9,10 @@ const {
   verifyEmailAccessToken,
   verifyPhoneAccessToken,
 } = require('../models/preregistration')
+const {
+  checkInvitationCode,
+  checkInvitationCodeConversion,
+} = require('../models/invitations')
 
 const accountFormFields = {
   firstname: Joi.string()
@@ -242,6 +246,27 @@ async function validateUniquePhoneNumber(req, res, next){
   }
 }
 
+async function validateInvitationCode(req, res, next){
+  try {
+    const { code } = req.query
+    if (!Boolean(code)){
+      return res.status(401).json({error: ['Invitation code required']})
+    }
+    const invitationCodeIdRow = await checkInvitationCode(code)
+    if(!Boolean(invitationCodeIdRow[0])){
+      return res.status(401).json({error: ['Valid invitation code required']})
+    }
+    const invitationCodeId = invitationCodeIdRow[0]
+    const invtitationCodeConversionRow = await checkInvitationCodeConversion(invitationCodeId)
+    if(Boolean(invtitationCodeConversionRow[0])){
+      return res.status(401).json({error: ['Invitation code is no longer valid']})
+    }
+    return next()
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 module.exports = {
   validateAccountSchema,
   validateUniqueAccountFields,
@@ -251,4 +276,5 @@ module.exports = {
   validateAccessCodeSchema,
   validateUniquePreRegistrationAccountFields,
   validateUniquePhoneNumber,
+  validateInvitationCode,
 }

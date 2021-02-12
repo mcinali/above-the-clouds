@@ -5,7 +5,7 @@ async function insertInvitation(invitationInfo){
     const { accountId, email, invitationCode, invitationCodeTTL } = invitationInfo
     const query = `
       INSERT INTO app_invitations (account_id, email, invitation_code, invitation_code_expiration)
-      VALUES (${accountId}, '${email}', '${invitationCode}', now() + INTERVAL '${invitationCodeTTL} minute')
+      VALUES (${accountId}, '${email}', '${invitationCode}', now() + INTERVAL '${invitationCodeTTL} hour')
       RETURNING id, account_id, email, encode(invitation_code, 'escape') as invitation_code, invitation_code_expiration`
     const result = await pgTransaction(query)
     return result.rows[0]

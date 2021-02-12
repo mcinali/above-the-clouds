@@ -9,9 +9,10 @@ const {
   getAccountIdFromEmail,
   getAccountIdFromPhone,
 } = require('../models/accounts')
+const { storeInvitationCodeConversion } = require('../services/invitations')
 const { sendEmail } = require('../sendgrid')
 
-async function registerUser(accountInfo){
+async function registerUser(accountInfo, params){
   try {
     // TO DO: return auth token
     //  Insert Account
@@ -19,6 +20,10 @@ async function registerUser(accountInfo){
     //  Insert Account Details
     accountInfo['accountId'] = account.id
     const accountDetails = await insertAccountDetails(accountInfo)
+    // Store invitation code conversion
+    if (params && params.code){
+      const invitationCodeConversion = await storeInvitationCodeConversion(account.id, params.code)
+    }
     // Send Registration Email
     const msg = {
       to: accountDetails.email,

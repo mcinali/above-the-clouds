@@ -1,8 +1,14 @@
 const {
   insertInvitation,
-  getEmailFromInvitationCode,
+  checkInvitationCode,
+  getEmailFromInvitationId,
+  getInvitationsToEmail,
+  getInvitationsFromAccount,
+  insertInvitationCodeConversion,
+  checkInvitationCodeConversion,
+  getInvitationCodeIdForConvertedAccount,
 } = require('../models/invitations')
-const { fetchAccountDetailsBasic } = require('./accounts')
+const { getAccountDetails } = require('../models/accounts')
 const { sendEmail } = require('../sendgrid')
 const { generateRandomCode } = require('../encryption')
 
@@ -11,7 +17,7 @@ async function sendInvitation(invitationInfo){
     // Send invitation email
     const { accountId, email } = invitationInfo
     const invitationCode = generateRandomCode()
-    const accountDetails = await fetchAccountDetailsBasic(accountId)
+    const accountDetails = await getAccountDetails(accountId)
     const msg = {
       to: email,
       from: 'abovethecloudsapp@gmail.com',
@@ -24,12 +30,12 @@ async function sendInvitation(invitationInfo){
       `
     }
     const sentEmail = await sendEmail(msg)
-    console.log(sentEmail)
     // Store invitation email
     const invitationInfoInput = {
       accountId: accountId,
       email: email,
       invitationCode: invitationCode,
+      invitationCodeTTL: 48,
     }
     const invitation = await insertInvitation(invitationInfoInput)
     return { email: email }
@@ -38,6 +44,24 @@ async function sendInvitation(invitationInfo){
   }
 }
 
+async function storeInvitationCodeConversion(accountId, invitationCode){
+  try {
+    const invitationCodeIdRow = await checkInvitationCode(invitationCode)
+    if (!Boolean(invitationCodeIdRow[0])){
+      throw new Error('Invalid invitation code')
+    }
+    const invitationCodeConversionInfo = {
+      accountId: accountId,
+      invitationCodeId: invitationCodeIdRow[0].id,
+    }
+    const invitationCodeConversionRow = await insertInvitationCodeConversion(invitationCodeConversionInfo)
+    return invitationCodeConversionRow
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 module.exports = {
   sendInvitation,
+  storeInvitationCodeConversion,
 }
