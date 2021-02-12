@@ -26,7 +26,7 @@ async function sendInvitation(invitationInfo){
       Your friend ${accountDetails.firstname} ${accountDetails.lastname} invited you to Above the Clouds!
 
       Click the link below to join:
-      http://localhost:3000/register?invitationCode=${invitationCode}
+      http://localhost:3000/register?code=${invitationCode}
       `
     }
     const sentEmail = await sendEmail(msg)

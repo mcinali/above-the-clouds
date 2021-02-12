@@ -6,13 +6,13 @@ const {
   validateAccessCodeSchema,
   validateUniquePreRegistrationAccountFields,
   validateUniquePhoneNumber,
+  validateInvitationCode,
 } = require('../middleware/validation')
 const {
   createEmailAccessCodes,
   verifyEmailAccessCode,
   createPhoneAccessCodes,
   verifyPhoneAccessCode,
-  validateInvitationCode,
 } = require('../services/preregistration')
 
 // Check User Account form info
