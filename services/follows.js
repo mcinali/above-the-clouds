@@ -69,7 +69,7 @@ async function getFollowingSuggestionsAccountSetup(params){
     }))
     const invitationAccountIds = [...invitationAccountIdsSet]
     // Get Following for accounts
-    const followingSet = new Set([])
+    const followingSet = new Set(invitationAccountIds)
     await Promise.all(invitationAccountIds.map(async (accountId) => {
       const followingArray = await getAccountFollowing(accountId)
       followingArray.map(followingRow => {
