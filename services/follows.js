@@ -1,6 +1,7 @@
 const {
   insertFollower,
-  removeFollower,
+  checkFollowerStatus,
+  updateFollowerStatus,
   getAccountFollowing,
   getAccountFollowers,
 } = require('../models/follows')
@@ -12,6 +13,38 @@ const {
   getInvitationsToEmail,
   getInvitationIdForConvertedAccount,
 } = require('../models/invitations')
+
+async function follow(followInfo){
+  try {
+    const followCheck = await checkFollowerStatus(followInfo)
+    // Check if follower DB entry exists
+    if (Boolean(followCheck[0])){
+      followInfo['unfollow'] = false
+      const follow = updateFollowerStatus(followInfo)
+      return
+    } else {
+      const follow = await insertFollower(followInfo)
+      return follow
+    }
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+async function unfollow(unfollowInfo){
+  try {
+    const unfollowCheck = await checkFollowerStatus(unfollowInfo)
+    if (Boolean(unfollowCheck[0])){
+      unfollowInfo['unfollow'] = true
+      const unfollow = updateFollowerStatus(unfollowInfo)
+      return unfollow
+    } else {
+      return {}
+    }
+  } catch (error) {
+    throw new Error(error)
+  }
+}
 
 async function getFollowingSuggestionsAccountSetup(params){
   try {
@@ -66,5 +99,7 @@ async function getFollowingSuggestionsAccountSetup(params){
 
 
 module.exports = {
+  follow,
+  unfollow,
   getFollowingSuggestionsAccountSetup,
 }
