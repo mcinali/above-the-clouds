@@ -86,20 +86,12 @@ async function pgMigrate(){
     )`
   )
 
-  await pgTransaction(`
-    DO $$
-      BEGIN
-        IF NOT EXISTS (select * from pg_type where typname = 'accessibility') THEN CREATE TYPE accessibility AS ENUM ('invite-only','network-only','public');
-        END IF;
-      END; $$
-    LANGUAGE plpgsql`)
-
   await pgTransaction(
     `CREATE TABLE IF NOT EXISTS streams (
       id SERIAL PRIMARY KEY NOT NULL,
       topic_id INTEGER NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
       creator_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
-      speaker_accessibility accessibility NOT NULL,
+      invite_only BOOLEAN NOT NULL DEFAULT false,
       capacity INTEGER NOT NULL,
       start_time TIMESTAMPTZ NOT NULL DEFAULT now(),
       end_time TIMESTAMPTZ,

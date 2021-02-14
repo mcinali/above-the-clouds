@@ -1,18 +1,18 @@
+const { getTopicInfo } = require('../models/topics')
 const {
   insertStream,
   getStreamDetails,
   insertStreamInvitation,
   getStreamInvitations,
   insertStreamParticipant,
+  getStreamParticipantDetails,
   getStreamParticipants,
   getActiveAccountStreams,
-  getStreamParticipantDetails,
   updateStreamParticipantEndTime,
   updateStreamEndTime,
 } = require('../models/streams')
 const { getAccountInfo, getAccountDetails, getAccountIdFromEmail } = require('../models/accounts')
-const { getAccountConnections, checkConnection } = require('../models/connections')
-const { getTopicInfo } = require('../models/topics')
+const { getAccountsFollowing } = require('../models/follows')
 const { sendEmail } = require('../sendgrid')
 const { twilioClient, createTwilioRoomAccessToken } = require('../twilio')
 
@@ -26,7 +26,6 @@ async function createStream(streamInfo){
         streamId: stream.id,
         accountId: streamInfo.accountId,
         inviteeAccountId: invitee.accountId,
-        inviteeEmail: invitee.email,
       })
     }))
     const twilioRoom = await twilioClient.video.rooms.create({
@@ -55,7 +54,7 @@ async function getStreamBasicInfo(streamId){
       'topic': topicInfo.topic,
       'creatorId': streamDetails.creatorId,
       'capacity': streamDetails.capacity,
-      'speakerAccessibility': streamDetails.speakerAccessibility,
+      'inviteOnly': streamDetails.inviteOnly,
       'startTime': streamDetails.startTime,
       'endTime': streamDetails.endTime,
     }
@@ -76,7 +75,7 @@ async function getStreamParticipantsInfo(streamId){
         'accountId': participant.accountId,
         'username': participantInfo.username,
         'firstname': participantDetails.firstname,
-        'lastnameInitial': participantDetails.lastname.slice(0,1),
+        'lastname': participantDetails.lastname,
         'startTime': participant.startTime,
       }
     })
@@ -96,10 +95,9 @@ async function getStreamInviteesInfo(streamId){
       return {
         'accountId': invitee.accountId,
         'inviteeAccountId': invitee.inviteeAccountId,
-        'inviteeEmail': null,
         'username': inviteeInfo.username,
         'firstname': inviteeDetails.firstname,
-        'lastnameInitial': inviteeDetails.lastname.slice(0,1),
+        'lastname': inviteeDetails.lastname,
         'ts': invitee.createdAt,
       }
     })
@@ -147,9 +145,7 @@ async function getStreamInfo(input){
 async function inviteParticipantToStream(inviteInfo){
   try {
     // TO DO: Send invite email
-    const { streamId, accountId } = inviteInfo
-    const inviteeAccountId = (inviteInfo.inviteeAccountId) ? inviteInfo.inviteeAccountId : null
-    const inviteeEmail = (inviteInfo.inviteeEmail) ? inviteInfo.inviteeEmail : null
+    const { streamId, accountId, inviteeAccountId } = inviteInfo
     // Check to make sure user has permission to invite others to stream
     const streamDetails = await getStreamDetails(streamId)
     const streamParticipants = await getStreamParticipants(streamId)
@@ -168,25 +164,23 @@ async function inviteParticipantToStream(inviteInfo){
     const inviteeAccountDetails = await getAccountDetails(inviteeAccountId)
     const msg = {
       from: 'abovethecloudsapp@gmail.com',
-      to: (inviteeAccountDetails) ? inviteeAccountDetails.email : inviteeEmail,
-      subject: `${accountDetails.firstname} ${accountDetails.lastname.slice(0,1)} (${accountUsername}) invited you to their stream`,
-      text: `${accountDetails.firstname} ${accountDetails.lastname.slice(0,1)} (${accountUsername}) invited you to their stream "${topic.topic}". Join now!`,
+      to: inviteeAccountDetails.email,
+      subject: `${accountDetails.firstname} ${accountDetails.lastname} (${accountUsername}) invited you to their stream`,
+      text: `${accountDetails.firstname} ${accountDetails.lastname} (${accountUsername}) invited you to their stream "${topic.topic}".
+
+      Join now: http://localhost:3000/stream/${streamId}`,
     }
-    // Insert connection id into connections if exists
-    if (inviteeAccountId) {
-      const streamInvitation = await insertStreamInvitation(inviteInfo)
-      sendEmail(msg)
-      return {
-        'accountId': accountId,
-        'inviteeAccountId': inviteeAccountId,
-        'inviteeEmail': null,
-        'username': inviteeAccount.username,
-        'firstname': inviteeAccountDetails.firstname,
-        'lastnameInitial': inviteeAccountDetails.lastname.slice(0,1),
-        'ts': streamInvitation.createdAt,
-      }
-    } else {
-      throw new Error('Unable to invite participant to stream')
+    // Insert stream invitation into DB
+    const streamInvitation = await insertStreamInvitation(inviteInfo)
+    // Send email
+    sendEmail(msg)
+    return {
+      'accountId': accountId,
+      'inviteeAccountId': inviteeAccountId,
+      'username': inviteeAccount.username,
+      'firstname': inviteeAccountDetails.firstname,
+      'lastname': inviteeAccountDetails.lastname,
+      'ts': streamInvitation.createdAt,
     }
   } catch (error) {
     throw new Error(error)
@@ -199,26 +193,25 @@ async function joinStream(joinInfo){
     const streamId = joinInfo.streamId
     const accountId = joinInfo.accountId
     const streamDetails = await getStreamDetails(streamId)
-    const streamParticipants = await getStreamParticipants(streamId)
-    // Check if stream exists
-    // Check if stream is active
-    // Check if stream is at capacity
+    // Throw errors if stream does not exist or if stream is no longer active
     if (!Boolean(streamDetails)){
       throw new Error('Stream does not exist')
     } else if (streamDetails.endTime){
       throw new Error('Stream is inactive. Users cannot join inactive streams.')
-    } else if (streamParticipants.length >= streamDetails.capacity){
-      throw new Error('Stream is at capacity. Users cannot join streams without capacity.')
     }
-    // Check if user is already active in other streams
-    const userStreams = await getActiveAccountStreams(accountId)
-    const userStreamsFltrd = userStreams.filter(function(userStream){
+    // Throw error if user is active in another stream
+    const activeUserStreams = await getActiveAccountStreams(accountId)
+    const otherActiveUserStreams = activeUserStreams.filter(function(userStream){
       if (userStream.streamId!==streamId) { return userStream }
     })
-    if (userStreamsFltrd.length > 0){
+    if (otherActiveUserStreams.length > 0){
       throw new Error('User already active in another stream')
-    } else if (userStreams.length > 0) {
-      const streamInfo = userStreams[0]
+    }
+    // Enable streaming if user is already active in this stream
+    const streamParticipants = await getStreamParticipants(streamId)
+    const accountInStream = streamParticipants.filter(item => {if (item.accountId===accountId){return item}})
+    if (Boolean(accountInStream[0])) {
+      const streamInfo = accountInStream[0]
       const twilioUserId = streamInfo.accountId.toString()
       const twilioUniqueRoomName = streamInfo.streamId.toString()
       const twilioAccessToken = createTwilioRoomAccessToken(twilioUserId, twilioUniqueRoomName)
@@ -229,44 +222,48 @@ async function joinStream(joinInfo){
         'startTime': streamInfo.startTime,
         'twilioAccessToken': twilioAccessToken,
       }
-      // throw new Error('User already active in this stream')
+    }
+    // Throw error if stream is already at capacity
+    if (streamParticipants.length >= streamDetails.capacity){
+      throw new Error('Stream is at capacity. Users cannot join streams without capacity.')
+    }
+    // Throw error if stream is invite-only & user is not the stream creator and has not been invited to the stream
+    const inviteOnly = streamDetails.inviteOnly
+    const streamCreatorId = streamDetails.creatorId
+    const streamInvitees = await getStreamInvitations(streamId)
+    const streamInviteesFlrtd = streamInvitees.filter(function(streamInvite){
+      if (streamInvite.inviteeAccountId===accountId) {return streamInvite}
+    })
+    if (inviteOnly){
+      if (streamInviteesFlrtd.length==0 && streamCreatorId!==accountId){
+        throw new Error('Stream is invite-only. User does not have permission to participate in stream.')
+      }
     } else {
-      // Reject user if they are not allowed to join stream
-      const speakerAccessibility = streamDetails.speakerAccessibility
-      const streamCreatorId = streamDetails.creatorId
-      const streamInvitees = await getStreamInvitations(streamId)
-      const streamInviteesFlrtd = streamInvitees.filter(function(streamInvite){
-        if (streamInvite.inviteeAccountId===accountId) {return streamInvite}
-      })
-      if (streamInviteesFlrtd.length==0){
-        if (speakerAccessibility==='invite-only' && streamCreatorId!==accountId){
-          throw new Error('Stream is invite-only. User does not have permission to participate in stream.')
-        } else if (speakerAccessibility==='network-only' && streamCreatorId!==accountId){
-          const participantConnectionCheck = await Promise.all(streamParticipants.map(async (participant) => {
-            const connection1 = await checkConnection({'accountId':accountId,'connectionId':participant.accountId})
-            const connection2 = await checkConnection({'accountId':participant.accountId,'connectionId':accountId})
-            if (Boolean(connection1) && Boolean(connection2)){
-              return {'speakerId':participant.accountId}
-            }
-          }))
-          const participantConnectionCheckFltrd = participantConnectionCheck.filter(function(x) {if (x) {return x}})
-          if (participantConnectionCheckFltrd.length==0){
-            throw new Error('Stream is network-only. User is not invited & not part of speaker network')
-          }
-        }
+      // Throw error if stream is not invite-only, but no one in user's network is active in stream
+      const accountsFollowingRows = await getAccountsFollowing(accountId)
+      const accountsFollowing = accountsFollowingRows.map(item => item.accountId)
+      const networkAccountIdsSet = new Set(accountsFollowing)
+      await Promise.all(accountsFollowing.map(async (accountId) => {
+        const followingRows = await getAccountsFollowing(accountId)
+        followingRows.map(row => networkAccountIdsSet.add(row.accountId))
+      }))
+      const networkAccountIds = [...networkAccountIdsSet]
+      const streamParticipantAccountIds = streamParticipants.map(item => item.accountId)
+      const fltrdAccountIds = networkAccountIds.filter(accountId => streamParticipantAccountIds.includes(accountId))
+      if (fltrdAccountIds.length == 0 && streamInviteesFlrtd.length==0 && streamCreatorId!==accountId){
+        throw new Error('User does not have permission to participate in stream.')
       }
-      const streamParticipant = await insertStreamParticipant(joinInfo)
-      // TO DO: Create Twilio video access token
-      const twilioUserId = streamParticipant.accountId.toString()
-      const twilioUniqueRoomName = streamParticipant.streamId.toString()
-      const twilioAccessToken = createTwilioRoomAccessToken(twilioUserId, twilioUniqueRoomName)
-      return {
-        'streamParticipantId': streamParticipant.id,
-        'streamId': streamParticipant.streamId,
-        'accountId': streamParticipant.accountId,
-        'startTime': streamParticipant.startTime,
-        'twilioAccessToken': twilioAccessToken,
-      }
+    }
+    const streamParticipant = await insertStreamParticipant(joinInfo)
+    const twilioUserId = streamParticipant.accountId.toString()
+    const twilioUniqueRoomName = streamParticipant.streamId.toString()
+    const twilioAccessToken = createTwilioRoomAccessToken(twilioUserId, twilioUniqueRoomName)
+    return {
+      'streamParticipantId': streamParticipant.id,
+      'streamId': streamParticipant.streamId,
+      'accountId': streamParticipant.accountId,
+      'startTime': streamParticipant.startTime,
+      'twilioAccessToken': twilioAccessToken,
     }
   } catch (error) {
     throw new Error(error)
