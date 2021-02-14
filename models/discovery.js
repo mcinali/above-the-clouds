@@ -21,7 +21,7 @@ async function getActivePublicStreams(limit){
     const query = `
       SELECT *
       FROM streams
-      WHERE speaker_accessibility = 'public'
+      WHERE invite_only = false
       AND end_time is null
       ORDER BY start_time desc
       LIMIT ${limit}`

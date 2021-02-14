@@ -29,7 +29,6 @@ async function getTopicInfo(topicId){
 async function getRecentTopics(lookbackPeriod){
   try {
     const query = `SELECT * FROM topics WHERE created_at + INTERVAL '${lookbackPeriod} hours' >= now()`
-    console.log(query)
     return pool
             .query(query)
             .then(res => res.rows)
