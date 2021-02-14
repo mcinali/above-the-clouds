@@ -1,7 +1,7 @@
-const { getActiveStreamInvitationsForAccount, getActivePublicStreams } = require('../models/discovery')
+const { getActiveStreamInvitationsForAccount, getActivePublicAccountStreams } = require('../models/discovery')
 const { getTopicInfo, getRecentTopics } = require('../models/topics')
 const { getAccountsFollowing } = require('../models/follows')
-const { getActiveAccountStreams, getStreamParticipants, getStreamDetails } = require('../models/streams')
+const { getStreamParticipants, getStreamDetails } = require('../models/streams')
 const { fetchAccountDetailsBasic } = require('../services/accounts')
 // const { getStreamBasicInfo, getStreamParticipantsInfo } = require('../services/streams')
 
@@ -17,7 +17,7 @@ async function getDiscoveryStreams(accountId){
     const accountsFollowingRows = await getAccountsFollowing(accountId)
     const accountsFollowing = accountsFollowingRows.map(row => row.accountId)
     const accountsFollowingStreams = await Promise.all(accountsFollowing.map(async (followingAccountId) => {
-      return await getActiveAccountStreams(followingAccountId)
+      return await getActivePublicAccountStreams(followingAccountId)
     }))
     // Get all active streams of accounts followed by accounts: invited + created_at + # following accounts + # accounts followed by following accounts
     const accountsFollowedByFollowingSet = new Set([])
@@ -30,7 +30,7 @@ async function getDiscoveryStreams(accountId){
     const accountsFollowedByFollowing = [...accountsFollowedByFollowingSet]
     const accountsFollowedByFollowingFltrd = accountsFollowedByFollowing.filter(followedByFollowingAccountId => !accountsFollowing.includes(followedByFollowingAccountId))
     const accountsFollowedByFollowingStreams = await Promise.all(accountsFollowedByFollowingFltrd.map(async (followedByFollowingAccountId) => {
-      return await getActiveAccountStreams(followedByFollowingAccountId)
+      return await getActivePublicAccountStreams(followedByFollowingAccountId)
     }))
     // Collect all accessible stream Ids
     const streamIdsSet = new Set([])
