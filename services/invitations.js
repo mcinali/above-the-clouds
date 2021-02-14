@@ -1,12 +1,8 @@
 const {
   insertInvitation,
   checkInvitationCode,
-  getEmailFromInvitationId,
-  getInvitationsToEmail,
-  getInvitationsFromAccount,
   insertInvitationCodeConversion,
   checkInvitationCodeConversion,
-  getInvitationCodeIdForConvertedAccount,
 } = require('../models/invitations')
 const { getAccountDetails } = require('../models/accounts')
 const { sendEmail } = require('../sendgrid')

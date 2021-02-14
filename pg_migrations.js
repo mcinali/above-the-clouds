@@ -130,10 +130,11 @@ async function pgMigrate(){
   )
 
   await pgTransaction(
-    `CREATE TABLE IF NOT EXISTS followers (
+    `CREATE TABLE IF NOT EXISTS follows (
       id SERIAL PRIMARY KEY NOT NULL,
       account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
       follower_account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      unfollow BOOLEAN,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       UNIQUE (account_id, follower_account_id)
     )`
