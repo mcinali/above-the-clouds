@@ -29,7 +29,7 @@ router.post('/unfollow', async function (req, res) {
 })
 
 // Get Following Suggestions during Account Setup
-router.get('/following/suggestions/onboarding/:accountId', async function (req, res) {
+router.get('/suggestions/:accountId', async function (req, res) {
   try {
     const results = await getFollowingSuggestionsAccountSetup(req.params)
     return res.send(results)
