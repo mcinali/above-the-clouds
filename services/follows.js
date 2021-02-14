@@ -2,7 +2,7 @@ const {
   insertFollower,
   checkFollowerStatus,
   updateFollowerStatus,
-  getAccountFollowing,
+  getAccountsFollowing,
   getAccountFollowers,
 } = require('../models/follows')
 const {
@@ -46,19 +46,22 @@ async function unfollow(unfollowInfo){
   }
 }
 
-async function getFollowingSuggestionsAccountSetup(params){
+async function getFollowingSuggestions(params){
   try {
     const { accountId } = params
+    // Get accounts following
+    const accountsFollowingRows = await getAccountsFollowing(accountId)
+    const accountsFollowing = accountsFollowingRows.map(account => { return account.accountId })
     // Get email used to register
     const accountDetails = await fetchAccountDetails(accountId)
-    const accountEmail = accountDetails.email
-    // Get invitation email
+    const registrationEmail = accountDetails.email
+    // Get email invitation was sent to
     const invitationIdRow = await getInvitationIdForConvertedAccount(accountId)
     const invitationId = (invitationIdRow[0]) ? invitationIdRow[0].invitationCodeId : null
     const invitationEmailRow = await getEmailFromInvitationId(invitationId)
     const invitationEmail = (invitationEmailRow[0]) ? invitationEmailRow[0].email : null
-    // Get all account Ids for accounts that sent an invite to new user
-    const emailsFull = [...new Set([accountEmail, invitationEmail, null])]
+    // Get all accountIds for accounts that sent an invite to user
+    const emailsFull = [...new Set([registrationEmail, invitationEmail])]
     const emails = emailsFull.filter(x => x !== null)
     const invitationAccountIdsSet = new Set([])
     await Promise.all(emails.map(async (email) => {
@@ -67,18 +70,23 @@ async function getFollowingSuggestionsAccountSetup(params){
         invitationAccountIdsSet.add(accountIdRow.accountId)
       })
     }))
-    const invitationAccountIds = [...invitationAccountIdsSet]
-    // Get Following for accounts
-    const followingSet = new Set(invitationAccountIds)
-    await Promise.all(invitationAccountIds.map(async (accountId) => {
-      const followingArray = await getAccountFollowing(accountId)
-      followingArray.map(followingRow => {
-        followingSet.add(followingRow.accountId)
+    // Get "first order account ids" (i.e. accountIds that invited user + following accountIds)
+    const firstOrderAccountIdsSet = invitationAccountIdsSet
+    accountsFollowing.map(accountId => firstOrderAccountIdsSet.add(accountId))
+    const firstOrderAccountIds = [...firstOrderAccountIdsSet]
+    // Suggest accounts that are followed by following accounts/accounts that invited user
+    const followSuggestionsSet = invitationAccountIdsSet
+    await Promise.all(firstOrderAccountIds.map(async (accountId) => {
+      const followSuggestionsArray = await getAccountsFollowing(accountId)
+      followSuggestionsArray.map(followSuggestionRow => {
+        followSuggestionsSet.add(followSuggestionRow.accountId)
       })
     }))
-    const following = [...followingSet]
+    const followSuggestions = [...followSuggestionsSet]
+    // Filter out following accounts from follow suggestions array
+    const followSuggestionsFltrd = followSuggestions.filter(accountId => !accountsFollowing.includes(accountId))
     // Get account details for following accounts
-    const returnObject = await Promise.all(following.map(async (accountId) => {
+    const returnObject = await Promise.all(followSuggestionsFltrd.map(async (accountId) => {
       const followingAccountDetails = await fetchAccountDetails(accountId)
       return {
         accountId: accountId,
@@ -101,5 +109,5 @@ async function getFollowingSuggestionsAccountSetup(params){
 module.exports = {
   follow,
   unfollow,
-  getFollowingSuggestionsAccountSetup,
+  getFollowingSuggestions,
 }

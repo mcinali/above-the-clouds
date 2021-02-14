@@ -37,7 +37,7 @@ async function updateFollowerStatus(followerInfo){
   }
 }
 
-async function getAccountFollowing(accountId){
+async function getAccountsFollowing(accountId){
   try {
     const query = `SELECT account_id FROM follows WHERE follower_account_id = ${accountId} AND (unfollow != true OR unfollow is null)`
     return pool.query(query)
@@ -65,6 +65,6 @@ module.exports = {
   insertFollower,
   checkFollowerStatus,
   updateFollowerStatus,
-  getAccountFollowing,
+  getAccountsFollowing,
   getAccountFollowers,
 }

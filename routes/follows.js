@@ -3,7 +3,7 @@ const router = express.Router()
 const {
   follow,
   unfollow,
-  getFollowingSuggestionsAccountSetup,
+  getFollowingSuggestions,
 } = require('../services/follows')
 
 // Get Following Suggestions during Account Setup
@@ -31,7 +31,7 @@ router.post('/unfollow', async function (req, res) {
 // Get Following Suggestions during Account Setup
 router.get('/suggestions/:accountId', async function (req, res) {
   try {
-    const results = await getFollowingSuggestionsAccountSetup(req.params)
+    const results = await getFollowingSuggestions(req.params)
     return res.send(results)
   } catch (error) {
     console.error(error)

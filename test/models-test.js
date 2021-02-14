@@ -38,7 +38,7 @@ const {
   insertFollower,
   checkFollowerStatus,
   updateFollowerStatus,
-  getAccountFollowing,
+  getAccountsFollowing,
   getAccountFollowers,
 } = require('../models/follows')
 const {
@@ -464,8 +464,8 @@ describe('Follows Tests', function() {
       expect(follower.accountId).to.equal(followerInfo.accountId)
       expect(follower.followerAccountId).to.equal(followerInfo.followerAccountId)
       // Fetch Account Following
-      const goodAccountFollowing = await getAccountFollowing(followerAccountId)
-      const badAccountFollowing = await getAccountFollowing(accountId)
+      const goodAccountFollowing = await getAccountsFollowing(followerAccountId)
+      const badAccountFollowing = await getAccountsFollowing(accountId)
       // Make sure Account Following were fetched correctly
       expect(goodAccountFollowing[0].accountId).to.equal(accountId)
       should.not.exist(badAccountFollowing[0])
@@ -499,7 +499,7 @@ describe('Follows Tests', function() {
       // Make sure follower info for unfollow = true is fetched correctly
       const unfollowedStatusCheck = await checkFollowerStatus(unfollowInfo)
       expect(unfollowedStatusCheck[0].unfollow).to.equal(unfollowInfo.unfollow)
-      const unfollowedFollowing = await getAccountFollowing(followerAccountId)
+      const unfollowedFollowing = await getAccountsFollowing(followerAccountId)
       should.not.exist(unfollowedFollowing[0])
       const unfollowingFollowers = await getAccountFollowers(accountId)
       should.not.exist(unfollowingFollowers[0])
@@ -517,7 +517,7 @@ describe('Follows Tests', function() {
       // Make sure follower info for unfollow = false is fetched correctly
       const refollowedStatusCheck = await checkFollowerStatus(refollowInfo)
       expect(refollowedStatusCheck[0].unfollow).to.equal(refollowInfo.unfollow)
-      const refollowedFollowing = await getAccountFollowing(followerAccountId)
+      const refollowedFollowing = await getAccountsFollowing(followerAccountId)
       expect(refollowedFollowing[0].accountId).to.equal(accountId)
       const refollowingFollowers = await getAccountFollowers(accountId)
       expect(refollowingFollowers[0].accountId).to.equal(followerAccountId)
