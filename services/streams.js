@@ -11,7 +11,7 @@ const {
   updateStreamParticipantEndTime,
   updateStreamEndTime,
 } = require('../models/streams')
-const { getAccountInfo, getAccountDetails, getAccountIdFromEmail } = require('../models/accounts')
+const { getAccountInfo, getAccountDetails, getProfilePic } = require('../models/accounts')
 const { getAccountsFollowing } = require('../models/follows')
 const { sendEmail } = require('../sendgrid')
 const { twilioClient, createTwilioRoomAccessToken } = require('../twilio')
@@ -33,10 +33,10 @@ async function createStream(streamInfo){
                               uniqueName: stream.id.toString(),
                             })
     return {
-      'streamId': stream.id,
-      'topicId': stream.topicId,
-      'startTime': stream.startTime,
-      'endTime': stream.endTime,
+      streamId: stream.id,
+      topicId: stream.topicId,
+      startTime: stream.startTime,
+      endTime: stream.endTime,
     }
   } catch (error) {
     throw new Error(error)
@@ -49,14 +49,14 @@ async function getStreamBasicInfo(streamId){
     const streamDetails = await getStreamDetails(streamId)
     const topicInfo = await getTopicInfo(streamDetails.topicId)
     return {
-      'streamId': streamDetails.id,
-      'topicId': streamDetails.topicId,
-      'topic': topicInfo.topic,
-      'creatorId': streamDetails.creatorId,
-      'capacity': streamDetails.capacity,
-      'inviteOnly': streamDetails.inviteOnly,
-      'startTime': streamDetails.startTime,
-      'endTime': streamDetails.endTime,
+      streamId: streamDetails.id,
+      topicId: streamDetails.topicId,
+      topic: topicInfo.topic,
+      creatorId: streamDetails.creatorId,
+      capacity: streamDetails.capacity,
+      inviteOnly: streamDetails.inviteOnly,
+      startTime: streamDetails.startTime,
+      endTime: streamDetails.endTime,
     }
   } catch (error) {
     throw new Error(error)
@@ -70,13 +70,16 @@ async function getStreamParticipantsInfo(streamId){
     const participants = streamParticipants.map(async (participant) => {
       const participantInfo = await getAccountInfo(participant.accountId)
       const participantDetails = await getAccountDetails(participant.accountId)
+      const profilePic = await getProfilePic(participant.accountId)
+      const profilePicture = (profilePic) ? profilePic.profilePicture : null
       return {
-        'streamParticipantId': participant.id,
-        'accountId': participant.accountId,
-        'username': participantInfo.username,
-        'firstname': participantDetails.firstname,
-        'lastname': participantDetails.lastname,
-        'startTime': participant.startTime,
+        streamParticipantId: participant.id,
+        accountId: participant.accountId,
+        username: participantInfo.username,
+        firstname: participantDetails.firstname,
+        lastname: participantDetails.lastname,
+        profilePicture: profilePicture,
+        startTime: participant.startTime,
       }
     })
     return Promise.all(participants)
@@ -92,13 +95,16 @@ async function getStreamInviteesInfo(streamId){
     const invitees = streamInvites.map(async (invitee) => {
       const inviteeInfo = await getAccountInfo(invitee.inviteeAccountId)
       const inviteeDetails = await getAccountDetails(invitee.inviteeAccountId)
+      const profilePic = await getProfilePic(invitee.inviteeAccountId)
+      const profilePicture = (profilePic) ? profilePic.profilePicture : null
       return {
-        'accountId': invitee.accountId,
-        'inviteeAccountId': invitee.inviteeAccountId,
-        'username': inviteeInfo.username,
-        'firstname': inviteeDetails.firstname,
-        'lastname': inviteeDetails.lastname,
-        'ts': invitee.createdAt,
+        accountId: invitee.accountId,
+        inviteeAccountId: invitee.inviteeAccountId,
+        username: inviteeInfo.username,
+        firstname: inviteeDetails.firstname,
+        lastname: inviteeDetails.lastname,
+        profilePicture: profilePicture,
+        ts: invitee.createdAt,
       }
     })
     return Promise.all(invitees)
@@ -132,9 +138,9 @@ async function getStreamInfo(input){
     const invitees = inAppInvitees
     invitees.sort((a,b) => (a.ts < b.ts) ? 1 : -1)
     return {
-      'info': basicInfo,
-      'participants': participants,
-      'invitees': invitees,
+      info: basicInfo,
+      participants: participants,
+      invitees: invitees,
     }
   } catch (error) {
     throw new Error(error)
@@ -162,6 +168,8 @@ async function inviteParticipantToStream(inviteInfo){
     const topic = await getTopicInfo(streamDetails.topicId)
     const inviteeAccount = await getAccountInfo(inviteeAccountId)
     const inviteeAccountDetails = await getAccountDetails(inviteeAccountId)
+    const profilePic = await getProfilePic(inviteeAccountId)
+    const profilePicture = (profilePic) ? profilePic.profilePicture : null
     const msg = {
       from: 'abovethecloudsapp@gmail.com',
       to: inviteeAccountDetails.email,
@@ -175,12 +183,13 @@ async function inviteParticipantToStream(inviteInfo){
     // Send email
     sendEmail(msg)
     return {
-      'accountId': accountId,
-      'inviteeAccountId': inviteeAccountId,
-      'username': inviteeAccount.username,
-      'firstname': inviteeAccountDetails.firstname,
-      'lastname': inviteeAccountDetails.lastname,
-      'ts': streamInvitation.createdAt,
+      accountId: accountId,
+      inviteeAccountId: inviteeAccountId,
+      username: inviteeAccount.username,
+      firstname: inviteeAccountDetails.firstname,
+      lastname: inviteeAccountDetails.lastname,
+      profilePicture: profilePicture,
+      ts: streamInvitation.createdAt,
     }
   } catch (error) {
     throw new Error(error)
@@ -216,11 +225,11 @@ async function joinStream(joinInfo){
       const twilioUniqueRoomName = streamInfo.streamId.toString()
       const twilioAccessToken = createTwilioRoomAccessToken(twilioUserId, twilioUniqueRoomName)
       return {
-        'streamParticipantId': streamInfo.id,
-        'streamId': streamInfo.streamId,
-        'accountId': streamInfo.accountId,
-        'startTime': streamInfo.startTime,
-        'twilioAccessToken': twilioAccessToken,
+        streamParticipantId: streamInfo.id,
+        streamId: streamInfo.streamId,
+        accountId: streamInfo.accountId,
+        startTime: streamInfo.startTime,
+        twilioAccessToken: twilioAccessToken,
       }
     }
     // Throw error if stream is already at capacity
@@ -259,11 +268,11 @@ async function joinStream(joinInfo){
     const twilioUniqueRoomName = streamParticipant.streamId.toString()
     const twilioAccessToken = createTwilioRoomAccessToken(twilioUserId, twilioUniqueRoomName)
     return {
-      'streamParticipantId': streamParticipant.id,
-      'streamId': streamParticipant.streamId,
-      'accountId': streamParticipant.accountId,
-      'startTime': streamParticipant.startTime,
-      'twilioAccessToken': twilioAccessToken,
+      streamParticipantId: streamParticipant.id,
+      streamId: streamParticipant.streamId,
+      accountId: streamParticipant.accountId,
+      startTime: streamParticipant.startTime,
+      twilioAccessToken: twilioAccessToken,
     }
   } catch (error) {
     throw new Error(error)
@@ -293,10 +302,10 @@ async function leaveStream(streamParticipantId){
     }
     const streamDetails = await getStreamDetails(streamId)
     return {
-      'streamId':streamId,
-      'accountId':streamParticipantEndTime.accountId,
-      'participantEndTime':streamParticipantEndTime.endTime,
-      'streamEndTime':streamDetails.endTime,
+      streamId:streamId,
+      accountId:streamParticipantEndTime.accountId,
+      participantEndTime:streamParticipantEndTime.endTime,
+      streamEndTime:streamDetails.endTime,
     }
   } catch (error) {
     throw new Error(error)
@@ -325,8 +334,8 @@ async function endStream(streamId){
     // End stream
     const streamEndTime = updateStreamEndTime(streamId)
     return {
-      'streamId':streamId,
-      'endTime':streamEndTime.endTime,
+      streamId:streamId,
+      endTime:streamEndTime.endTime,
     }
   } catch (error) {
     throw new Error(error)
