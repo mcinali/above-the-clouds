@@ -44,6 +44,7 @@ const {
 const {
   insertTopic,
   getTopicInfo,
+  getRecentTopics,
 } = require('../models/topics')
 const {
   insertStream,
@@ -529,7 +530,9 @@ describe('Topics Tests', function() {
     - Insert test Topic
     - Check to make sure Topic info is correct
     - Fetch Topic Info
-    - Check to make sure Topic Info was fetched correctly`, async function() {
+    - Check to make sure Topic Info was fetched correctly
+    - Fetch recent topics
+    - Make sure recent topics were fetched correctly`, async function() {
       // Insert test topic
       const accountRow = await getAccountRow()
       const accountId = accountRow.id
@@ -548,6 +551,20 @@ describe('Topics Tests', function() {
       expect(fetchedTopicInfo.accountId).to.equal(topic.accountId)
       expect(fetchedTopicInfo.topic).to.equal(topic.topic)
       expect(fetchedTopicInfo.createdAt.getTime()).to.equal(topic.createdAt.getTime())
+      // Fetch recent topics
+      const lookBackPeriod = 1
+      const recentTopics = await getRecentTopics(lookBackPeriod)
+      const noRecentTopics = await getRecentTopics(0)
+      // Make sure recent topics were fetched correctly
+      recentTopics.map(topicRow => {
+        should.exist(topicRow.id)
+        should.exist(topicRow.accountId)
+        should.exist(topicRow.topic)
+        const now = new Date(new Date().getTime()).getTime()))
+        const createdAtTS = topicRow.createdAt.getTime() + (lookBackPeriod*60*60*1000)
+        expect(createdAtTS).to.be.above(now)
+      })
+      should.not.exist(noRecentTopics[0])
   })
 })
 
@@ -582,7 +599,7 @@ describe('Streams Tests', function() {
         topicId: topicId,
         accountId: accountId,
         inviteOnly: true,
-        capacity:5,
+        capacity:4,
       }
       const streamStart = new Date(new Date().getTime())
       const stream = await insertStream(streamInfo)
@@ -711,7 +728,7 @@ describe('Discovery Tests', function() {
         topicId: topic.id,
         accountId: accountId,
         inviteOnly: false,
-        capacity: 5,
+        capacity: 4,
       }
       const activeStream = await insertStream(streamInfo)
       const inactiveStream = await insertStream(streamInfo)

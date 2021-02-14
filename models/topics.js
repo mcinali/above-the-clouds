@@ -26,7 +26,21 @@ async function getTopicInfo(topicId){
   }
 }
 
+async function getRecentTopics(lookbackPeriod){
+  try {
+    const query = `SELECT * FROM topics WHERE created_at + INTERVAL '${lookbackPeriod} hours' >= now()`
+    console.log(query)
+    return pool
+            .query(query)
+            .then(res => res.rows)
+            .catch(error => new Error(error))
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 module.exports = {
   insertTopic,
   getTopicInfo,
+  getRecentTopics,
 }
