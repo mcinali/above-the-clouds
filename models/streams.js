@@ -2,10 +2,10 @@ const { pool, pgTransaction } = require('../pg_helpers')
 
 async function insertStream(streamInfo){
   try {
-    const { topicId, accountId, speakerAccessibility, capacity } = streamInfo
+    const { topicId, accountId, inviteOnly, capacity } = streamInfo
     const query = `
-      INSERT INTO streams (topic_id, creator_id, speaker_accessibility, capacity)
-      VALUES (${topicId}, ${accountId}, '${speakerAccessibility}', ${capacity})
+      INSERT INTO streams (topic_id, creator_id, invite_only, capacity)
+      VALUES (${topicId}, ${accountId}, ${inviteOnly}, ${capacity})
       RETURNING *`
     const result = await pgTransaction(query)
     return result.rows[0]
@@ -17,7 +17,7 @@ async function insertStream(streamInfo){
 async function getStreamDetails(streamId){
   try {
     const query = `
-      SELECT id, topic_id, creator_id, speaker_accessibility, capacity, start_time, end_time
+      SELECT id, topic_id, creator_id, invite_only, capacity, start_time, end_time
       FROM streams where id = ${streamId}`
     return pool
             .query(query)

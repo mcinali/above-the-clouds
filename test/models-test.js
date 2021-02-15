@@ -44,6 +44,7 @@ const {
 const {
   insertTopic,
   getTopicInfo,
+  getRecentTopics,
 } = require('../models/topics')
 const {
   insertStream,
@@ -59,7 +60,7 @@ const {
 } = require('../models/streams')
 const {
   getActiveStreamInvitationsForAccount,
-  getActivePublicStreams,
+  getActivePublicAccountStreams,
 } = require('../models/discovery')
 
 const testUsername = 'testAccount'
@@ -529,7 +530,9 @@ describe('Topics Tests', function() {
     - Insert test Topic
     - Check to make sure Topic info is correct
     - Fetch Topic Info
-    - Check to make sure Topic Info was fetched correctly`, async function() {
+    - Check to make sure Topic Info was fetched correctly
+    - Fetch recent topics
+    - Make sure recent topics were fetched correctly`, async function() {
       // Insert test topic
       const accountRow = await getAccountRow()
       const accountId = accountRow.id
@@ -548,6 +551,20 @@ describe('Topics Tests', function() {
       expect(fetchedTopicInfo.accountId).to.equal(topic.accountId)
       expect(fetchedTopicInfo.topic).to.equal(topic.topic)
       expect(fetchedTopicInfo.createdAt.getTime()).to.equal(topic.createdAt.getTime())
+      // Fetch recent topics
+      const lookBackPeriod = 1
+      const recentTopics = await getRecentTopics(lookBackPeriod)
+      const noRecentTopics = await getRecentTopics(0)
+      // Make sure recent topics were fetched correctly
+      recentTopics.map(topicRow => {
+        should.exist(topicRow.id)
+        should.exist(topicRow.accountId)
+        should.exist(topicRow.topic)
+        const now = new Date(new Date().getTime()).getTime()
+        const createdAtTS = topicRow.createdAt.getTime() + (lookBackPeriod*60*60*1000)
+        expect(createdAtTS).to.be.above(now)
+      })
+      should.not.exist(noRecentTopics[0])
   })
 })
 
@@ -581,15 +598,15 @@ describe('Streams Tests', function() {
       const streamInfo = {
         topicId: topicId,
         accountId: accountId,
-        speakerAccessibility:'invite-only',
-        capacity:5,
+        inviteOnly: true,
+        capacity:4,
       }
       const streamStart = new Date(new Date().getTime())
       const stream = await insertStream(streamInfo)
       // Check to make sure Stream info was inserted correctly
       expect(stream.topicId).to.equal(streamInfo.topicId)
       expect(stream.creatorId).to.equal(streamInfo.accountId)
-      expect(stream.speakerAccessibility).to.equal(streamInfo.speakerAccessibility)
+      expect(stream.inviteOnly).to.equal(streamInfo.inviteOnly)
       expect(stream.capacity).to.equal(streamInfo.capacity)
       expect(stream.startTime.getTime() - streamStart.getTime()).to.be.within(0,1)
       should.not.exist(stream.endTime)
@@ -599,7 +616,7 @@ describe('Streams Tests', function() {
       expect(stream.id).to.equal(fetchedStream.id)
       expect(stream.topicId).to.equal(fetchedStream.topicId)
       expect(stream.creatorId).to.equal(fetchedStream.creatorId)
-      expect(stream.speakerAccessibility).to.equal(fetchedStream.speakerAccessibility)
+      expect(stream.inviteOnly).to.equal(fetchedStream.inviteOnly)
       expect(stream.capacity).to.equal(fetchedStream.capacity)
       expect(stream.startTime.getTime()).to.equal(fetchedStream.startTime.getTime())
       should.not.exist(fetchedStream.endTime)
@@ -681,6 +698,8 @@ describe('Discovery Tests', function() {
     - Insert Stream Invitations for Inactive Stream
     - Fetch Active Stream Invitations for Account
     - Check to make sure Active Stream Invitations for Account were fetched correctly
+    - Insert active invite-only stream
+    - Insert participants for Active Streams
     - Fetch Active Public Streams
     - Check to make sure Active Public Streams were fetched correctly`, async function() {
       // Insert new test Account
@@ -710,8 +729,8 @@ describe('Discovery Tests', function() {
       const streamInfo = {
         topicId: topic.id,
         accountId: accountId,
-        speakerAccessibility:'public',
-        capacity:5,
+        inviteOnly: false,
+        capacity: 4,
       }
       const activeStream = await insertStream(streamInfo)
       const inactiveStream = await insertStream(streamInfo)
@@ -738,15 +757,23 @@ describe('Discovery Tests', function() {
       expect(activeStreamInvitationsForAccount[0].streamId).to.equal(activeStreamInvitation.streamId)
       expect(activeStreamInvitationsForAccount[0].accountId).to.equal(activeStreamInvitation.accountId)
       expect(activeStreamInvitationsForAccount[0].inviteeAccountId).to.equal(activeStreamInvitation.inviteeAccountId)
+      // Insert active invite-only stream
+      const inviteOnlyStreamInfo = {
+        topicId: topic.id,
+        accountId: accountId,
+        inviteOnly: true,
+        capacity: 4,
+      }
+      const inviteOnlyActiveStream = await insertStream(inviteOnlyStreamInfo)
+      // Insert participants for Active Streams
+      const participant1 = await insertStreamParticipant({streamId: activeStream.id, accountId: accountId})
+      const participant2 = await insertStreamParticipant({streamId: inviteOnlyActiveStream.id, accountId: accountId})
       // Fetch Active Public Streams
-      const activePublicStreams = await getActivePublicStreams(1)
+      const activePublicStreams = await getActivePublicAccountStreams(accountId)
       // Check to make sure Active Public Streams were fetched correctly
       expect(activePublicStreams.length).to.equal(1)
-      expect(activePublicStreams[0].id).to.equal(activeStream.id)
-      expect(activePublicStreams[0].topicId).to.equal(activeStream.topicId)
-      expect(activePublicStreams[0].speakerAccessibility).to.equal(activeStream.speakerAccessibility)
-      expect(activePublicStreams[0].capacity).to.equal(activeStream.capacity)
-      expect(activePublicStreams[0].startTime.getTime()).to.equal(activeStream.startTime.getTime())
+      expect(activePublicStreams[0].streamId).to.equal(activeStream.id)
+      expect(activePublicStreams[0].accountId).to.equal(accountId)
       should.not.exist(activePublicStreams[0].endTime)
   })
 })

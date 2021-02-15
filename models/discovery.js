@@ -16,15 +16,13 @@ async function getActiveStreamInvitationsForAccount(accountId){
   }
 }
 
-async function getActivePublicStreams(limit){
+async function getActivePublicAccountStreams(accountId){
   try {
     const query = `
-      SELECT *
-      FROM streams
-      WHERE speaker_accessibility = 'public'
+      SELECT * FROM stream_participants
+      WHERE account_id = ${accountId}
       AND end_time is null
-      ORDER BY start_time desc
-      LIMIT ${limit}`
+      AND stream_id in (SELECT id FROM streams WHERE invite_only = false)`
     return pool
             .query(query)
             .then(res => res.rows)
@@ -36,5 +34,5 @@ async function getActivePublicStreams(limit){
 
 module.exports = {
   getActiveStreamInvitationsForAccount,
-  getActivePublicStreams,
+  getActivePublicAccountStreams,
 }
