@@ -52,6 +52,9 @@ async function getFollowingSuggestions(params){
     // Get accounts following
     const accountsFollowingRows = await getAccountsFollowing(accountId)
     const accountsFollowing = accountsFollowingRows.map(account => { return account.accountId })
+    // Get account followers
+    const accountFollowersRows = await getAccountFollowers(accountId)
+    const accountFollowers = accountFollowersRows.map(account => { return account.accountId })
     // Get email used to register
     const accountDetails = await fetchAccountDetails(accountId)
     const registrationEmail = accountDetails.email
@@ -82,11 +85,12 @@ async function getFollowingSuggestions(params){
         followSuggestionsSet.add(followSuggestionRow.accountId)
       })
     }))
-    const followSuggestions = [...followSuggestionsSet]
+    const followSuggestions = [...followSuggestionsSet].concat(accountFollowers)
     // Filter out following accounts from follow suggestions array
     const followSuggestionsFltrd = followSuggestions.filter(accountId => !accountsFollowing.includes(accountId))
+    const followSuggestionsFinal = followSuggestionsFltrd.filter(suggestionsAccountId => suggestionsAccountId!=accountId)
     // Get account details for following accounts
-    const returnObject = await Promise.all(followSuggestionsFltrd.map(async (accountId) => {
+    const returnObject = await Promise.all(followSuggestionsFinal.map(async (accountId) => {
       const followingAccountDetails = await fetchAccountDetails(accountId)
       return {
         accountId: accountId,
