@@ -64,14 +64,17 @@ async function getStreamBasicInfo(streamId){
 }
 
 // Get Stream Participants Info
-async function getStreamParticipantsInfo(streamId){
+async function getStreamParticipantsInfo(accountId, streamId){
   try {
     const streamParticipants = await getStreamParticipants(streamId)
+    const accountFollowingRows = await getAccountsFollowing(accountId)
+    const accountFollowing = accountFollowingRows.map(item => item.accountId)
     const participants = streamParticipants.map(async (participant) => {
       const participantInfo = await getAccountInfo(participant.accountId)
       const participantDetails = await getAccountDetails(participant.accountId)
       const profilePic = await getProfilePic(participant.accountId)
       const profilePicture = (profilePic) ? profilePic.profilePicture : null
+      const following = (participant.accountId==accountId) ? null : (accountFollowing.includes(participant.accountId)) ? true : false
       return {
         streamParticipantId: participant.id,
         accountId: participant.accountId,
@@ -79,6 +82,7 @@ async function getStreamParticipantsInfo(streamId){
         firstname: participantDetails.firstname,
         lastname: participantDetails.lastname,
         profilePicture: profilePicture,
+        following: following,
         startTime: participant.startTime,
       }
     })
@@ -89,14 +93,17 @@ async function getStreamParticipantsInfo(streamId){
 }
 
 // Get Stream Invitees Info
-async function getStreamInviteesInfo(streamId){
+async function getStreamInviteesInfo(accountId, streamId){
   try {
     const streamInvites = await getStreamInvitations(streamId)
+    const accountFollowingRows = await getAccountsFollowing(accountId)
+    const accountFollowing = accountFollowingRows.map(item => item.accountId)
     const invitees = streamInvites.map(async (invitee) => {
       const inviteeInfo = await getAccountInfo(invitee.inviteeAccountId)
       const inviteeDetails = await getAccountDetails(invitee.inviteeAccountId)
       const profilePic = await getProfilePic(invitee.inviteeAccountId)
       const profilePicture = (profilePic) ? profilePic.profilePicture : null
+      const following = (invitee.accountId==accountId) ? null : (accountFollowing.includes(invitee.accountId)) ? true : false
       return {
         accountId: invitee.accountId,
         inviteeAccountId: invitee.inviteeAccountId,
@@ -104,6 +111,7 @@ async function getStreamInviteesInfo(streamId){
         firstname: inviteeDetails.firstname,
         lastname: inviteeDetails.lastname,
         profilePicture: profilePicture,
+        following: following,
         ts: invitee.createdAt,
       }
     })
@@ -133,8 +141,8 @@ async function getStreamInfo(input){
     }
     // Collection components of stream info: basic + participants + invitees + email outreach
     const basicInfo = await getStreamBasicInfo(streamId)
-    const participants = await getStreamParticipantsInfo(streamId)
-    const inAppInvitees = await getStreamInviteesInfo(streamId)
+    const participants = await getStreamParticipantsInfo(accountId, streamId)
+    const inAppInvitees = await getStreamInviteesInfo(accountId, streamId)
     const invitees = inAppInvitees
     invitees.sort((a,b) => (a.ts < b.ts) ? 1 : -1)
     return {
@@ -170,6 +178,9 @@ async function inviteParticipantToStream(inviteInfo){
     const inviteeAccountDetails = await getAccountDetails(inviteeAccountId)
     const profilePic = await getProfilePic(inviteeAccountId)
     const profilePicture = (profilePic) ? profilePic.profilePicture : null
+    const accountFollowingRows = await getAccountsFollowing(accountId)
+    const accountFollowing = accountFollowingRows.map(item => item.accountId)
+    const following = (inviteeAccountId==accountId) ? null : (accountFollowing.includes(inviteeAccountId)) ? true : false
     const msg = {
       from: 'abovethecloudsapp@gmail.com',
       to: inviteeAccountDetails.email,
@@ -189,6 +200,7 @@ async function inviteParticipantToStream(inviteInfo){
       firstname: inviteeAccountDetails.firstname,
       lastname: inviteeAccountDetails.lastname,
       profilePicture: profilePicture,
+      following: following,
       ts: streamInvitation.createdAt,
     }
   } catch (error) {
@@ -345,7 +357,6 @@ async function endStream(streamId){
 module.exports = {
   createStream,
   getStreamBasicInfo,
-  getStreamParticipantsInfo,
   getStreamInfo,
   inviteParticipantToStream,
   joinStream,

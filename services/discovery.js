@@ -3,7 +3,6 @@ const { getTopicInfo, getRecentTopics } = require('../models/topics')
 const { getAccountsFollowing } = require('../models/follows')
 const { getStreamParticipants, getStreamDetails } = require('../models/streams')
 const { fetchAccountDetailsBasic } = require('../services/accounts')
-// const { getStreamBasicInfo, getStreamParticipantsInfo } = require('../services/streams')
 
 
 // Get discovery streams
@@ -60,8 +59,8 @@ async function getDiscoveryStreams(accountId){
         const participantAccountDetails = await fetchAccountDetailsBasic(participant.accountId)
         const following = accountsFollowing.filter(followingAccountId => followingAccountId==participant.accountId)
         const followedByFollowing = accountsFollowedByFollowingFltrd.filter(followedByFollowingAccountId => followedByFollowingAccountId==participant.accountId)
-        participantAccountDetails['following'] = (following.length>0) ? true : false
-        participantAccountDetails['followedByFollowing'] = (followedByFollowing.length>0) ? true : false
+        participantAccountDetails['following'] = (following.length>0) ? true : (participant.accountId==accountId) ? null : false
+        participantAccountDetails['followedByFollowing'] = (followedByFollowing.length>0) ? true : (participant.accountId==accountId) ? null : false
         return participantAccountDetails
       }))
       // Attached stream participant information to stream object
@@ -119,17 +118,6 @@ async function getDiscoveryStreams(accountId){
     throw new Error(error)
   }
 
-}
-
-async function formatStreamOutput(streamId, invitesDict, inNetworkStreamDict){
-  const streamBasicInfo = await getStreamBasicInfo(streamId)
-  streamBasicInfo['sumInvites'] = (invitesDict[streamId]) ? (invitesDict[streamId]) : null
-  streamBasicInfo['sumConnections'] = (inNetworkStreamDict[streamId]) ? inNetworkStreamDict[streamId] : null
-  const streamParticipantInfo = await getStreamParticipantsInfo(streamId)
-  return {
-    'info': streamBasicInfo,
-    'participants': streamParticipantInfo,
-  }
 }
 
 module.exports = {
