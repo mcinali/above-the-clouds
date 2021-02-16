@@ -2,9 +2,10 @@ const express = require('express')
 const router = express.Router()
 const { validateInvitationCode } = require('../middleware/validation')
 const { sendInvitation } = require('../services/invitations')
+const { checkAccountBodyAccessToken } = require('../middleware/auth')
 
 // Send app inviation to email
-router.post('/', async function (req, res) {
+router.post('/', checkAccountBodyAccessToken, async function (req, res) {
   try {
     const results = await sendInvitation(req.body)
     return res.send(results)

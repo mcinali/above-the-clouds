@@ -1,9 +1,10 @@
 const express = require('express')
 const router = express.Router()
 const { getDiscoveryStreams } = require('../services/discovery')
+const { checkAccountParamsAccessToken } = require('../middleware/auth')
 
 // Get discovery streams for user
-router.get('/:accountId', async function (req, res) {
+router.get('/:accountId', checkAccountParamsAccessToken, async function (req, res) {
   try {
     const results = await getDiscoveryStreams(req.params.accountId)
     return res.send(results)

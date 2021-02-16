@@ -14,6 +14,33 @@ async function insertAccessToken(tokenInfo){
   }
 }
 
+async function getPasswordFromUsername(username){
+  try {
+    const query = `SELECT encode(password, 'escape') as password FROM accounts WHERE username = '${username}'`
+    return pool.query(query)
+            .then(res => res.rows[0])
+            .catch(error => new Error(error))
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+async function getAccessTokenFromAccountId(accountId){
+  try {
+    const query = `
+      SELECT encode(access_token, 'escape') as access_token
+      FROM access_tokens
+      WHERE account_id = ${accountId} AND access_token_expiration >= now()`
+    return pool.query(query)
+            .then(res => res.rows)
+            .catch(error => new Error(error))
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 module.exports = {
   insertAccessToken,
+  getPasswordFromUsername,
+  getAccessTokenFromAccountId,
 }

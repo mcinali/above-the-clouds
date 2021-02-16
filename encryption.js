@@ -29,8 +29,18 @@ function generateAccessToken(){
   return prefix + '.' + suffix
 }
 
+function verifyHashedText(plainText, hashedText){
+  try {
+    const verified = bcrypt.compareSync(plainText, hashedText)
+    return verified
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 module.exports = {
   hashPlainText,
   generateRandomnCode,
   generateAccessToken,
+  verifyHashedText,
 }

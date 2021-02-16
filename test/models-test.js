@@ -26,6 +26,8 @@ const {
 } = require('../models/accounts')
 const {
   insertAccessToken,
+  getPasswordFromUsername,
+  getAccessTokenFromAccountId,
 } = require('../models/auth')
 const {
   insertInvitation,
@@ -334,7 +336,11 @@ describe('Accounts Tests', function() {
   it(`Should...
     - Insert auth test account & account detials
     - Insert access token
-    - Make sure access token was inserted correctly`, async function() {
+    - Make sure access token was inserted correctly
+    - Fetch password
+    - Make sure password was fetched correctly
+    - Fetch access token from accountId
+    - Make sure access token from accountId was fetched correctly`, async function() {
       // Insert auth test account & account detials
       const accountInfo = {
         username:'authTest',
@@ -363,6 +369,18 @@ describe('Accounts Tests', function() {
       const now = new Date(new Date().getTime()).getTime()
       expect(accessToken.accessTokenExpiration.getTime()).to.be.above(now)
       expect(accessToken.accessTokenExpiration.getTime()).to.be.below(now+(accessTokenInfo.accessTokenTTL*24*60*60*1000))
+      // Fetch password
+      const goodPasswordRow = await getPasswordFromUsername(accountInfo.username)
+      const badPasswordRow = await getPasswordFromUsername('@uthTest')
+      const goodPassword = goodPasswordRow.password
+      // Make sure password was fetched correctly
+      expect(goodPassword).to.equal(accountInfo.password)
+      should.not.exist(badPasswordRow)
+      // Fetch access token from accountId
+      const accessTokenRows = await getAccessTokenFromAccountId(account.id)
+      // Make sure access token from accountId was fetched correctly
+      expect(accessTokenRows.length).to.equal(1)
+      expect(accessTokenRows[0].accessToken).to.equal(accessTokenInfo.accessToken)
     })
   })
 

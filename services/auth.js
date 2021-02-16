@@ -1,10 +1,15 @@
 const {
   insertAccessToken,
 } = require('../models/auth')
+const { getAccountIdFromUsername } = require('../models/accounts')
 const { generateAccessToken, hashPlainText } = require('../encryption')
 
-async function createAccessToken(accountId){
+async function createAccessToken(username){
   try {
+    // Get accountId from username
+    const accountIdRow = await getAccountIdFromUsername(username)
+    const accountId = accountIdRow.id
+    // Create access token & store hashed version in DB
     const accessToken = generateAccessToken()
     const hashedAccessTokenInfo = {
       accountId: accountId,
@@ -12,6 +17,7 @@ async function createAccessToken(accountId){
       accessTokenTTL: 180,
     }
     const storedAccessToken = await insertAccessToken(hashedAccessTokenInfo)
+    // Return plain text access token
     const plainTextAccessTokenInfo = {
       hastoken: true,
       accessToken: accessToken,
