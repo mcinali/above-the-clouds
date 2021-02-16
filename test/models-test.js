@@ -25,6 +25,9 @@ const {
   fuzzyMatchAccountsByFullName,
 } = require('../models/accounts')
 const {
+  insertAccessToken,
+} = require('../models/auth')
+const {
   insertInvitation,
   checkInvitationCode,
   getEmailFromInvitationId,
@@ -326,6 +329,42 @@ describe('Accounts Tests', function() {
       expect(accountFromFuzzyMatchFullNameBad3.length).to.equal(0)
   })
 })
+
+describe('Accounts Tests', function() {
+  it(`Should...
+    - Insert auth test account & account detials
+    - Insert access token
+    - Make sure access token was inserted correctly`, async function() {
+      // Insert auth test account & account detials
+      const accountInfo = {
+        username:'authTest',
+        password:'authTestPassword',
+      }
+      await pgTransaction(`DELETE FROM accounts WHERE username = '${accountInfo.username}'`)
+      const account = await insertAccount(accountInfo)
+      const accountDetailsInfo = {
+        accountId: account.id,
+        email: 'auth@test.com',
+        phone:9129239456,
+        firstname:'Auth',
+        lastname:'Test',
+      }
+      const accountDetails = await insertAccountDetails(accountDetailsInfo)
+      // Insert access token
+      const accessTokenInfo = {
+        accountId: account.id,
+        accessToken: 'token',
+        accessTokenTTL: 1,
+      }
+      const accessToken = await insertAccessToken(accessTokenInfo)
+      // Make sure access token was inserted correctly
+      expect(accessToken.accountId).to.equal(accessTokenInfo.accountId)
+      expect(accessToken.accessToken).to.equal(accessTokenInfo.accessToken)
+      const now = new Date(new Date().getTime()).getTime()
+      expect(accessToken.accessTokenExpiration.getTime()).to.be.above(now)
+      expect(accessToken.accessTokenExpiration.getTime()).to.be.below(now+(accessTokenInfo.accessTokenTTL*24*60*60*1000))
+    })
+  })
 
 describe('Invitations Tests', function() {
   it(`Should...

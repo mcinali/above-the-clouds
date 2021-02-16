@@ -6,7 +6,7 @@ const {
   fetchPhoneAccessTokenFromAccessCode,
   verifyPhoneAccessToken,
 } = require('../models/preregistration')
-const { hashPlainText } = require('../encryption')
+const { generateRandomnCode } = require('../encryption')
 const { sendEmail } = require('../sendgrid')
 const { sendSMS } = require('../twilio')
 
@@ -16,7 +16,7 @@ async function createEmailAccessCodes(accountInfo){
     const { email } = accountInfo
     const accessCodeInt = Math.floor((Math.random()*1000000)+1)
     const accessCode = String(accessCodeInt).padStart(6, '0')
-    const accessToken = hashPlainText(accessCode + email)
+    const accessToken = generateRandomnCode(32, 'base64')
     const emailAccessCodesInfo = {
       email: email,
       accessCode: accessCode,
@@ -64,7 +64,7 @@ async function createPhoneAccessCodes(accountInfo){
     const { phone } = accountInfo
     const accessCodeInt = Math.floor((Math.random()*1000000)+1)
     const accessCode = String(accessCodeInt).padStart(6, '0')
-    const accessToken = hashPlainText(accessCode + phone.toString())
+    const accessToken = generateRandomnCode(32, 'base64')
     const phoneAccessCodesInfo = {
       phone: phone,
       accessCode: accessCode,

@@ -6,13 +6,13 @@ const {
 } = require('../models/invitations')
 const { getAccountDetails } = require('../models/accounts')
 const { sendEmail } = require('../sendgrid')
-const { generateRandomCode } = require('../encryption')
+const { generateRandomnCode } = require('../encryption')
 
 async function sendInvitation(invitationInfo){
   try {
     // Send invitation email
     const { accountId, email } = invitationInfo
-    const invitationCode = generateRandomCode()
+    const invitationCode = generateRandomnCode(32, 'hex')
     const accountDetails = await getAccountDetails(accountId)
     const msg = {
       to: email,
