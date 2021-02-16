@@ -127,17 +127,9 @@ async function getStreamInfo(input){
     const { streamId, accountId } = input
 
     const streamDetails = await getStreamDetails(streamId)
-    const streamParticipants = await getStreamParticipants(streamId)
     // Check if stream exists
     if(!Boolean(streamDetails)){
       throw new Error('Stream does not exist')
-    }
-    // Check to make sure user has permission to get stream details
-    const streamParticipantsFltrd = streamParticipants.filter(function(streamParticipant){
-      if (streamParticipant.accountId==accountId) {return streamParticipant}
-    })
-    if (streamParticipantsFltrd.length==0 && streamDetails.creatorId!=accountId){
-      throw new Error('User must be active in stream or stream creator to get stream details')
     }
     // Collection components of stream info: basic + participants + invitees + email outreach
     const basicInfo = await getStreamBasicInfo(streamId)
@@ -162,13 +154,6 @@ async function inviteParticipantToStream(inviteInfo){
     const { streamId, accountId, inviteeAccountId } = inviteInfo
     // Check to make sure user has permission to invite others to stream
     const streamDetails = await getStreamDetails(streamId)
-    const streamParticipants = await getStreamParticipants(streamId)
-    const streamParticipantsFltrd = streamParticipants.filter(function(streamParticipant){
-      if (streamParticipant.accountId==accountId) {return streamParticipant}
-    })
-    if (streamParticipantsFltrd.length === 0 && streamDetails.creatorId!=accountId){
-      throw new Error('User must be active in stream or stream creator to invite others to stream')
-    }
     // Instantiate email
     const account = await getAccountInfo(accountId)
     const accountUsername = account.username
@@ -215,9 +200,7 @@ async function joinStream(joinInfo){
     const accountId = joinInfo.accountId
     const streamDetails = await getStreamDetails(streamId)
     // Throw errors if stream does not exist or if stream is no longer active
-    if (!Boolean(streamDetails)){
-      throw new Error('Stream does not exist')
-    } else if (streamDetails.endTime){
+    if (streamDetails.endTime){
       throw new Error('Stream is inactive. Users cannot join inactive streams.')
     }
     // Throw error if user is active in another stream
@@ -296,10 +279,8 @@ async function leaveStream(streamParticipantId){
   try {
     // Check if participant already left stream
     const streamParticipantDetails = await getStreamParticipantDetails(streamParticipantId)
-    if (!Boolean(streamParticipantDetails)){
-      throw new Error('Stream Participant Id does not exist')
-    } else if (Boolean(streamParticipantDetails.endTime)){
-      throw new Error('User has already left stream')
+    if (Boolean(streamParticipantDetails.endTime)){
+      return 'User has already left stream'
     }
     // Set end time for user participation in stream
     const streamParticipantEndTime = await updateStreamParticipantEndTime(streamParticipantId)

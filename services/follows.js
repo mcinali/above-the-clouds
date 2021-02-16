@@ -46,9 +46,8 @@ async function unfollow(unfollowInfo){
   }
 }
 
-async function getFollowingSuggestions(params){
+async function getFollowingSuggestions(accountId){
   try {
-    const { accountId } = params
     // Get accounts following
     const accountsFollowingRows = await getAccountsFollowing(accountId)
     const accountsFollowing = accountsFollowingRows.map(account => { return account.accountId })

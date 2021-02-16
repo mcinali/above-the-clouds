@@ -11,6 +11,7 @@ const {
 const {
   checkAccountBodyAccessToken,
   checkAccountQueryAccessToken,
+  checkAccountStreamAccess,
 } = require('../middleware/auth')
 
 
@@ -26,7 +27,7 @@ router.post('/', checkAccountBodyAccessToken, async function (req, res) {
 })
 
 // Get Stream Details
-router.get('/:streamId', checkAccountQueryAccessToken, async function (req, res) {
+router.get('/:streamId', checkAccountQueryAccessToken, checkAccountStreamAccess, async function (req, res) {
   try {
     const input = {
       'streamId':req.params.streamId,
@@ -41,7 +42,7 @@ router.get('/:streamId', checkAccountQueryAccessToken, async function (req, res)
 })
 
 // Send Invites to  Stream
-router.post('/invite', checkAccountBodyAccessToken, async function (req, res) {
+router.post('/invite', checkAccountBodyAccessToken, checkAccountStreamAccess, async function (req, res) {
   try {
     const results = await inviteParticipantToStream(req.body)
     return res.send(results)
@@ -52,7 +53,7 @@ router.post('/invite', checkAccountBodyAccessToken, async function (req, res) {
 })
 
 // Join Stream
-router.post('/join', checkAccountBodyAccessToken, async function (req, res) {
+router.post('/join', checkAccountBodyAccessToken, checkAccountStreamAccess, async function (req, res) {
   try {
     const results = await joinStream(req.body)
     return res.send(results)
@@ -63,7 +64,7 @@ router.post('/join', checkAccountBodyAccessToken, async function (req, res) {
 })
 
 // Leave Stream
-router.post('/leave', checkAccountBodyAccessToken, async function (req, res) {
+router.post('/leave', checkAccountBodyAccessToken, checkAccountStreamAccess, async function (req, res) {
   try {
     const results = await leaveStream(req.body.streamParticipantId)
     return res.send(results)
@@ -74,7 +75,7 @@ router.post('/leave', checkAccountBodyAccessToken, async function (req, res) {
 })
 
 // End Stream
-router.post('/end', checkAccountBodyAccessToken, async function (req, res) {
+router.post('/end', checkAccountBodyAccessToken, checkAccountStreamAccess, async function (req, res) {
   try {
     const results = await endStream(req.body.streamId)
     return res.send(results)

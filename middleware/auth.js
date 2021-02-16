@@ -2,6 +2,11 @@ const {
   getPasswordFromUsername,
   getAccessTokenFromAccountId,
 } = require('../models/auth')
+const {
+  getStreamDetails,
+  getStreamParticipants,
+  getStreamParticipantDetails,
+} = require('../models/streams')
 const { verifyHashedText } = require('../encryption')
 
 // Validate login account credentials
@@ -102,9 +107,50 @@ async function checkAccessToken(accountId, accessToken){
   }
 }
 
+// Check if user has permissions for Stream
+async function checkAccountStreamAccess(req, res, next){
+  try {
+    const streamId = (req.method=='GET') ? req.params.streamId : req.body.streamId
+    const accountId = (req.method=='GET') ? req.query.accountId : req.body.accountId
+    // Get stream details
+    const streamDetails = await getStreamDetails(streamId)
+    // Check if stream exists
+    if(!Boolean(streamDetails)){
+      return res.status(400).json({error: ['Stream does not exist']})
+    }
+    // Check to make sure user has permission to get stream details
+    const streamParticipants = await getStreamParticipants(streamId)
+    const streamParticipantsFltrd = streamParticipants.filter(function(streamParticipant){
+      if (streamParticipant.accountId==accountId) {return streamParticipant}
+    })
+    if (streamParticipantsFltrd.length==0 && streamDetails.creatorId!=accountId){
+      return res.status(401).json({error: ['User must be active in stream or stream creator']})
+    }
+    // Make sure stream participant id (if exists) matches accountId & streamId
+    const streamParticipantId = (req.body) ? req.body.streamParticipantId : null
+    if (streamParticipantId){
+      const streamParticipantDetails = await getStreamParticipantDetails(streamParticipantId)
+      if (!Boolean(streamParticipantDetails)){
+        return res.status(400).json({error: ['Invalid stream participant id']})
+      }
+      if (streamParticipantDetails.accountId!=accountId){
+        return res.status(401).json({error: ['Account id and stream participant id mismatch']})
+      }
+      if (streamParticipantDetails.streamId!=streamId){
+        return res.status(401).json({error: ['Stream id and stream participant id mismatch']})
+      }
+    }
+    next()
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+
 module.exports = {
   checkLoginCredentials,
   checkAccountBodyAccessToken,
   checkAccountQueryAccessToken,
   checkAccountParamsAccessToken,
+  checkAccountStreamAccess,
 }

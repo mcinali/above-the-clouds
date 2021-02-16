@@ -7,7 +7,7 @@ const {
 } = require('../services/follows')
 const {
   checkAccountBodyAccessToken,
-  checkAccountParamsAccessToken,
+  checkAccountQueryAccessToken,
 } = require('../middleware/auth')
 
 // Get Following Suggestions during Account Setup
@@ -33,9 +33,9 @@ router.post('/unfollow', checkAccountBodyAccessToken, async function (req, res) 
 })
 
 // Get Following Suggestions during Account Setup
-router.get('/suggestions/:accountId', checkAccountParamsAccessToken, async function (req, res) {
+router.get('/suggestions', checkAccountQueryAccessToken, async function (req, res) {
   try {
-    const results = await getFollowingSuggestions(req.params)
+    const results = await getFollowingSuggestions(req.query.accountId)
     return res.send(results)
   } catch (error) {
     console.error(error)
