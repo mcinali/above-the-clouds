@@ -43,7 +43,7 @@ router.post('/login', checkLoginCredentials, async function (req, res) {
 })
 
 // Create new User Account
-router.post('/profilePicture', checkAccountBodyAccessToken, upload.single('file'), async function (req, res) {
+router.post('/profilePicture', upload.single('file'), checkAccountBodyAccessToken, async function (req, res) {
   try {
     const input = {
       accountId: req.body.accountId,

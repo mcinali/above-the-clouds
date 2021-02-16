@@ -49,7 +49,7 @@ async function registerUser(accountInfo, params){
       'phone':accountDetails.phone,
       'firstname':accountDetails.firstname,
       'lastname':accountDetails.lastname,
-      'hasToken': accessTokenInfo.hasToken,
+      'hasToken': true,
       'accessToken': accessTokenInfo.accessToken,
       'createdAt':account.createdAt
     }
