@@ -3,9 +3,7 @@ const {
   fuzzyMatchAccountsByEmail,
   fuzzyMatchAccountsByFullName,
 } = require('../models/accounts')
-const {
-  getAccountsFollowing,
-} = require('../models/follows')
+const { getAccountsFollowing } = require('../models/follows')
 const { fetchAccountDetailsBasic } = require('../services/accounts')
 
 async function getAccountSuggestions(accountId, text){

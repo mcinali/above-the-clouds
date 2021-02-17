@@ -1,11 +1,11 @@
 const { pool, pgTransaction } = require('../pg_helpers')
 
-async function insertFollower(followerInfo){
+async function insertFollow(followingInfo){
   try {
-    const { accountId, followerAccountId  } = followerInfo
+    const { accountId, followingAccountId  } = followingInfo
     const query = `
-      INSERT INTO follows (account_id, follower_account_id)
-      VALUES (${accountId}, ${followerAccountId})
+      INSERT INTO follows (account_id, following_account_id)
+      VALUES (${accountId}, ${followingAccountId})
       RETURNING *`
     const result = await pgTransaction(query)
     return result.rows[0]
@@ -14,10 +14,10 @@ async function insertFollower(followerInfo){
   }
 }
 
-async function checkFollowerStatus(followerInfo){
+async function checkFollowStatus(followingInfo){
   try {
-    const { accountId, followerAccountId  } = followerInfo
-    const query = `SELECT unfollow FROM follows WHERE account_id = ${accountId} and follower_account_id = ${followerAccountId}`
+    const { accountId, followingAccountId  } = followingInfo
+    const query = `SELECT unfollow FROM follows WHERE account_id = ${accountId} and following_account_id = ${followingAccountId}`
     return pool.query(query)
             .then(res => res.rows)
             .catch(error => new Error(error))
@@ -26,10 +26,10 @@ async function checkFollowerStatus(followerInfo){
   }
 }
 
-async function updateFollowerStatus(followerInfo){
+async function updateFollowStatus(followingInfo){
   try {
-    const { accountId, followerAccountId, unfollow } = followerInfo
-    const query = `UPDATE follows SET unfollow = ${unfollow} WHERE account_id = ${accountId} and follower_account_id = ${followerAccountId} RETURNING *`
+    const { accountId, followingAccountId, unfollow } = followingInfo
+    const query = `UPDATE follows SET unfollow = ${unfollow} WHERE account_id = ${accountId} and following_account_id = ${followingAccountId} RETURNING *`
     const result = await pgTransaction(query)
     return result.rows[0]
   } catch (error) {
@@ -39,7 +39,7 @@ async function updateFollowerStatus(followerInfo){
 
 async function getAccountsFollowing(accountId){
   try {
-    const query = `SELECT account_id FROM follows WHERE follower_account_id = ${accountId} AND (unfollow != true OR unfollow is null)`
+    const query = `SELECT following_account_id as account_id FROM follows WHERE account_id = ${accountId} AND (unfollow != true OR unfollow is null)`
     return pool.query(query)
             .then(res => res.rows)
             .catch(error => new Error(error))
@@ -50,7 +50,7 @@ async function getAccountsFollowing(accountId){
 
 async function getAccountFollowers(accountId){
   try {
-    const query = `SELECT follower_account_id as account_id FROM follows WHERE account_id = ${accountId} AND (unfollow != true OR unfollow is null)`
+    const query = `SELECT account_id FROM follows WHERE following_account_id = ${accountId} AND (unfollow != true OR unfollow is null)`
     return pool.query(query)
             .then(res => res.rows)
             .catch(error => new Error(error))
@@ -62,9 +62,9 @@ async function getAccountFollowers(accountId){
 
 
 module.exports = {
-  insertFollower,
-  checkFollowerStatus,
-  updateFollowerStatus,
+  insertFollow,
+  checkFollowStatus,
+  updateFollowStatus,
   getAccountsFollowing,
   getAccountFollowers,
 }
