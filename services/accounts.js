@@ -9,6 +9,8 @@ const {
   getAccountIdFromEmail,
   getAccountIdFromPhone,
 } = require('../models/accounts')
+const { hashPlainText } = require('../encryption')
+const { createAccessToken } = require('../services/auth')
 const { storeInvitationCodeConversion } = require('../services/invitations')
 const { sendEmail } = require('../sendgrid')
 
@@ -16,10 +18,17 @@ async function registerUser(accountInfo, params){
   try {
     // TO DO: return auth token
     //  Insert Account
-    const account = await insertAccount(accountInfo)
+    const { username, password } = accountInfo
+    const hashedAccountInfo = {
+      username: username,
+      password: hashPlainText(password),
+    }
+    const account = await insertAccount(hashedAccountInfo)
     //  Insert Account Details
     accountInfo['accountId'] = account.id
     const accountDetails = await insertAccountDetails(accountInfo)
+    // Create access token
+    const accessTokenInfo = await createAccessToken(username)
     // Store invitation code conversion
     if (params && params.code){
       const invitationCodeConversion = await storeInvitationCodeConversion(account.id, params.code)
@@ -40,11 +49,13 @@ async function registerUser(accountInfo, params){
       'phone':accountDetails.phone,
       'firstname':accountDetails.firstname,
       'lastname':accountDetails.lastname,
+      'hasToken': true,
+      'accessToken': accessTokenInfo.accessToken,
       'createdAt':account.createdAt
     }
     return result
   } catch (error) {
-    throw new Error(error)
+    console.error(error)
   }
 }
 

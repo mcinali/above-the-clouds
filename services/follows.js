@@ -1,7 +1,7 @@
 const {
-  insertFollower,
-  checkFollowerStatus,
-  updateFollowerStatus,
+  insertFollow,
+  checkFollowStatus,
+  updateFollowStatus,
   getAccountsFollowing,
   getAccountFollowers,
 } = require('../models/follows')
@@ -16,14 +16,14 @@ const {
 
 async function follow(followInfo){
   try {
-    const followCheck = await checkFollowerStatus(followInfo)
+    const followCheck = await checkFollowStatus(followInfo)
     // Check if follower DB entry exists
     if (Boolean(followCheck[0])){
       followInfo['unfollow'] = false
-      const follow = updateFollowerStatus(followInfo)
+      const follow = updateFollowStatus(followInfo)
       return
     } else {
-      const follow = await insertFollower(followInfo)
+      const follow = await insertFollow(followInfo)
       return follow
     }
   } catch (error) {
@@ -33,10 +33,10 @@ async function follow(followInfo){
 
 async function unfollow(unfollowInfo){
   try {
-    const unfollowCheck = await checkFollowerStatus(unfollowInfo)
+    const unfollowCheck = await checkFollowStatus(unfollowInfo)
     if (Boolean(unfollowCheck[0])){
       unfollowInfo['unfollow'] = true
-      const unfollow = updateFollowerStatus(unfollowInfo)
+      const unfollow = updateFollowStatus(unfollowInfo)
       return unfollow
     } else {
       return {}
@@ -46,9 +46,8 @@ async function unfollow(unfollowInfo){
   }
 }
 
-async function getFollowingSuggestions(params){
+async function getFollowingSuggestions(accountId){
   try {
-    const { accountId } = params
     // Get accounts following
     const accountsFollowingRows = await getAccountsFollowing(accountId)
     const accountsFollowing = accountsFollowingRows.map(account => { return account.accountId })

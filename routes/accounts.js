@@ -13,6 +13,12 @@ const {
   validateRegistrationAccessTokens,
   validateInvitationCode,
 } = require('../middleware/validation')
+const {
+  checkLoginCredentials,
+  checkAccountBodyAccessToken,
+  checkAccountParamsAccessToken,
+} = require('../middleware/auth')
+const { createAccessToken } = require('../services/auth')
 
 // Create new User Account
 router.post('/register', validateAccountSchema, validateUniqueAccountFields, validateRegistrationAccessTokens, validateInvitationCode, async function (req, res) {
@@ -25,8 +31,19 @@ router.post('/register', validateAccountSchema, validateUniqueAccountFields, val
   }
 })
 
+// Login account
+router.post('/login', checkLoginCredentials, async function (req, res) {
+  try {
+    const results = await createAccessToken(req.body.username)
+    return res.send(results)
+  } catch (error) {
+    console.error(error)
+    return res.status(400).json({error: 'Failed to log in'})
+  }
+})
+
 // Create new User Account
-router.post('/profilePicture', upload.single('file'), async function (req, res) {
+router.post('/profilePicture', upload.single('file'), checkAccountBodyAccessToken, async function (req, res) {
   try {
     const input = {
       accountId: req.body.accountId,
@@ -37,12 +54,12 @@ router.post('/profilePicture', upload.single('file'), async function (req, res) 
     return res.send(results)
   } catch (error) {
     console.error(error)
-    return res.status(400).json({error: 'Failed to register new user'})
+    return res.status(400).json({error: 'Failed to upload profile pic'})
   }
 })
 
 // Get Account Details
-router.get('/:accountId', async function (req, res) {
+router.get('/:accountId', checkAccountParamsAccessToken, async function (req, res) {
   try {
     const results = await fetchAccountDetails(req.params.accountId)
     return res.send(results)

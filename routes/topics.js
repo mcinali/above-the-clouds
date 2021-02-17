@@ -3,10 +3,11 @@ const router = express.Router()
 const {
   createTopic,
 } = require('../services/topics')
+const { checkAccountBodyAccessToken } = require('../middleware/auth')
 
 
 // Create Topic
-router.post('/', async function (req, res) {
+router.post('/', checkAccountBodyAccessToken, async function (req, res) {
   try {
     const results = await createTopic(req.body)
     return res.send(results)

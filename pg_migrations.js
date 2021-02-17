@@ -37,6 +37,16 @@ async function pgMigrate(){
   )
 
   await pgTransaction(
+    `CREATE TABLE iF NOT EXISTS access_tokens (
+      id SERIAL PRIMARY KEY NOT NULL,
+      account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      access_token BYTEA NOT NULL,
+      access_token_expiration TIMESTAMPTZ NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`
+  )
+
+  await pgTransaction(
     `CREATE TABLE IF NOT EXISTS account_details (
       id SERIAL PRIMARY KEY NOT NULL,
       account_id INTEGER UNIQUE NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
@@ -125,10 +135,10 @@ async function pgMigrate(){
     `CREATE TABLE IF NOT EXISTS follows (
       id SERIAL PRIMARY KEY NOT NULL,
       account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
-      follower_account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      following_account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
       unfollow BOOLEAN,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-      UNIQUE (account_id, follower_account_id)
+      UNIQUE (account_id, following_account_id)
     )`
   )
 
