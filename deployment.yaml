@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: backend
+  name: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: backend
+    spec:
+      serviceAccountName: cloud-sql-proxy-sa
+      containers:
+      - name: cloud-sql-proxy
+        image: gcr.io/cloudsql-docker/gce-proxy:1.17
+        command:
+          - "/cloud_sql_proxy"
+          - "-instances=above-the-clouds-app:us-central1:above-the-clouds-dbs=tcp:5432"
+        securityContext:
+          runAsNonRoot: true
+      - image: gcr.io/above-the-clouds-app/backend:1.0.0
+        name: backend
+        resources: {}
+        env:
+        - name: NODE_ENV
+          value: "prod"
+status: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+spec:
+  selector:
+    app: backend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080

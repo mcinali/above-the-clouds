@@ -1,2 +1,7 @@
 TODO.*
 secrets*
+*.pem
+*.crt
+*.key
+cloud-sql-proxy-sa-key.json
+cloud_sql_proxy

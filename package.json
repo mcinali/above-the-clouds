@@ -20,7 +20,10 @@
   },
   "devDependencies": {},
   "scripts": {
-    "test": "./node_modules/.bin/mocha"
+    "test": "./node_modules/.bin/mocha",
+    "build": "./docker.sh build",
+    "push": "./docker.sh push",
+    "deploy": "./docker.sh deploy"
   },
   "repository": {
     "type": "git",
