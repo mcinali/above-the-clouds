@@ -31,8 +31,3 @@ if [ "$command" == "push" ]; then
   docker tag $IMAGE_NAME:$VERSION $HOST_IMAGE:$VERSION
   docker push $HOST_IMAGE:$VERSION
 fi
-
-if [ "$command" == "deploy" ]; then
-  echo 'DEPLOYING to GKE cluster...'
-  kubectl apply -f deployment.yaml
-fi
