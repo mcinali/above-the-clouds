@@ -173,7 +173,7 @@ async function inviteParticipantToStream(inviteInfo){
       subject: `${accountDetails.firstname} ${accountDetails.lastname} (${accountUsername}) invited you to their stream`,
       text: `${accountDetails.firstname} ${accountDetails.lastname} (${accountUsername}) invited you to their stream "${topic.topic}".
 
-      Join now: ${webURL}:3000/stream/${streamId}`,
+      Join now: ${webURL}/stream?streamId${streamId}`,
     }
     // Insert stream invitation into DB
     const streamInvitation = await insertStreamInvitation(inviteInfo)
