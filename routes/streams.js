@@ -53,7 +53,7 @@ router.post('/invite', checkAccountBodyAccessToken, checkAccountStreamAccess, as
 })
 
 // Join Stream
-router.post('/join', checkAccountBodyAccessToken, checkAccountStreamAccess, async function (req, res) {
+router.post('/join', checkAccountBodyAccessToken, async function (req, res) {
   try {
     const results = await joinStream(req.body)
     return res.send(results)

@@ -33,7 +33,24 @@ async function checkLoginCredentials(req, res, next){
   }
 }
 
-// Validate access token + accountId in request body
+// Validate access token header + accountId in request body
+async function validateAccessToken(req, res, next){
+  try {
+    const token = req.body.token
+    const accountId = req.body.accountId
+    const verified = await checkAccessToken(accountId, token)
+    if (verified){
+      next()
+    } else {
+      return res.status(401).json({error: ['Invalid access token']})
+    }
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({error: ['Unable to authorize access token']})
+  }
+}
+
+// Validate access token header + accountId in request body
 async function checkAccountBodyAccessToken(req, res, next){
   try {
     const token = req.header('token')
@@ -50,7 +67,7 @@ async function checkAccountBodyAccessToken(req, res, next){
   }
 }
 
-// Validate access token + accountId in request query
+// Validate access token header + accountId in request query
 async function checkAccountQueryAccessToken(req, res, next){
   try {
     const token = req.header('token')
@@ -67,7 +84,7 @@ async function checkAccountQueryAccessToken(req, res, next){
   }
 }
 
-// Validate access token + accountId in request path
+// Validate access token header + accountId in request path
 async function checkAccountParamsAccessToken(req, res, next){
   try {
     const token = req.header('token')
@@ -149,6 +166,7 @@ async function checkAccountStreamAccess(req, res, next){
 
 module.exports = {
   checkLoginCredentials,
+  validateAccessToken,
   checkAccountBodyAccessToken,
   checkAccountQueryAccessToken,
   checkAccountParamsAccessToken,
