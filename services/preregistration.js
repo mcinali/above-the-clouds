@@ -20,7 +20,7 @@ async function createEmailAccessCodes(accountInfo){
     const emailAccessCodesInfo = {
       email: email,
       accessCode: accessCode,
-      accessCodeTTL: 1,
+      accessCodeTTL: 5,
       accessToken: accessToken,
       accessTokenTTL: 5,
     }
@@ -68,7 +68,7 @@ async function createPhoneAccessCodes(accountInfo){
     const phoneAccessCodesInfo = {
       phone: phone,
       accessCode: accessCode,
-      accessCodeTTL: 1,
+      accessCodeTTL: 5,
       accessToken: accessToken,
       accessTokenTTL: 5,
     }
