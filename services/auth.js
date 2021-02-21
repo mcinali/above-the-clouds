@@ -19,6 +19,7 @@ async function createAccessToken(username){
     const storedAccessToken = await insertAccessToken(hashedAccessTokenInfo)
     // Return plain text access token
     const plainTextAccessTokenInfo = {
+      accountId: accountId,
       hastoken: true,
       accessToken: accessToken,
     }

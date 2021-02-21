@@ -14,11 +14,9 @@ const {
   validateInvitationCode,
 } = require('../middleware/validation')
 const {
-  checkLoginCredentials,
   checkAccountBodyAccessToken,
   checkAccountParamsAccessToken,
 } = require('../middleware/auth')
-const { createAccessToken } = require('../services/auth')
 
 // Create new User Account
 router.post('/register', validateAccountSchema, validateUniqueAccountFields, validateRegistrationAccessTokens, validateInvitationCode, async function (req, res) {
@@ -28,17 +26,6 @@ router.post('/register', validateAccountSchema, validateUniqueAccountFields, val
   } catch (error) {
     console.error(error)
     return res.status(400).json({error: 'Failed to register new user'})
-  }
-})
-
-// Login account
-router.post('/login', checkLoginCredentials, async function (req, res) {
-  try {
-    const results = await createAccessToken(req.body.username)
-    return res.send(results)
-  } catch (error) {
-    console.error(error)
-    return res.status(400).json({error: 'Failed to log in'})
   }
 })
 
