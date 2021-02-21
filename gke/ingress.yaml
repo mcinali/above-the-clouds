@@ -1,7 +1,7 @@
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
-  name: ingress
+  name: backend-ingress
   annotations:
     kubernetes.io/ingress.global-static-ip-name: above-the-clouds-ip
     networking.gke.io/managed-certificates: managed-cert
