@@ -19,7 +19,7 @@ const gcpDB = {
 }
 
 const db = (env=='prod') ? gcpDB : localDB
-const webURL = (env=='prod') ? 'https://www.abovetheclouds.com' : 'http://localhost:3000'
+const webURL = (env=='prod') ? 'https://www.abovethecloudsapp.com' : 'http://localhost:3000'
 
 module.exports = {
   db,
