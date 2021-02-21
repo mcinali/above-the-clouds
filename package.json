@@ -21,8 +21,8 @@
   "devDependencies": {},
   "scripts": {
     "test": "./node_modules/.bin/mocha",
-    "build": "./docker.sh build",
-    "push": "./docker.sh push",
+    "docker_build": "./docker.sh build",
+    "docker_push": "./docker.sh push",
     "deploy": "./gke/gke.sh deploy"
   },
   "repository": {
