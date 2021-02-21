@@ -7,6 +7,7 @@ const {
 const { getAccountDetails } = require('../models/accounts')
 const { sendEmail } = require('../sendgrid')
 const { generateRandomnCode } = require('../encryption')
+const { webURL } = require('../config')
 
 async function sendInvitation(invitationInfo){
   try {
@@ -22,7 +23,7 @@ async function sendInvitation(invitationInfo){
       Your friend ${accountDetails.firstname} ${accountDetails.lastname} invited you to Above the Clouds!
 
       Click the link below to join:
-      http://localhost:3000/register?code=${invitationCode}
+      ${webURL}/register?code=${invitationCode}
       `
     }
     const sentEmail = await sendEmail(msg)
