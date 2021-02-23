@@ -33,7 +33,7 @@ async function checkLoginCredentials(req, res, next){
   }
 }
 
-// Validate access token header + accountId in request body
+// Validate access token + accountId in request body
 async function validateAccessToken(req, res, next){
   try {
     const token = req.body.token
