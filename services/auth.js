@@ -55,7 +55,7 @@ async function createPasswordReset(body){
     // Insert password reset info into the DB
     const accountId = accountIdRow.accountId
     const resetCode = generateRandomnCode(32, 'hex')
-    const resetToken = generateRandomnCode(32, 'base64')
+    const resetToken = generateRandomnCode(32, 'hex')
     const hashedResetToken = hashPlainText(resetToken)
     const verificationCodeInt = Math.floor((Math.random()*1000000)+1)
     const verificationCode = String(verificationCodeInt).padStart(6, '0')

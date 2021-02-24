@@ -1,6 +1,7 @@
 const {
   getPasswordFromUsername,
   getAccessTokenFromAccountId,
+  getPasswordResetInfo,
 } = require('../models/auth')
 const {
   getStreamDetails,
@@ -28,8 +29,71 @@ async function checkLoginCredentials(req, res, next){
       return res.status(401).json({error: ['Invalid login credentials']})
     }
   } catch (error) {
-    console.error(error)
     return res.status(500).json({error: ['Unable to authorize login credentials']})
+  }
+}
+
+// Validate password reset token
+async function validatePasswordResetToken(req, res, next){
+  try {
+    const { code, token } = req.query
+    const passwordResetInfo = await getPasswordResetInfo(code)
+    // Check to make sure password reset code exists
+    if (!Boolean(passwordResetInfo)){
+      return res.status(401).json({error: ['Invalid password reset code']})
+    }
+    // Check to make sure password reset code has not been used
+    if (passwordResetInfo.used){
+      return res.status(401).json({error: ['Password reset code has already been used']})
+    }
+    // Check to make sure password reset code has not expired
+    const currentTime = new Date().getTime()
+    if (passwordResetInfo.expiration.getTime() < currentTime){
+      return res.status(401).json({error: ['Password reset code has expired']})
+    }
+    // Check to make sure password reset token is valid
+    console.log(token)
+    console.log(passwordResetInfo.resetToken)
+    const validToken = verifyHashedText(token, passwordResetInfo.resetToken)
+    if (!validToken){
+      return res.status(401).json({error: ['Password reset token is not valid']})
+    }
+    next()
+  } catch (error) {
+    return res.status(500).json({error: ['Something went wrong']})
+  }
+}
+
+// Validate password reset token + verification code
+async function validatePasswordResetTokenAndVerificationCode(req, res, next){
+  try {
+    const { resetCode, token, verificationCode } = req.body
+    const passwordResetInfo = await getPasswordResetInfo(resetCode)
+    // Check to make sure password reset code exists
+    if (!Boolean(passwordResetInfo)){
+      return res.status(401).json({error: ['Invalid password reset code']})
+    }
+    // Check to make sure password reset code has not been used
+    if (passwordResetInfo.used){
+      return res.status(401).json({error: ['Password reset code has already been used']})
+    }
+    // Check to make sure password reset code has not expired
+    const currentTime = new Date().getTime()
+    if (passwordResetInfo.expiration.getTime() < currentTime){
+      return res.status(401).json({error: ['Password reset code has expired']})
+    }
+    // Check to make sure password reset token is valid
+    const validToken = verifyHashedText(token, passwordResetInfo.resetToken)
+    if (!validToken){
+      return res.status(401).json({error: ['Password reset token is not valid']})
+    }
+    // Check to make sure verification code is valid
+    if (passwordResetInfo.verificationCode!=verificationCode){
+      return res.status(401).json({error: ['Invalid verification code']})
+    }
+    next()
+  } catch (error) {
+    return res.status(500).json({error: ['Something went wrong']})
   }
 }
 
@@ -45,7 +109,6 @@ async function validateAccessToken(req, res, next){
       return res.status(401).json({error: ['Invalid access token']})
     }
   } catch (error) {
-    console.error(error)
     return res.status(500).json({error: ['Unable to authorize access token']})
   }
 }
@@ -79,7 +142,6 @@ async function checkAccountQueryAccessToken(req, res, next){
       return res.status(401).json({error: ['Invalid access token']})
     }
   } catch (error) {
-    console.error(error)
     return res.status(500).json({error: ['Unable to authorize access token']})
   }
 }
@@ -96,7 +158,6 @@ async function checkAccountParamsAccessToken(req, res, next){
       return res.status(401).json({error: ['Invalid access token']})
     }
   } catch (error) {
-    console.error(error)
     return res.status(500).json({error: ['Unable to authorize access token']})
   }
 }
@@ -166,6 +227,8 @@ async function checkAccountStreamAccess(req, res, next){
 
 module.exports = {
   checkLoginCredentials,
+  validatePasswordResetToken,
+  validatePasswordResetTokenAndVerificationCode,
   validateAccessToken,
   checkAccountBodyAccessToken,
   checkAccountQueryAccessToken,
