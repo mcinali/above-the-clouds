@@ -28,6 +28,10 @@ const {
   insertAccessToken,
   getPasswordFromUsername,
   getAccessTokenFromAccountId,
+  insertPasswordReset,
+  getPasswordResetInfo,
+  updatePassword,
+  expirePasswordResetCode,
 } = require('../models/auth')
 const {
   insertInvitation,
@@ -332,7 +336,7 @@ describe('Accounts Tests', function() {
   })
 })
 
-describe('Accounts Tests', function() {
+describe('Auth Tests', function() {
   it(`Should...
     - Insert auth test account & account detials
     - Insert access token
@@ -340,7 +344,15 @@ describe('Accounts Tests', function() {
     - Fetch password
     - Make sure password was fetched correctly
     - Fetch access token from accountId
-    - Make sure access token from accountId was fetched correctly`, async function() {
+    - Make sure access token from accountId was fetched correctly
+    - Insert password reset info
+    - Make sure password reset info was inserted correctly
+    - Fetch password reset info
+    - Make sure password reset info was fetched correctly
+    - Update password
+    - Make sure password was updated correctly
+    - Expire password reset code
+    - Make sure password reset code was expired correctly`, async function() {
       // Insert auth test account & account detials
       const accountInfo = {
         username:'authTest',
@@ -362,13 +374,14 @@ describe('Accounts Tests', function() {
         accessToken: 'token',
         accessTokenTTL: 1,
       }
+      const before = new Date(new Date().getTime()).getTime()
       const accessToken = await insertAccessToken(accessTokenInfo)
+      const after = new Date(new Date().getTime()).getTime()
       // Make sure access token was inserted correctly
       expect(accessToken.accountId).to.equal(accessTokenInfo.accountId)
       expect(accessToken.accessToken).to.equal(accessTokenInfo.accessToken)
-      const now = new Date(new Date().getTime()).getTime()
-      expect(accessToken.accessTokenExpiration.getTime()).to.be.above(now)
-      expect(accessToken.accessTokenExpiration.getTime()).to.be.below(now+(accessTokenInfo.accessTokenTTL*24*60*60*1000))
+      expect(accessToken.accessTokenExpiration.getTime()).to.be.above(before)
+      expect(accessToken.accessTokenExpiration.getTime()).to.be.below(after+(accessTokenInfo.accessTokenTTL*24*60*60*1000))
       // Fetch password
       const goodPasswordRow = await getPasswordFromUsername(accountInfo.username)
       const badPasswordRow = await getPasswordFromUsername('@uthTest')
@@ -381,6 +394,49 @@ describe('Accounts Tests', function() {
       // Make sure access token from accountId was fetched correctly
       expect(accessTokenRows.length).to.equal(1)
       expect(accessTokenRows[0].accessToken).to.equal(accessTokenInfo.accessToken)
+      // Insert password reset info
+      const passwordResetInfo = {
+        accountId: account.id,
+        resetCode: 'abc123',
+        verificationCode: '123456',
+        resetTTL: 1,
+      }
+      const before2 = new Date(new Date().getTime()).getTime()
+      const passwordReset = await insertPasswordReset(passwordResetInfo)
+      const after2 = new Date(new Date().getTime()).getTime()
+      // Make sure password reset info was inserted correctly
+      expect(passwordReset.accountId).to.equal(passwordResetInfo.accountId)
+      expect(passwordReset.resetCode).to.equal(passwordResetInfo.resetCode)
+      expect(passwordReset.verificationCode).to.equal(passwordResetInfo.verificationCode)
+      expect(passwordReset.used).to.equal(false)
+      expect(passwordReset.expiration.getTime()).to.be.above(before2)
+      expect(passwordReset.expiration.getTime()).to.be.below(after2+(passwordResetInfo.resetTTL*60*60*1000))
+      // Fetch password reset info
+      const fetchedPasswordResetInfo = await getPasswordResetInfo(passwordResetInfo.resetCode)
+      // Make sure password reset info was fetched correctly
+      expect(fetchedPasswordResetInfo.id).to.equal(passwordReset.id)
+      expect(fetchedPasswordResetInfo.accountId).to.equal(passwordReset.accountId)
+      expect(fetchedPasswordResetInfo.resetCode).to.equal(passwordReset.resetCode)
+      expect(fetchedPasswordResetInfo.verificationCode).to.equal(passwordReset.verificationCode)
+      expect(fetchedPasswordResetInfo.used).to.equal(passwordReset.used)
+      expect(fetchedPasswordResetInfo.expiration.getTime()).to.equal(passwordReset.expiration.getTime())
+      // Update password
+      const passwordUpdateInfo = {
+        accountId: account.id,
+        password: 'updatedPassword',
+      }
+      const updatedPassword = await updatePassword(passwordUpdateInfo)
+      // Make sure password was updated correctly
+      expect(updatedPassword.accountId).to.equal(passwordUpdateInfo.accountId)
+      expect(updatedPassword.password).to.equal(passwordUpdateInfo.password)
+      expect(updatedPassword.password).to.not.equal(accountInfo.password)
+      // Expire password reset code
+      const expiredPasswordResetCode = await expirePasswordResetCode(passwordResetInfo.resetCode)
+      // Make sure password reset code was expired correctly
+      expect(expiredPasswordResetCode.id).to.equal(passwordReset.id)
+      expect(expiredPasswordResetCode.accountId).to.equal(passwordReset.accountId)
+      expect(expiredPasswordResetCode.resetCode).to.equal(passwordReset.resetCode)
+      expect(expiredPasswordResetCode.used).to.equal(true)
     })
   })
 
