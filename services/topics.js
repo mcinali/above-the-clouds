@@ -5,10 +5,10 @@ async function createTopic(topicInfo){
   try {
     const results = await insertTopic(topicInfo)
     return {
-      'topicId':results.id,
-      'accountId':results.accountId,
-      'topic':results.topic,
-      'createdAt':results.createdAt,
+      topicId:results.id,
+      accountId:results.accountId,
+      topic:results.topic,
+      createdAt:results.createdAt,
     }
   } catch (error) {
     throw new Error(error)

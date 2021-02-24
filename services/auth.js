@@ -20,8 +20,8 @@ async function createAccessToken(username){
     // Return plain text access token
     const plainTextAccessTokenInfo = {
       accountId: accountId,
-      hastoken: true,
-      accessToken: accessToken,
+      hasToken: true,
+      token: accessToken,
     }
     return plainTextAccessTokenInfo
   } catch (error) {
