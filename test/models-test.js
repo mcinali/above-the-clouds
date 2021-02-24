@@ -398,6 +398,7 @@ describe('Auth Tests', function() {
       const passwordResetInfo = {
         accountId: account.id,
         resetCode: 'abc123',
+        resetToken: 'tokenabc123',
         verificationCode: '123456',
         resetTTL: 1,
       }
@@ -407,6 +408,7 @@ describe('Auth Tests', function() {
       // Make sure password reset info was inserted correctly
       expect(passwordReset.accountId).to.equal(passwordResetInfo.accountId)
       expect(passwordReset.resetCode).to.equal(passwordResetInfo.resetCode)
+      expect(passwordReset.resetToken).to.equal(passwordResetInfo.resetToken)
       expect(passwordReset.verificationCode).to.equal(passwordResetInfo.verificationCode)
       expect(passwordReset.used).to.equal(false)
       expect(passwordReset.expiration.getTime()).to.be.above(before2)
@@ -417,6 +419,7 @@ describe('Auth Tests', function() {
       expect(fetchedPasswordResetInfo.id).to.equal(passwordReset.id)
       expect(fetchedPasswordResetInfo.accountId).to.equal(passwordReset.accountId)
       expect(fetchedPasswordResetInfo.resetCode).to.equal(passwordReset.resetCode)
+      expect(fetchedPasswordResetInfo.resetToken).to.equal(passwordReset.resetToken)
       expect(fetchedPasswordResetInfo.verificationCode).to.equal(passwordReset.verificationCode)
       expect(fetchedPasswordResetInfo.used).to.equal(passwordReset.used)
       expect(fetchedPasswordResetInfo.expiration.getTime()).to.equal(passwordReset.expiration.getTime())

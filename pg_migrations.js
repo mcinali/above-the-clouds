@@ -53,6 +53,7 @@ async function pgMigrate(){
         id SERIAL PRIMARY KEY NOT NULL,
         account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
         reset_code BYTEA UNIQUE NOT NULL,
+        reset_token BYTEA NOT NULL,
         verification_code BYTEA NOT NULL,
         expiration TIMESTAMPTZ NOT NULL,
         used BOOLEAN NOT NULL,

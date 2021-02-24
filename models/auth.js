@@ -41,11 +41,11 @@ async function getAccessTokenFromAccountId(accountId){
 
 async function insertPasswordReset(passwordResetInfo){
   try {
-    const { accountId, resetCode, verificationCode, resetTTL } = passwordResetInfo
+    const { accountId, resetCode, resetToken, verificationCode, resetTTL } = passwordResetInfo
     const query = `
-      INSERT INTO password_reset (account_id, reset_code, verification_code, expiration, used)
-      VALUES (${accountId}, '${resetCode}', '${verificationCode}', now() + INTERVAL '${resetTTL} hour', false)
-      RETURNING id, account_id, encode(reset_code, 'escape') as reset_code, encode(verification_code, 'escape') as verification_code, expiration, used`
+      INSERT INTO password_reset (account_id, reset_code, reset_token, verification_code, expiration, used)
+      VALUES (${accountId}, '${resetCode}', '${resetToken}', '${verificationCode}', now() + INTERVAL '${resetTTL} hour', false)
+      RETURNING id, account_id, encode(reset_code, 'escape') as reset_code, encode(reset_token, 'escape') as reset_token, encode(verification_code, 'escape') as verification_code, expiration, used`
     const result = await pgTransaction(query)
     return result.rows[0]
   } catch (error) {
@@ -56,7 +56,7 @@ async function insertPasswordReset(passwordResetInfo){
 async function getPasswordResetInfo(resetCode){
   try {
     const query = `
-      SELECT id, account_id, encode(reset_code, 'escape') as reset_code, encode(verification_code, 'escape') as verification_code, expiration, used
+      SELECT id, account_id, encode(reset_code, 'escape') as reset_code, encode(reset_token, 'escape') as reset_token, encode(verification_code, 'escape') as verification_code, expiration, used
       FROM password_reset WHERE encode(reset_code, 'escape') = '${resetCode}'`
     return pool.query(query)
             .then(res => res.rows[0])
