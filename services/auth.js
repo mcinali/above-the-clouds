@@ -95,7 +95,9 @@ async function sendPasswordResetVerificationCode(resetCode){
     const phoneNumber = '+1'+phone.toString()
     const message = `Your Above the Clouds password reset verification code is ${verificationCode}`
     sendSMS(phoneNumber, message)
-    return
+    return {
+      phone: phone
+    }
   } catch (error) {
     throw new Error(error)
   }

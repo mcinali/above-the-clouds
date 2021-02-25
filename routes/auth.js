@@ -58,8 +58,8 @@ router.get('/password_reset/validate_reset_code', validatePasswordResetToken, as
 // Send sms verificatin code
 router.get('/password_reset/phone_code', validatePasswordResetToken, async function (req, res) {
   try {
-    const phoneCode = await sendPasswordResetVerificationCode(req.query.code)
-    return res.send('SMS verification code sent')
+    const phone = await sendPasswordResetVerificationCode(req.query.code)
+    return res.send(phone)
   } catch (error) {
     console.error(error)
     return res.status(400).json({error: 'Failed to authenticate user'})
@@ -69,6 +69,10 @@ router.get('/password_reset/phone_code', validatePasswordResetToken, async funct
 // Update password
 router.post('/password_reset/update', validatePasswordResetTokenAndVerificationCode, async function (req, res) {
   try {
+    const { password, passwordConfirmation } = req.body
+    if (password!=passwordConfirmation){
+      res.status(400).json({error: `Password confirmation doesn't match Password`})
+    }
     const updatedPassword = await updateAccountPassword(req.body)
     return res.send('Password reset successfully')
   } catch (error) {

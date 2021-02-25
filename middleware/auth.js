@@ -52,8 +52,6 @@ async function validatePasswordResetToken(req, res, next){
       return res.status(401).json({error: ['Password reset code has expired']})
     }
     // Check to make sure password reset token is valid
-    console.log(token)
-    console.log(passwordResetInfo.resetToken)
     const validToken = verifyHashedText(token, passwordResetInfo.resetToken)
     if (!validToken){
       return res.status(401).json({error: ['Password reset token is not valid']})
