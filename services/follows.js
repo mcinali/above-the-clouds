@@ -13,6 +13,8 @@ const {
   getInvitationsToEmail,
   getInvitationIdForConvertedAccount,
 } = require('../models/invitations')
+const { sendEmail } = require('../sendgrid')
+const { webURL } = require('../config')
 
 async function follow(followInfo){
   try {
@@ -24,6 +26,17 @@ async function follow(followInfo){
       return
     } else {
       const follow = await insertFollow(followInfo)
+      const accountDetails = await fetchAccountDetails(followInfo.accountId)
+      const followingAccountDetails = await fetchAccountDetails(followInfo.followingAccountId)
+      const msg = {
+        from: 'abovethecloudsapp@gmail.com',
+        to: followingAccountDetails.email,
+        subject: `So popular! ${accountDetails.firstname} ${accountDetails.lastname} (${accountDetails.username}) started following you`,
+        text: `${accountDetails.firstname} ${accountDetails.lastname} (${accountDetails.username}) started following you on Above the Clouds.
+
+        Get a conversation going: ${webURL}`,
+      }
+      sendEmail(msg)
       return follow
     }
   } catch (error) {
