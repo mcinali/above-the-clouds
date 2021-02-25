@@ -287,8 +287,10 @@ async function joinStream(joinInfo){
 }
 
 // Leave Stream
-async function leaveStream(streamParticipantId){
+async function leaveStream(body){
   try {
+    // twilioClient
+    const { streamParticipantId, twilioRoomSID, twilioParticipantSID } = body
     // Check if participant already left stream
     const streamParticipantDetails = await getStreamParticipantDetails(streamParticipantId)
     if (Boolean(streamParticipantDetails.endTime)){
@@ -296,21 +298,18 @@ async function leaveStream(streamParticipantId){
     }
     // Set end time for user participation in stream
     const streamParticipantEndTime = await updateStreamParticipantEndTime(streamParticipantId)
-    // End stream if no more users remain
+    // Disconnect user from room
     const streamId = streamParticipantEndTime.streamId
-    const streamParticipants = await getStreamParticipants(streamId)
-    const streamParticipantsFlrtd = streamParticipants.filter(function(participant){
-      if (!participant.endTime) {return participant}
-    })
-    if (streamParticipantsFlrtd.length==0) {
-      const streamEndTime = await updateStreamEndTime(streamId)
-    }
-    const streamDetails = await getStreamDetails(streamId)
+    twilioClient.video.rooms(twilioRoomSID)
+      .participants(twilioParticipantSID)
+      .update({status: 'disconnected'})
+      .then(participant => {
+        console.log(participant.status)
+      })
     return {
       streamId:streamId,
       accountId:streamParticipantEndTime.accountId,
       participantEndTime:streamParticipantEndTime.endTime,
-      streamEndTime:streamDetails.endTime,
     }
   } catch (error) {
     throw new Error(error)
