@@ -49,6 +49,7 @@ router.post('/profilePicture', upload.single('file'), checkAccountBodyAccessToke
 router.get('/:accountId', checkAccountParamsAccessToken, async function (req, res) {
   try {
     const results = await fetchAccountDetails(req.params.accountId)
+    console.log(results)
     return res.send(results)
   } catch (error) {
     console.error(error)
