@@ -22,7 +22,7 @@ if [ "$command" == "build" ]; then
   docker build -t $IMAGE_NAME:$VERSION .
   echo
   # Run container locally:
-  docker run -e DB_HOST=host.docker.internal -p 8080:8080 -d $IMAGE_NAME:$VERSION
+  # docker run -e DB_HOST=host.docker.internal -p 8080:8080 -d $IMAGE_NAME:$VERSION
 fi
 
 if [ "$command" == "push" ]; then
