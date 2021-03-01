@@ -1,41 +1,55 @@
-const { getActiveStreamInvitationsForAccount, getActivePublicAccountStreams } = require('../models/discovery')
-const { getTopicInfo, getRecentTopics } = require('../models/topics')
+const {
+  getStreamInvitationsForAccount,
+  getStreamCreationsForAccount,
+} = require('../models/discovery')
+const {
+  getTopicInfo,
+  getRecentTopics
+} = require('../models/topics')
 const { getAccountsFollowing } = require('../models/follows')
-const { getStreamParticipants, getStreamDetails } = require('../models/streams')
+const {
+  getStreamParticipants,
+  getStreamDetails,
+  getActiveAccountStreams,
+} = require('../models/streams')
 const { fetchAccountDetailsBasic } = require('../services/accounts')
 
 
 // Get discovery streams
 async function getDiscoveryStreams(accountId){
   try {
-    // Get topics created in last 12 hours: # participants + # streams
-    const recentTopics = await getRecentTopics(12)
-    // Get all active streams user was invited to: invited + created_at + # following accounts + # accounts followed by following accounts
-    const streamInvitations = await getActiveStreamInvitationsForAccount(accountId)
-    // Get all active streams of following accounts: invited + created_at + # following accounts + # accounts followed by following accounts
+    // Get streams account is already active in
+    const existingStreams = await getActiveAccountStreams(accountId)
+    const existingStreamIds = existingStreams.map(stream => stream.streamId)
+    // Get all streams that account created in past 24 hrs
+    const createdStreams = await getStreamCreationsForAccount(accountId, 24)
+    const createdStreamIds = createdStreams.map(stream => stream.id)
+    // Get stream invitations in past 24 hours
+    const streamInvitations = await getStreamInvitationsForAccount(accountId, 24)
+    // Collect active stream Ids that account has been invited to
+    const invitedStreamIds = await Promise.all(streamInvitations.map(async (invitation) => {
+      const streamId = invitation.streamId
+      const activeParticipants = await getStreamParticipants(streamId)
+      if (activeParticipants.length>0){
+        return streamId
+      }
+    }))
+    // Get accounts following
     const accountsFollowingRows = await getAccountsFollowing(accountId)
     const accountsFollowing = accountsFollowingRows.map(row => row.accountId)
-    const accountsFollowingStreams = await Promise.all(accountsFollowing.map(async (followingAccountId) => {
-      return await getActivePublicAccountStreams(followingAccountId)
+    // Get active streams for accounts following
+    const accountsFollowingStreamIds = await Promise.all(accountsFollowing.map(async (followingAccountId) => {
+      const activeStreams = await getActiveAccountStreams(followingAccountId)
+      if (activeStreams.length>0){
+        return activeStreams[0].streamId
+      }
     }))
-    // Get all active streams of accounts followed by accounts: invited + created_at + # following accounts + # accounts followed by following accounts
-    const accountsFollowedByFollowingSet = new Set([])
-    await Promise.all(accountsFollowing.map(async (followedByFollowingAccountId) => {
-      const accountRows = await getAccountsFollowing(followedByFollowingAccountId)
-      accountRows.map(row => {
-        accountsFollowedByFollowingSet.add(row.accountId)
-      })
-    }))
-    const accountsFollowedByFollowing = [...accountsFollowedByFollowingSet]
-    const accountsFollowedByFollowingFltrd = accountsFollowedByFollowing.filter(followedByFollowingAccountId => !accountsFollowing.includes(followedByFollowingAccountId))
-    const accountsFollowedByFollowingStreams = await Promise.all(accountsFollowedByFollowingFltrd.map(async (followedByFollowingAccountId) => {
-      return await getActivePublicAccountStreams(followedByFollowingAccountId)
-    }))
-    // Collect all accessible stream Ids
-    const streamIdsSet = new Set([])
-    streamInvitations.map(item => streamIdsSet.add(item.streamId))
-    accountsFollowingStreams.flat().map(item => streamIdsSet.add(item.streamId))
-    accountsFollowedByFollowingStreams.flat().map(item => streamIdsSet.add(item.streamId))
+    // Collect all accessible stream Ids in Set
+    const combinedStreamIds = existingStreamIds.concat(createdStreamIds).concat(invitedStreamIds).concat(accountsFollowingStreamIds)
+    // Filter null/undefined streamIds
+    const combinedStreamIdsFltrd = combinedStreamIds.filter(x => x != null)
+    // Create a unique set of non-null streamIds
+    const streamIdsSet = new Set(combinedStreamIdsFltrd)
     const streamIds = [...streamIdsSet]
     // Collate stream info for return object/ranking
     const streamObjects = await Promise.all(streamIds.map(async (streamId) => {
@@ -50,17 +64,15 @@ async function getDiscoveryStreams(accountId){
       // Get invitations
       const invitationsToStream = streamInvitations.filter(item => item.streamId==streamId)
       // Get following participants
-      const followingParticipants = accountsFollowingStreams.flat().filter(item => item.streamId==streamId)
-      // Get following's following participants
-      const followedByFollowingParticipants = accountsFollowedByFollowingStreams.flat().filter(item => item.streamId==streamId)
+      const followingParticipants = streamParticipants.filter(participant => accountsFollowing.includes(participant.accountId))
+      // Check if user is active in stream
+      const isActive = (existingStreamIds.includes(streamId)) ? 1 : 0
       // Create return object
       // Format participant objects
       const participantsFrmtd = await Promise.all(streamParticipants.map(async (participant) => {
         const participantAccountDetails = await fetchAccountDetailsBasic(participant.accountId)
         const following = accountsFollowing.filter(followingAccountId => followingAccountId==participant.accountId)
-        const followedByFollowing = accountsFollowedByFollowingFltrd.filter(followedByFollowingAccountId => followedByFollowingAccountId==participant.accountId)
         participantAccountDetails['following'] = (following.length>0) ? true : (participant.accountId==accountId) ? null : false
-        participantAccountDetails['followedByFollowing'] = (followedByFollowing.length>0) ? true : (participant.accountId==accountId) ? null : false
         return participantAccountDetails
       }))
       // Attached stream participant information to stream object
@@ -69,6 +81,7 @@ async function getDiscoveryStreams(accountId){
         creatorId: streamDetails.creatorId,
         topicId: streamDetails.topicId,
         topic: topicInfo.topic,
+        isActive: isActive,
         capacity: streamDetails.capacity,
         inviteOnly: streamDetails.inviteOnly,
         startTime: streamDetails.startTime,
@@ -76,44 +89,20 @@ async function getDiscoveryStreams(accountId){
         participants: {
           ttlParticipants: streamParticipants.length,
           ttlFollowing: followingParticipants.length,
-          ttlFollowedByFollowing: followedByFollowingParticipants.length,
-          details: participantsFrmtd,
+          // details: participantsFrmtd,
         }
       }
     }))
-    // Fetch & format unseen recent topics
-    const recentUnseenTopics = recentTopics.map(topic => {
-      const fltrdStreams = streamObjects.filter(streamObject => streamObject.topicId==topic.id)
-      if (fltrdStreams.length==0) {
-        return {
-          streamId: null,
-          creatorId: topic.accountId,
-          topicId: topic.id,
-          topic: topic.topic,
-          startTime: topic.createdAt,
-          ttlInvitations: 0,
-          participants: {
-            ttlParticipants: 0,
-            ttlFollowing: 0,
-            ttlFollowedByFollowing: 0,
-            details: []
-          },
-        }
-      }
-    })
-    const recentUnseenTopicsFltrd = recentUnseenTopics.filter(item => Boolean(item))
-    // Concat stream objects + unseen recent topics
-    const returnObjects = streamObjects.concat(recentUnseenTopicsFltrd)
     // Sort potential streams
-    returnObjects.sort(function(a,b) {
+    streamObjects.sort(function(a,b) {
+      const isActiveDiff = (a.isActive - b.isActive) * 100
       const invitesDiff = 7 * (a.ttlInvitations - b.ttlInvitations)
       const followingDiff = 2 * (a.participants.ttlFollowing - b.participants.ttlFollowing)
-      const followedByFollowingDiff = 0.5 * (a.participants.ttlFollowedByFollowing - b.participants.ttlFollowedByFollowing)
       const startTimeDiff = a.startTime.getTime() / b.startTime.getTime()
-      const score = -1 * (invitesDiff + followingDiff + followedByFollowingDiff + 1) * startTimeDiff
+      const score = -1 * (isActiveDiff + invitesDiff + followingDiff + 1) * startTimeDiff
       return score
     })
-    return returnObjects
+    return streamObjects
   } catch (error){
     throw new Error(error)
   }

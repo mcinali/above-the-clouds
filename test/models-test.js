@@ -68,8 +68,8 @@ const {
   updateStreamEndTime,
 } = require('../models/streams')
 const {
-  getActiveStreamInvitationsForAccount,
-  getActivePublicAccountStreams,
+  getStreamCreationsForAccount,
+  getStreamInvitationsForAccount,
 } = require('../models/discovery')
 
 const testUsername = 'testAccount'
@@ -809,15 +809,12 @@ describe('Discovery Tests', function() {
   it(`Should...
     - Insert new test Account
     - Insert new Topic
-    - Insert 2 Public Streams & De-activate one of them
-    - Insert Stream Invitations for Active Stream
-    - Insert Stream Invitations for Inactive Stream
+    - Insert Stream
+    - Fetch Streams Account created
+    - Make sure Account created Streams were fetched correctly
+    - Insert Stream Invitations for Stream
     - Fetch Active Stream Invitations for Account
-    - Check to make sure Active Stream Invitations for Account were fetched correctly
-    - Insert active invite-only stream
-    - Insert participants for Active Streams
-    - Fetch Active Public Streams
-    - Check to make sure Active Public Streams were fetched correctly`, async function() {
+    - Check to make sure Active Stream Invitations for Account were fetched correctly`, async function() {
       // Insert new test Account
       const discoveryTestAccountUsername = 'discoveryTestAccount'
       await pgTransaction(`DELETE FROM accounts WHERE username = '${discoveryTestAccountUsername}'`)
@@ -841,7 +838,7 @@ describe('Discovery Tests', function() {
         topic:"Can we test discovery topics?",
       }
       const topic = await insertTopic(topicInfo)
-      // Insert 2 Streams & De-activate one of them
+      // Insert Stream
       const streamInfo = {
         topicId: topic.id,
         accountId: accountId,
@@ -849,47 +846,32 @@ describe('Discovery Tests', function() {
         capacity: 4,
       }
       const activeStream = await insertStream(streamInfo)
-      const inactiveStream = await insertStream(streamInfo)
-      const streamEnd = await updateStreamEndTime(inactiveStream.id)
-      // Insert Stream Invitations for Active Stream
-      const activeStreamInvitationInfo = {
+      // Fetch Streams Account created
+      const accountCreatedStreams = await getStreamCreationsForAccount(accountId, 24)
+      const expiredAccountCreatedStreams = await getStreamCreationsForAccount(accountId, 0)
+      const noStreamAccountCreatedStreams = await getStreamCreationsForAccount(-1, 24)
+      // Make sure Account created Streams were fetched correctly
+      expect(accountCreatedStreams.length).to.equal(1)
+      expect(accountCreatedStreams[0].id).to.equal(activeStream.id)
+      expect(accountCreatedStreams[0].creatorId).to.equal(accountId)
+      should.not.exist(expiredAccountCreatedStreams[0])
+      should.not.exist(noStreamAccountCreatedStreams[0])
+      // Insert Stream Invitations for Stream
+      const streamInvitationInfo = {
         streamId:activeStream.id,
         accountId:accountId,
         inviteeAccountId:accountId,
       }
-      const activeStreamInvitation = await insertStreamInvitation(activeStreamInvitationInfo)
-      // Insert Stream Invitations for Inactive Stream
-      const inactiveStreamInvitationInfo = {
-        streamId:inactiveStream.id,
-        accountId:accountId,
-        inviteeAccountId:accountId,
-      }
-      const inactiveStreamInvitation = await insertStreamInvitation(inactiveStreamInvitationInfo)
-      // Fetch Active Stream Invitations for Account
-      const activeStreamInvitationsForAccount = await getActiveStreamInvitationsForAccount(accountId)
+      const streamInvitation = await insertStreamInvitation(streamInvitationInfo)
+      // Fetch Stream Invitations for Account
+      const goodStreamInvitationsForAccount = await getStreamInvitationsForAccount(accountId, 24)
+      const expiredStreamInvitationsForAccount = await getStreamInvitationsForAccount(accountId, 0)
       // Check to make sure Active Stream Invitations for Account were fetched correctly
-      expect(activeStreamInvitationsForAccount.length).to.equal(1)
-      expect(activeStreamInvitationsForAccount[0].id).to.equal(activeStreamInvitation.id)
-      expect(activeStreamInvitationsForAccount[0].streamId).to.equal(activeStreamInvitation.streamId)
-      expect(activeStreamInvitationsForAccount[0].accountId).to.equal(activeStreamInvitation.accountId)
-      expect(activeStreamInvitationsForAccount[0].inviteeAccountId).to.equal(activeStreamInvitation.inviteeAccountId)
-      // Insert active invite-only stream
-      const inviteOnlyStreamInfo = {
-        topicId: topic.id,
-        accountId: accountId,
-        inviteOnly: true,
-        capacity: 4,
-      }
-      const inviteOnlyActiveStream = await insertStream(inviteOnlyStreamInfo)
-      // Insert participants for Active Streams
-      const participant1 = await insertStreamParticipant({streamId: activeStream.id, accountId: accountId})
-      const participant2 = await insertStreamParticipant({streamId: inviteOnlyActiveStream.id, accountId: accountId})
-      // Fetch Active Public Streams
-      const activePublicStreams = await getActivePublicAccountStreams(accountId)
-      // Check to make sure Active Public Streams were fetched correctly
-      expect(activePublicStreams.length).to.equal(1)
-      expect(activePublicStreams[0].streamId).to.equal(activeStream.id)
-      expect(activePublicStreams[0].accountId).to.equal(accountId)
-      should.not.exist(activePublicStreams[0].endTime)
+      expect(goodStreamInvitationsForAccount.length).to.equal(1)
+      expect(goodStreamInvitationsForAccount[0].id).to.equal(streamInvitation.id)
+      expect(goodStreamInvitationsForAccount[0].streamId).to.equal(streamInvitationInfo.streamId)
+      expect(goodStreamInvitationsForAccount[0].accountId).to.equal(streamInvitationInfo.accountId)
+      expect(goodStreamInvitationsForAccount[0].inviteeAccountId).to.equal(streamInvitationInfo.inviteeAccountId)
+      should.not.exist(expiredStreamInvitationsForAccount[0])
   })
 })
