@@ -23,6 +23,7 @@ async function createAccessToken(username){
   try {
     // Get accountId from username
     const accountIdRow = await getAccountIdFromUsername(username)
+    console.log(accountIdRow)
     const accountId = accountIdRow.id
     // Create access token & store hashed version in DB
     const accessToken = generateAccessToken()

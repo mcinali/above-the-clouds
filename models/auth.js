@@ -16,7 +16,7 @@ async function insertAccessToken(tokenInfo){
 
 async function getPasswordFromUsername(username){
   try {
-    const query = `SELECT encode(password, 'escape') as password FROM accounts WHERE username = '${username}'`
+    const query = `SELECT encode(password, 'escape') as password FROM accounts WHERE lower(username) = lower('${username}')`
     return pool.query(query)
             .then(res => res.rows[0])
             .catch(error => new Error(error))
