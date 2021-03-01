@@ -23,7 +23,12 @@ async function getDiscoveryStreams(accountId){
     const existingStreamIds = existingStreams.map(stream => stream.streamId)
     // Get all streams that account created in past 24 hrs
     const createdStreams = await getStreamCreationsForAccount(accountId, 24)
-    const createdStreamIds = createdStreams.map(stream => stream.id)
+    const createdStreamIds = await Promise.all(createdStreams.map(async (stream) => {
+      const activeParticipants = await getStreamParticipants(stream.id)
+      if (activeParticipants.length>0){
+        return stream.id
+      }
+    }))
     // Get stream invitations in past 24 hours
     const streamInvitations = await getStreamInvitationsForAccount(accountId, 24)
     // Collect active stream Ids that account has been invited to
@@ -89,7 +94,7 @@ async function getDiscoveryStreams(accountId){
         participants: {
           ttlParticipants: streamParticipants.length,
           ttlFollowing: followingParticipants.length,
-          // details: participantsFrmtd,
+          details: participantsFrmtd,
         }
       }
     }))
