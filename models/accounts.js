@@ -84,7 +84,6 @@ async function getProfilePic(accountId){
 async function getAccountIdFromUsername(username){
   try {
     const query = `SELECT id FROM accounts where lower(username) = lower('${username}')`
-    console.log(query)
     return pool
             .query(query)
             .then(res => res.rows[0])
