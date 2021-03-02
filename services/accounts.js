@@ -43,15 +43,15 @@ async function registerUser(accountInfo, params){
     sendEmail(msg)
     // Return result
     const result = {
-      'accountId':account.id,
-      'username':account.username,
-      'email':accountDetails.email,
-      'phone':accountDetails.phone,
-      'firstname':accountDetails.firstname,
-      'lastname':accountDetails.lastname,
-      'hasToken': true,
-      'accessToken': accessTokenInfo.accessToken,
-      'createdAt':account.createdAt
+      accountId:account.id,
+      username:account.username,
+      email:accountDetails.email,
+      phone:accountDetails.phone,
+      firstname:accountDetails.firstname,
+      lastname:accountDetails.lastname,
+      hasToken: true,
+      token: accessTokenInfo.accessToken,
+      createdAt:account.createdAt
     }
     return result
   } catch (error) {
@@ -78,14 +78,14 @@ async function fetchAccountDetails(accountId){
     const profilePic = await getProfilePic(accountId)
     const profilePicture = (profilePic) ? profilePic.profilePicture : null
     const result = {
-      'accountId':accountId,
-      'username':account.username,
-      'email':accountDetails.email,
-      'phone':accountDetails.phone,
-      'firstname':accountDetails.firstname,
-      'lastname':accountDetails.lastname,
-      'profilePicture': profilePicture,
-      'createdAt':account.createdAt,
+      accountId:accountId,
+      username:account.username,
+      email:accountDetails.email,
+      phone:accountDetails.phone,
+      firstname:accountDetails.firstname,
+      lastname:accountDetails.lastname,
+      profilePicture: profilePicture,
+      createdAt:account.createdAt,
     }
     return result
   } catch (error) {
@@ -100,12 +100,12 @@ async function fetchAccountDetailsBasic(accountId){
     const profilePic = await getProfilePic(accountId)
     const profilePicture = (profilePic) ? profilePic.profilePicture : null
     const result = {
-      'accountId':accountId,
-      'username':account.username,
-      'firstname':accountDetails.firstname,
-      'lastname':accountDetails.lastname,
-      'email':accountDetails.email,
-      'profilePicture': profilePicture,
+      accountId:accountId,
+      username:account.username,
+      firstname:accountDetails.firstname,
+      lastname:accountDetails.lastname,
+      email:accountDetails.email,
+      profilePicture: profilePicture,
     }
     return result
   } catch (error) {

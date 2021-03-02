@@ -28,6 +28,10 @@ const {
   insertAccessToken,
   getPasswordFromUsername,
   getAccessTokenFromAccountId,
+  insertPasswordReset,
+  getPasswordResetInfo,
+  updatePassword,
+  expirePasswordResetCode,
 } = require('../models/auth')
 const {
   insertInvitation,
@@ -64,8 +68,8 @@ const {
   updateStreamEndTime,
 } = require('../models/streams')
 const {
-  getActiveStreamInvitationsForAccount,
-  getActivePublicAccountStreams,
+  getStreamCreationsForAccount,
+  getStreamInvitationsForAccount,
 } = require('../models/discovery')
 
 const testUsername = 'testAccount'
@@ -332,7 +336,7 @@ describe('Accounts Tests', function() {
   })
 })
 
-describe('Accounts Tests', function() {
+describe('Auth Tests', function() {
   it(`Should...
     - Insert auth test account & account detials
     - Insert access token
@@ -340,7 +344,15 @@ describe('Accounts Tests', function() {
     - Fetch password
     - Make sure password was fetched correctly
     - Fetch access token from accountId
-    - Make sure access token from accountId was fetched correctly`, async function() {
+    - Make sure access token from accountId was fetched correctly
+    - Insert password reset info
+    - Make sure password reset info was inserted correctly
+    - Fetch password reset info
+    - Make sure password reset info was fetched correctly
+    - Update password
+    - Make sure password was updated correctly
+    - Expire password reset code
+    - Make sure password reset code was expired correctly`, async function() {
       // Insert auth test account & account detials
       const accountInfo = {
         username:'authTest',
@@ -362,13 +374,14 @@ describe('Accounts Tests', function() {
         accessToken: 'token',
         accessTokenTTL: 1,
       }
+      const before = new Date(new Date().getTime()).getTime()
       const accessToken = await insertAccessToken(accessTokenInfo)
+      const after = new Date(new Date().getTime()).getTime()
       // Make sure access token was inserted correctly
       expect(accessToken.accountId).to.equal(accessTokenInfo.accountId)
       expect(accessToken.accessToken).to.equal(accessTokenInfo.accessToken)
-      const now = new Date(new Date().getTime()).getTime()
-      expect(accessToken.accessTokenExpiration.getTime()).to.be.above(now)
-      expect(accessToken.accessTokenExpiration.getTime()).to.be.below(now+(accessTokenInfo.accessTokenTTL*24*60*60*1000))
+      expect(accessToken.accessTokenExpiration.getTime()).to.be.above(before)
+      expect(accessToken.accessTokenExpiration.getTime()).to.be.below(after+(accessTokenInfo.accessTokenTTL*24*60*60*1000))
       // Fetch password
       const goodPasswordRow = await getPasswordFromUsername(accountInfo.username)
       const badPasswordRow = await getPasswordFromUsername('@uthTest')
@@ -381,6 +394,52 @@ describe('Accounts Tests', function() {
       // Make sure access token from accountId was fetched correctly
       expect(accessTokenRows.length).to.equal(1)
       expect(accessTokenRows[0].accessToken).to.equal(accessTokenInfo.accessToken)
+      // Insert password reset info
+      const passwordResetInfo = {
+        accountId: account.id,
+        resetCode: 'abc123',
+        resetToken: 'tokenabc123',
+        verificationCode: '123456',
+        resetTTL: 1,
+      }
+      const before2 = new Date(new Date().getTime()).getTime()
+      const passwordReset = await insertPasswordReset(passwordResetInfo)
+      const after2 = new Date(new Date().getTime()).getTime()
+      // Make sure password reset info was inserted correctly
+      expect(passwordReset.accountId).to.equal(passwordResetInfo.accountId)
+      expect(passwordReset.resetCode).to.equal(passwordResetInfo.resetCode)
+      expect(passwordReset.resetToken).to.equal(passwordResetInfo.resetToken)
+      expect(passwordReset.verificationCode).to.equal(passwordResetInfo.verificationCode)
+      expect(passwordReset.used).to.equal(false)
+      expect(passwordReset.expiration.getTime()).to.be.above(before2)
+      expect(passwordReset.expiration.getTime()).to.be.below(after2+(passwordResetInfo.resetTTL*60*60*1000))
+      // Fetch password reset info
+      const fetchedPasswordResetInfo = await getPasswordResetInfo(passwordResetInfo.resetCode)
+      // Make sure password reset info was fetched correctly
+      expect(fetchedPasswordResetInfo.id).to.equal(passwordReset.id)
+      expect(fetchedPasswordResetInfo.accountId).to.equal(passwordReset.accountId)
+      expect(fetchedPasswordResetInfo.resetCode).to.equal(passwordReset.resetCode)
+      expect(fetchedPasswordResetInfo.resetToken).to.equal(passwordReset.resetToken)
+      expect(fetchedPasswordResetInfo.verificationCode).to.equal(passwordReset.verificationCode)
+      expect(fetchedPasswordResetInfo.used).to.equal(passwordReset.used)
+      expect(fetchedPasswordResetInfo.expiration.getTime()).to.equal(passwordReset.expiration.getTime())
+      // Update password
+      const passwordUpdateInfo = {
+        accountId: account.id,
+        password: 'updatedPassword',
+      }
+      const updatedPassword = await updatePassword(passwordUpdateInfo)
+      // Make sure password was updated correctly
+      expect(updatedPassword.accountId).to.equal(passwordUpdateInfo.accountId)
+      expect(updatedPassword.password).to.equal(passwordUpdateInfo.password)
+      expect(updatedPassword.password).to.not.equal(accountInfo.password)
+      // Expire password reset code
+      const expiredPasswordResetCode = await expirePasswordResetCode(passwordResetInfo.resetCode)
+      // Make sure password reset code was expired correctly
+      expect(expiredPasswordResetCode.id).to.equal(passwordReset.id)
+      expect(expiredPasswordResetCode.accountId).to.equal(passwordReset.accountId)
+      expect(expiredPasswordResetCode.resetCode).to.equal(passwordReset.resetCode)
+      expect(expiredPasswordResetCode.used).to.equal(true)
     })
   })
 
@@ -750,15 +809,12 @@ describe('Discovery Tests', function() {
   it(`Should...
     - Insert new test Account
     - Insert new Topic
-    - Insert 2 Public Streams & De-activate one of them
-    - Insert Stream Invitations for Active Stream
-    - Insert Stream Invitations for Inactive Stream
+    - Insert Stream
+    - Fetch Streams Account created
+    - Make sure Account created Streams were fetched correctly
+    - Insert Stream Invitations for Stream
     - Fetch Active Stream Invitations for Account
-    - Check to make sure Active Stream Invitations for Account were fetched correctly
-    - Insert active invite-only stream
-    - Insert participants for Active Streams
-    - Fetch Active Public Streams
-    - Check to make sure Active Public Streams were fetched correctly`, async function() {
+    - Check to make sure Active Stream Invitations for Account were fetched correctly`, async function() {
       // Insert new test Account
       const discoveryTestAccountUsername = 'discoveryTestAccount'
       await pgTransaction(`DELETE FROM accounts WHERE username = '${discoveryTestAccountUsername}'`)
@@ -782,7 +838,7 @@ describe('Discovery Tests', function() {
         topic:"Can we test discovery topics?",
       }
       const topic = await insertTopic(topicInfo)
-      // Insert 2 Streams & De-activate one of them
+      // Insert Stream
       const streamInfo = {
         topicId: topic.id,
         accountId: accountId,
@@ -790,47 +846,32 @@ describe('Discovery Tests', function() {
         capacity: 4,
       }
       const activeStream = await insertStream(streamInfo)
-      const inactiveStream = await insertStream(streamInfo)
-      const streamEnd = await updateStreamEndTime(inactiveStream.id)
-      // Insert Stream Invitations for Active Stream
-      const activeStreamInvitationInfo = {
+      // Fetch Streams Account created
+      const accountCreatedStreams = await getStreamCreationsForAccount(accountId, 24)
+      const expiredAccountCreatedStreams = await getStreamCreationsForAccount(accountId, 0)
+      const noStreamAccountCreatedStreams = await getStreamCreationsForAccount(-1, 24)
+      // Make sure Account created Streams were fetched correctly
+      expect(accountCreatedStreams.length).to.equal(1)
+      expect(accountCreatedStreams[0].id).to.equal(activeStream.id)
+      expect(accountCreatedStreams[0].creatorId).to.equal(accountId)
+      should.not.exist(expiredAccountCreatedStreams[0])
+      should.not.exist(noStreamAccountCreatedStreams[0])
+      // Insert Stream Invitations for Stream
+      const streamInvitationInfo = {
         streamId:activeStream.id,
         accountId:accountId,
         inviteeAccountId:accountId,
       }
-      const activeStreamInvitation = await insertStreamInvitation(activeStreamInvitationInfo)
-      // Insert Stream Invitations for Inactive Stream
-      const inactiveStreamInvitationInfo = {
-        streamId:inactiveStream.id,
-        accountId:accountId,
-        inviteeAccountId:accountId,
-      }
-      const inactiveStreamInvitation = await insertStreamInvitation(inactiveStreamInvitationInfo)
-      // Fetch Active Stream Invitations for Account
-      const activeStreamInvitationsForAccount = await getActiveStreamInvitationsForAccount(accountId)
+      const streamInvitation = await insertStreamInvitation(streamInvitationInfo)
+      // Fetch Stream Invitations for Account
+      const goodStreamInvitationsForAccount = await getStreamInvitationsForAccount(accountId, 24)
+      const expiredStreamInvitationsForAccount = await getStreamInvitationsForAccount(accountId, 0)
       // Check to make sure Active Stream Invitations for Account were fetched correctly
-      expect(activeStreamInvitationsForAccount.length).to.equal(1)
-      expect(activeStreamInvitationsForAccount[0].id).to.equal(activeStreamInvitation.id)
-      expect(activeStreamInvitationsForAccount[0].streamId).to.equal(activeStreamInvitation.streamId)
-      expect(activeStreamInvitationsForAccount[0].accountId).to.equal(activeStreamInvitation.accountId)
-      expect(activeStreamInvitationsForAccount[0].inviteeAccountId).to.equal(activeStreamInvitation.inviteeAccountId)
-      // Insert active invite-only stream
-      const inviteOnlyStreamInfo = {
-        topicId: topic.id,
-        accountId: accountId,
-        inviteOnly: true,
-        capacity: 4,
-      }
-      const inviteOnlyActiveStream = await insertStream(inviteOnlyStreamInfo)
-      // Insert participants for Active Streams
-      const participant1 = await insertStreamParticipant({streamId: activeStream.id, accountId: accountId})
-      const participant2 = await insertStreamParticipant({streamId: inviteOnlyActiveStream.id, accountId: accountId})
-      // Fetch Active Public Streams
-      const activePublicStreams = await getActivePublicAccountStreams(accountId)
-      // Check to make sure Active Public Streams were fetched correctly
-      expect(activePublicStreams.length).to.equal(1)
-      expect(activePublicStreams[0].streamId).to.equal(activeStream.id)
-      expect(activePublicStreams[0].accountId).to.equal(accountId)
-      should.not.exist(activePublicStreams[0].endTime)
+      expect(goodStreamInvitationsForAccount.length).to.equal(1)
+      expect(goodStreamInvitationsForAccount[0].id).to.equal(streamInvitation.id)
+      expect(goodStreamInvitationsForAccount[0].streamId).to.equal(streamInvitationInfo.streamId)
+      expect(goodStreamInvitationsForAccount[0].accountId).to.equal(streamInvitationInfo.accountId)
+      expect(goodStreamInvitationsForAccount[0].inviteeAccountId).to.equal(streamInvitationInfo.inviteeAccountId)
+      should.not.exist(expiredStreamInvitationsForAccount[0])
   })
 })

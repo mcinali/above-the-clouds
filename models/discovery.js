@@ -1,12 +1,12 @@
 const { pool, pgTransaction } = require('../pg_helpers')
 
-async function getActiveStreamInvitationsForAccount(accountId){
+async function getStreamCreationsForAccount(accountId, lookbackHours){
   try {
     const query = `
-      SELECT id, stream_id, account_id, invitee_account_id
-      FROM stream_invitations
-      WHERE invitee_account_id = ${accountId}
-      AND stream_id in (SELECT id FROM streams WHERE end_time is null)`
+      SELECT id, creator_id
+      FROM streams
+      WHERE creator_id = ${accountId}
+      AND created_at + INTERVAL '${lookbackHours} hour' > now()`
     return pool
             .query(query)
             .then(res => res.rows)
@@ -16,13 +16,13 @@ async function getActiveStreamInvitationsForAccount(accountId){
   }
 }
 
-async function getActivePublicAccountStreams(accountId){
+async function getStreamInvitationsForAccount(accountId, lookbackHours){
   try {
     const query = `
-      SELECT * FROM stream_participants
-      WHERE account_id = ${accountId}
-      AND end_time is null
-      AND stream_id in (SELECT id FROM streams WHERE invite_only = false)`
+      SELECT id, stream_id, account_id, invitee_account_id
+      FROM stream_invitations
+      WHERE invitee_account_id = ${accountId}
+      AND created_at + INTERVAL '${lookbackHours} hour' > now()`
     return pool
             .query(query)
             .then(res => res.rows)
@@ -33,6 +33,6 @@ async function getActivePublicAccountStreams(accountId){
 }
 
 module.exports = {
-  getActiveStreamInvitationsForAccount,
-  getActivePublicAccountStreams,
+  getStreamInvitationsForAccount,
+  getStreamCreationsForAccount,
 }

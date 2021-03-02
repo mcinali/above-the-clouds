@@ -14,7 +14,7 @@ const {
 const { getAccountInfo, getAccountDetails, getProfilePic } = require('../models/accounts')
 const { getAccountsFollowing } = require('../models/follows')
 const { sendEmail } = require('../sendgrid')
-const { twilioClient, createTwilioRoomAccessToken } = require('../twilio')
+const { twilioClient, createTwilioRoomAccessToken, sendSMS } = require('../twilio')
 const { webURL } = require('../config')
 
 // Create Stream
@@ -157,7 +157,7 @@ async function inviteParticipantToStream(inviteInfo){
     const streamDetails = await getStreamDetails(streamId)
     // Instantiate email
     const account = await getAccountInfo(accountId)
-    const accountUsername = account.username
+    const username = account.username
     const accountDetails = await getAccountDetails(accountId)
     const topic = await getTopicInfo(streamDetails.topicId)
     const inviteeAccount = await getAccountInfo(inviteeAccountId)
@@ -167,18 +167,29 @@ async function inviteParticipantToStream(inviteInfo){
     const accountFollowingRows = await getAccountsFollowing(accountId)
     const accountFollowing = accountFollowingRows.map(item => item.accountId)
     const following = (inviteeAccountId==accountId) ? null : (accountFollowing.includes(inviteeAccountId)) ? true : false
-    const msg = {
-      from: 'abovethecloudsapp@gmail.com',
-      to: inviteeAccountDetails.email,
-      subject: `${accountDetails.firstname} ${accountDetails.lastname} (${accountUsername}) invited you to their stream`,
-      text: `${accountDetails.firstname} ${accountDetails.lastname} (${accountUsername}) invited you to their stream "${topic.topic}".
-
-      Join now: ${webURL}/stream?streamId${streamId}`,
-    }
     // Insert stream invitation into DB
     const streamInvitation = await insertStreamInvitation(inviteInfo)
     // Send email
+    const firstname = accountDetails.firstname
+    const lastname = accountDetails.lastname
+    const msg = {
+      from: 'abovethecloudsapp@gmail.com',
+      to: inviteeAccountDetails.email,
+      subject: `${firstname} ${lastname} (${username}) invited you to their stream`,
+      text: `${firstname} ${lastname} (${username}) invited you to their stream "${topic.topic}".
+
+      Join now: ${webURL}/stream?streamId=${streamId}`,
+    }
     sendEmail(msg)
+    // Send text
+    const phoneNumber = '+1'+inviteeAccountDetails.phone.toString()
+    const textMessage = `${firstname} ${lastname} (${username}) invited you to their stream "${topic.topic}":
+
+    Join now: ${webURL}/stream?streamId=${streamId}
+
+    An invite email was sent to ${inviteeAccountDetails.email} for an optimal experience on desktop`
+    sendSMS(phoneNumber, textMessage)
+
     return {
       accountId: accountId,
       inviteeAccountId: inviteeAccountId,
@@ -276,8 +287,10 @@ async function joinStream(joinInfo){
 }
 
 // Leave Stream
-async function leaveStream(streamParticipantId){
+async function leaveStream(body){
   try {
+    // twilioClient
+    const { streamParticipantId, twilioRoomSID, twilioParticipantSID } = body
     // Check if participant already left stream
     const streamParticipantDetails = await getStreamParticipantDetails(streamParticipantId)
     if (Boolean(streamParticipantDetails.endTime)){
@@ -285,21 +298,18 @@ async function leaveStream(streamParticipantId){
     }
     // Set end time for user participation in stream
     const streamParticipantEndTime = await updateStreamParticipantEndTime(streamParticipantId)
-    // End stream if no more users remain
+    // Disconnect user from room
     const streamId = streamParticipantEndTime.streamId
-    const streamParticipants = await getStreamParticipants(streamId)
-    const streamParticipantsFlrtd = streamParticipants.filter(function(participant){
-      if (!participant.endTime) {return participant}
-    })
-    if (streamParticipantsFlrtd.length==0) {
-      const streamEndTime = await updateStreamEndTime(streamId)
-    }
-    const streamDetails = await getStreamDetails(streamId)
+    twilioClient.video.rooms(twilioRoomSID)
+      .participants(twilioParticipantSID)
+      .update({status: 'disconnected'})
+      .then(participant => {
+        console.log(participant.status)
+      })
     return {
       streamId:streamId,
       accountId:streamParticipantEndTime.accountId,
       participantEndTime:streamParticipantEndTime.endTime,
-      streamEndTime:streamDetails.endTime,
     }
   } catch (error) {
     throw new Error(error)

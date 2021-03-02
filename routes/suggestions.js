@@ -3,7 +3,7 @@ const router = express.Router()
 const { getAccountSuggestions } = require('../services/suggestions')
 const { checkAccountQueryAccessToken } = require('../middleware/auth')
 
-// Get discovery streams for user
+// Get account suggestions for user
 router.get('/', checkAccountQueryAccessToken, async function (req, res) {
   try {
     const results = await getAccountSuggestions(req.query.accountId, req.query.text)

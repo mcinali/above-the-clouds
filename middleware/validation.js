@@ -46,7 +46,7 @@ const accountFormFields = {
              'any.required':'email is a required field',
            }),
   password: Joi.string()
-             .pattern(new RegExp('^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,32}$'))
+             .pattern(new RegExp('^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$'))
              .required()
              .messages({
                'string.pattern.base': 'password must be between 8-32 characters and must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
