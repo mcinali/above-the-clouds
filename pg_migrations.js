@@ -156,6 +156,17 @@ async function pgMigrate(){
         UNIQUE (account_id, following_account_id)
       )`
     )
+
+    await pgTransaction(
+      `CREATE TABLE IF NOT EXISTS socket_connections (
+        id SERIAL PRIMARY KEY NOT NULL,
+        socket_id VARCHAR(32) NOT NULL,
+        account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+        connected BOOLEAN NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE (socket_id, account_id)
+      )`
+    )
   } catch (error) {
     console.error(error)
   }
