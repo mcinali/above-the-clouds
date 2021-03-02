@@ -86,6 +86,8 @@ async function getFollowingSuggestions(accountId){
       })
     }))
     const invitationAccountIds = [...invitationAccountIdsSet]
+    // Get filter list (accounts following + accountId)
+    const filterAccountIds = accountsFollowing.concat([parseInt(accountId)])
     // Get "first order account ids" (i.e. accountIds that invited user + following accountIds)
     const firstOrderAccountIds = [...new Set(accountsFollowing.concat(invitationAccountIds))]
     // Suggest accounts that are followed by 1st order accountIds (accounts following + invite accounts)
@@ -94,7 +96,7 @@ async function getFollowingSuggestions(accountId){
       const followSuggestionsArray = await getAccountsFollowing(id)
       followSuggestionsArray.map(followSuggestionRow => {
         const followingAccountId = followSuggestionRow.accountId
-        if (!accountsFollowing.includes(followingAccountId)){
+        if (!filterAccountIds.includes(followingAccountId)){
           if (followingSuggestionsDict[followingAccountId]){
             followingSuggestionsDict[followingAccountId] = followingSuggestionsDict[followingAccountId] + 1
           } else {
@@ -105,7 +107,7 @@ async function getFollowingSuggestions(accountId){
     }))
     // Suggest follower accounts
     accountFollowers.map(id => {
-      if (!accountsFollowing.includes(id)){
+      if (!filterAccountIds.includes(id)){
         if (followingSuggestionsDict[id]){
           followingSuggestionsDict[id] = followingSuggestionsDict[id] + 2
         } else {
