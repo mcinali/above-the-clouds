@@ -85,27 +85,54 @@ async function getFollowingSuggestions(accountId){
         invitationAccountIdsSet.add(accountIdRow.accountId)
       })
     }))
+    const invitationAccountIds = [...invitationAccountIdsSet]
     // Get "first order account ids" (i.e. accountIds that invited user + following accountIds)
-    const firstOrderAccountIdsSet = invitationAccountIdsSet
-    accountsFollowing.map(accountId => firstOrderAccountIdsSet.add(accountId))
-    const firstOrderAccountIds = [...firstOrderAccountIdsSet]
-    // Suggest accounts that are followed by following accounts/accounts that invited user
-    const followSuggestionsSet = invitationAccountIdsSet
-    await Promise.all(firstOrderAccountIds.map(async (accountId) => {
-      const followSuggestionsArray = await getAccountsFollowing(accountId)
+    const firstOrderAccountIds = [...new Set(accountsFollowing.concat(invitationAccountIds))]
+    // Suggest accounts that are followed by 1st order accountIds (accounts following + invite accounts)
+    const followingSuggestionsDict = {}
+    await Promise.all(firstOrderAccountIds.map(async (id) => {
+      const followSuggestionsArray = await getAccountsFollowing(id)
       followSuggestionsArray.map(followSuggestionRow => {
-        followSuggestionsSet.add(followSuggestionRow.accountId)
+        const followingAccountId = followSuggestionRow.accountId
+        if (!accountsFollowing.includes(followingAccountId)){
+          if (followingSuggestionsDict[followingAccountId]){
+            followingSuggestionsDict[followingAccountId] = followingSuggestionsDict[followingAccountId] + 1
+          } else {
+            followingSuggestionsDict[followingAccountId] = 1
+          }
+        }
       })
     }))
-    const followSuggestions = [...followSuggestionsSet].concat(accountFollowers)
-    // Filter out following accounts from follow suggestions array
-    const followSuggestionsFltrd = followSuggestions.filter(accountId => !accountsFollowing.includes(accountId))
-    const followSuggestionsFinal = followSuggestionsFltrd.filter(suggestionsAccountId => suggestionsAccountId!=accountId)
-    // Get account details for following accounts
-    const returnObject = await Promise.all(followSuggestionsFinal.map(async (accountId) => {
-      const followingAccountDetails = await fetchAccountDetails(accountId)
+    // Suggest follower accounts
+    accountFollowers.map(id => {
+      if (!accountsFollowing.includes(id)){
+        if (followingSuggestionsDict[id]){
+          followingSuggestionsDict[id] = followingSuggestionsDict[id] + 2
+        } else {
+          followingSuggestionsDict[id] = 2
+        }
+      }
+    })
+    // Convert dict to (sortable) array of objects
+    const followingSuggestionObjects = []
+    Object.keys(followingSuggestionsDict).forEach(function(key){
+      const obj = {
+        accountId: key,
+        value: followingSuggestionsDict[key],
+      }
+      followingSuggestionObjects.push(obj)
+    })
+    // Sort array of objects based on value (aggregate accounts following)
+    followingSuggestionObjects.sort(function(a,b){
+      return b.value - a.value
+    })
+    // Get top 10 following suggestions
+    const topTenFollowingSuggestions = followingSuggestionObjects.slice(0,10)
+    // Get account details for following suggestions
+    const returnObject = await Promise.all(topTenFollowingSuggestions.map(async (id) => {
+      const followingAccountDetails = await fetchAccountDetails(id.accountId)
       return {
-        accountId: accountId,
+        accountId: id.accountId,
         username: followingAccountDetails.username,
         firstname: followingAccountDetails.firstname,
         lastname: followingAccountDetails.lastname,
