@@ -11,8 +11,18 @@ const topics = require('./routes/topics')
 const streams = require('./routes/streams')
 const discovery = require('./routes/discovery')
 const suggestions = require('./routes/suggestions')
-
 const app = express()
+const http = require('http').createServer(app)
+const { webURL } = require('./config')
+const io = require('socket.io')(http, {
+  cors: {
+    origin: webURL,
+    methods: ['GET']
+  }
+})
+const { establishSockets } = require('./sockets/sockets')
+
+
 app.use(cors())
 app.use(express.json())
 app.use('/', index)
@@ -31,6 +41,11 @@ const port = 8080;
 
 app.listen(port, hostname, () => {
   console.log(`App running at http://${hostname}:${port}`)
+})
+
+http.listen(8000, () => {
+  establishSockets(io)
+  console.log(`Websockets listening on port 8000`)
 })
 
 // RUN DB migrations
