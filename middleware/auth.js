@@ -165,10 +165,7 @@ async function authenticateSocket(req, res, next){
   try {
     const accountId = req.auth.accountId
     const token = req.auth.token
-    console.log(accountId)
-    console.log(token)
     const verified = await checkAccessToken(accountId, token)
-    console.log(verified)
     if (verified){
       next()
     } else {
