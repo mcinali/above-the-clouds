@@ -4,6 +4,7 @@ const {
   updateSocketDisconnection,
 } = require('../models/sockets')
 const { getAccountFollowers } = require('../models/follows')
+const { fetchAccountDetailsBasic } = require('../services/accounts')
 
 async function establishSockets(io){
   try {
@@ -50,7 +51,10 @@ async function broadcastToFollowers(accountId, socket, channel){
     followers.map(async (follower) => {
       const id = follower.accountId
       const socketConnections = await getAccountSocketConnections(id, 24)
-      socketConnections.map(socketConnection => socket.broadcast.to(socketConnection.socketId).emit(channel, accountId))
+      if (Boolean(socketConnections[0])){
+        const accountInfo = await fetchAccountDetailsBasic(id)
+        socketConnections.map(socketConnection => socket.broadcast.to(socketConnection.socketId).emit(channel, accountInfo))
+      }
     })
   } catch (error) {
     throw new Error(error)
