@@ -11,8 +11,17 @@ const topics = require('./routes/topics')
 const streams = require('./routes/streams')
 const discovery = require('./routes/discovery')
 const suggestions = require('./routes/suggestions')
-
 const app = express()
+const { establishSockets } = require('./sockets/sockets')
+const http = require('http').createServer(app)
+const { corsURL } = require('./config')
+const io = require('socket.io')(http, {
+  cors: {
+    origin: corsURL,
+    methods: ['GET']
+  }
+})
+
 app.use(cors())
 app.use(express.json())
 app.use('/', index)
@@ -27,10 +36,14 @@ app.use('/discovery', discovery)
 app.use('/suggestions', suggestions)
 
 const hostname = '0.0.0.0';
-const port = 8080;
 
-app.listen(port, hostname, () => {
-  console.log(`App running at http://${hostname}:${port}`)
+app.listen(8080, hostname, () => {
+  console.log(`App running on port 8080`)
+})
+
+http.listen(8000, hostname, () => {
+  establishSockets(io)
+  console.log(`Websockets listening on port 8000`)
 })
 
 // RUN DB migrations

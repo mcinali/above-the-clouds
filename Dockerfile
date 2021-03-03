@@ -10,8 +10,9 @@ RUN npm install
 # Bundle app source source code
 COPY . .
 
-# Expose port 8080
+# Expose ports 8080 & 8000
 EXPOSE 8080
+EXPOSE 8000
 
 # RUNTIME COMMANDS
 CMD ["node","app.js"]

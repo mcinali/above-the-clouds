@@ -7,12 +7,14 @@ const {
 } = require('../models/follows')
 const {
   fetchAccountDetails,
+  fetchAccountDetailsBasic,
 } = require('../services/accounts')
 const {
   getEmailFromInvitationId,
   getInvitationsToEmail,
   getInvitationIdForConvertedAccount,
 } = require('../models/invitations')
+const { getAccountSocketConnections } = require('../models/sockets')
 const { sendEmail } = require('../sendgrid')
 const { webURL } = require('../config')
 
@@ -26,7 +28,7 @@ async function follow(followInfo){
       return
     } else {
       const follow = await insertFollow(followInfo)
-      const accountDetails = await fetchAccountDetails(followInfo.accountId)
+      const accountDetails = await fetchAccountDetailsBasic(followInfo.accountId)
       const followingAccountDetails = await fetchAccountDetails(followInfo.followingAccountId)
       const msg = {
         from: 'abovethecloudsapp@gmail.com',
@@ -132,18 +134,29 @@ async function getFollowingSuggestions(accountId){
     const topTenFollowingSuggestions = followingSuggestionObjects.slice(0,10)
     // Get account details for following suggestions
     const returnObject = await Promise.all(topTenFollowingSuggestions.map(async (id) => {
-      const followingAccountDetails = await fetchAccountDetails(id.accountId)
-      return {
-        accountId: id.accountId,
-        username: followingAccountDetails.username,
-        firstname: followingAccountDetails.firstname,
-        lastname: followingAccountDetails.lastname,
-        profilePicture: followingAccountDetails.profilePicture,
-      }
+      const followingAccountDetails = await fetchAccountDetailsBasic(id.accountId)
+      return followingAccountDetails
     }))
     return {
       suggestions: returnObject,
     }
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+async function getOnlineAccountsFollowing(accountId){
+  try {
+    const accountsFollowing = await getAccountsFollowing(accountId)
+    const onlineFollowing = await Promise.all(accountsFollowing.map( async (following) => {
+      const id = following.accountId
+      const socketConnections = await getAccountSocketConnections(id, 2)
+      if (Boolean(socketConnections[0])){
+        const accountInfo = await fetchAccountDetailsBasic(id)
+        return accountInfo
+      }
+    }))
+    return onlineFollowing.filter(entry => entry!=null)
   } catch (error) {
     throw new Error(error)
   }
@@ -155,4 +168,5 @@ module.exports = {
   follow,
   unfollow,
   getFollowingSuggestions,
+  getOnlineAccountsFollowing,
 }

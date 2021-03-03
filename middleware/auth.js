@@ -160,6 +160,22 @@ async function checkAccountParamsAccessToken(req, res, next){
   }
 }
 
+// Authenticate socket
+async function authenticateSocket(req, res, next){
+  try {
+    const accountId = req.auth.accountId
+    const token = req.auth.token
+    const verified = await checkAccessToken(accountId, token)
+    if (verified){
+      next()
+    } else {
+      next(new Error('unauthorized'))
+    }
+  } catch (error) {
+    next(new Error('Unable to authenticate socket'))
+  }
+}
+
 // Helper function to check for validity of access token for accountId
 async function checkAccessToken(accountId, accessToken){
   try {
@@ -218,10 +234,9 @@ async function checkAccountStreamAccess(req, res, next){
     }
     next()
   } catch (error) {
-    throw new Error(error)
+    return res.status(500).json({error: ['Unable to verify stream access']})
   }
 }
-
 
 module.exports = {
   checkLoginCredentials,
@@ -231,5 +246,6 @@ module.exports = {
   checkAccountBodyAccessToken,
   checkAccountQueryAccessToken,
   checkAccountParamsAccessToken,
+  authenticateSocket,
   checkAccountStreamAccess,
 }

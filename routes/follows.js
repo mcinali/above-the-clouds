@@ -4,6 +4,7 @@ const {
   follow,
   unfollow,
   getFollowingSuggestions,
+  getOnlineAccountsFollowing,
 } = require('../services/follows')
 const {
   checkAccountBodyAccessToken,
@@ -40,6 +41,17 @@ router.get('/suggestions', checkAccountQueryAccessToken, async function (req, re
   } catch (error) {
     console.error(error)
     return res.status(400).json({error: 'Failed to fetch follow suggestions'})
+  }
+})
+
+// Get Online Accounts Following
+router.get('/online_following', checkAccountQueryAccessToken, async function (req, res) {
+  try {
+    const results = await getOnlineAccountsFollowing(req.query.accountId)
+    return res.send(results)
+  } catch (error) {
+    console.error(error)
+    return res.status(400).json({error: 'Failed to fetch online following'})
   }
 })
 
