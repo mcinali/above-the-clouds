@@ -11,4 +11,8 @@ spec:
     tier: web
   ports:
     - port: 80
+      name: web-app-port
       targetPort: 8080
+    - port: 8000
+      name: socket-port
+      targetPort: 8000

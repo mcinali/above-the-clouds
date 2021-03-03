@@ -14,10 +14,10 @@ const suggestions = require('./routes/suggestions')
 const app = express()
 const { establishSockets } = require('./sockets/sockets')
 const http = require('http').createServer(app)
-const { webURL } = require('./config')
+const { corsURL } = require('./config')
 const io = require('socket.io')(http, {
   cors: {
-    origin: webURL,
+    origin: corsURL,
     methods: ['GET']
   }
 })
@@ -36,13 +36,12 @@ app.use('/discovery', discovery)
 app.use('/suggestions', suggestions)
 
 const hostname = '0.0.0.0';
-const port = 8080;
 
-app.listen(port, hostname, () => {
-  console.log(`App running at http://${hostname}:${port}`)
+app.listen(8080, hostname, () => {
+  console.log(`App running on port 8080`)
 })
 
-http.listen(8000, () => {
+http.listen(8000, hostname, () => {
   establishSockets(io)
   console.log(`Websockets listening on port 8000`)
 })

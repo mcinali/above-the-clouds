@@ -9,6 +9,14 @@ metadata:
   labels:
     app: backend
 spec:
-  backend:
-    serviceName: backend
-    servicePort: 80
+  rules:
+  - http:
+      paths:
+      - path: /socket.io/*
+        backend:
+          serviceName: backend
+          servicePort: socket-port
+      - path: /*
+        backend:
+          serviceName: backend
+          servicePort: web-app-port

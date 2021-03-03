@@ -31,6 +31,9 @@ spec:
         name: backend
         ports:
         - containerPort: 8080
+          name: web-app-port
+        - containerPort: 8000
+          name: socket-port
         env:
         - name: NODE_ENV
           value: "prod"
