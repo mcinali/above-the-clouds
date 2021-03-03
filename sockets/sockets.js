@@ -48,13 +48,11 @@ async function establishSockets(io){
 async function broadcastToFollowers(accountId, socket, channel){
   try {
     const followers = await getAccountFollowers(accountId)
+    const accountInfo = await fetchAccountDetailsBasic(accountId)
     followers.map(async (follower) => {
       const id = follower.accountId
       const socketConnections = await getAccountSocketConnections(id, 24)
-      if (Boolean(socketConnections[0])){
-        const accountInfo = await fetchAccountDetailsBasic(id)
-        socketConnections.map(socketConnection => socket.broadcast.to(socketConnection.socketId).emit(channel, accountInfo))
-      }
+      socketConnections.map(socketConnection => socket.broadcast.to(socketConnection.socketId).emit(channel, accountInfo))
     })
   } catch (error) {
     throw new Error(error)
