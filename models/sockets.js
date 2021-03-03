@@ -14,9 +14,11 @@ async function insertSocketConnection(socketConnectionInfo){
   }
 }
 
-async function getAccountSocketConnections(accountId){
+async function getAccountSocketConnections(accountId, ttl){
   try {
-    const query = `SELECT * FROM socket_connections WHERE account_id = ${accountId} AND connected = true`
+    const query = `
+      SELECT * FROM socket_connections
+      WHERE account_id = ${accountId} AND connected = true AND created_at + INTERVAL '${ttl} hour' > now()`
     return pool.query(query)
             .then(res => res.rows)
             .catch(error => new Error(error))
@@ -25,7 +27,7 @@ async function getAccountSocketConnections(accountId){
   }
 }
 
-async function udpateDisconnectSocket(socketDisconnectionInfo){
+async function updateSocketDisconnection(socketDisconnectionInfo){
   try {
     const { accountId, socketId } = socketDisconnectionInfo
     const query = `
@@ -41,5 +43,5 @@ async function udpateDisconnectSocket(socketDisconnectionInfo){
 module.exports = {
   insertSocketConnection,
   getAccountSocketConnections,
-  udpateDisconnectSocket,
+  updateSocketDisconnection,
 }
