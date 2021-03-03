@@ -5,12 +5,16 @@ const {
 } = require('../models/sockets')
 const { getAccountFollowers } = require('../models/follows')
 const { fetchAccountDetailsBasic } = require('../services/accounts')
+const { authenticateSocket } = require('../middleware/auth')
 
 async function establishSockets(io){
   try {
+    io.use(async (socket, next) => {
+      await authenticateSocket(socket.handshake, {}, next)
+    })
     io.on('connection', async (socket) => {
       // Insert socket connection in DB
-      const accountId = socket.request._query.accountId
+      const accountId = socket.handshake.auth.accountId
       const socketId = socket.id
       console.log()
       console.log(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }), ` - Account ${accountId} connected`)
@@ -40,7 +44,7 @@ async function establishSockets(io){
       })
     })
   } catch (error) {
-
+    throw new Error(error)
   }
 }
 
