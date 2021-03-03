@@ -104,7 +104,6 @@ async function fetchAccountDetailsBasic(accountId){
       username:account.username,
       firstname:accountDetails.firstname,
       lastname:accountDetails.lastname,
-      email:accountDetails.email,
       profilePicture: profilePicture,
     }
     return result
