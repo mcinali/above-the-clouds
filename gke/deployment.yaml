@@ -16,14 +16,19 @@ spec:
         app: backend
         tier: web
     spec:
-      serviceAccountName: cloud-sql-proxy-sa
+      serviceAccountName: backend
       containers:
       - image: gcr.io/cloudsql-docker/gce-proxy:1.17
         imagePullPolicy: Always
         name: cloud-sql-proxy
         command:
           - "/cloud_sql_proxy"
-          - "-instances=above-the-clouds-app:us-central1:above-the-clouds-dbs=tcp:5432"
+          - "-instances=above-the-clouds-app:us-central1:${DB_ADDRESS}=tcp:5432"
+        - name: DB_ADDRESS
+          valueFrom:
+            configMapKeyRef:
+              name: backend
+              key: db_address
         securityContext:
           runAsNonRoot: true
       - image: gcr.io/above-the-clouds-app/backend:1.0.0
@@ -36,7 +41,15 @@ spec:
           name: socket-port
         env:
         - name: NODE_ENV
-          value: "prod"
+          valueFrom:
+            configMapKeyRef:
+              name: backend
+              key: env
+        - name: WEB_URL
+          valueFrom:
+            configMapKeyRef:
+              name: backend
+              key: web_url
         livenessProbe:
           httpGet:
             path: /

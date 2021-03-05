@@ -1,4 +1,5 @@
 const env = process.env.NODE_ENV
+const webURL = process.env.WEB_URL
 const fs = require('fs')
 const { GCP_POSTGRES_PASSWORD } = require('./secrets')
 
@@ -19,10 +20,9 @@ const gcpDB = {
   port: 5432,
 }
 // Set db variable
-const db = (env=='prod') ? gcpDB : localDB
+const db = (env=='prod' || env=='staging') ? gcpDB : localDB
 
-// Set webURL variable
-const webURL = (env=='prod') ? 'https://www.abovethecloudsapp.com' : 'http://localhost:3000'
+// Set corsURL variable
 const corsURL = (env=='prod') ? /abovethecloudsapp\.com$/ : 'http://localhost:3000'
 
 module.exports = {
