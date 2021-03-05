@@ -31,7 +31,7 @@ spec:
               key: db_address
         securityContext:
           runAsNonRoot: true
-      - image: gcr.io/above-the-clouds-app/backend:1.0.0
+      - image: gcr.io/above-the-clouds-app/backend:1.0.1
         imagePullPolicy: Always
         name: backend
         ports:
