@@ -3,7 +3,7 @@ const { db } = require('./config')
 
 async function pgMigrate(){
   try {
-    await pgTransaction(`ALTER DATABASE ${db.database} SET timezone TO 'GMT'`)
+    await pgTransaction(`ALTER DATABASE "${db.database}" SET timezone TO 'GMT'`)
 
     await pgTransaction(
       `CREATE TABLE iF NOT EXISTS registration_email_access_codes (
