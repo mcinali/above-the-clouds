@@ -11,8 +11,8 @@ const topics = require('./routes/topics')
 const streams = require('./routes/streams')
 const discovery = require('./routes/discovery')
 const suggestions = require('./routes/suggestions')
-const app = express()
 const { establishSockets } = require('./sockets/sockets')
+const app = express()
 const http = require('http').createServer(app)
 const { corsURL } = require('./config')
 const io = require('socket.io')(http, {
@@ -22,6 +22,7 @@ const io = require('socket.io')(http, {
   }
 })
 
+app.set('io', io)
 app.use(cors())
 app.use(express.json())
 app.use('/', index)

@@ -16,9 +16,10 @@ const { getAccountsFollowing } = require('../models/follows')
 const { sendEmail } = require('../sendgrid')
 const { twilioClient, createTwilioRoomAccessToken, sendSMS } = require('../twilio')
 const { webURL } = require('../config')
+const { broadcastToFollowers, broadcastToInvitees } = require('../sockets/sockets')
 
 // Create Stream
-async function createStream(streamInfo){
+async function createStream(streamInfo, app){
   try {
     const stream = await insertStream(streamInfo)
     const { invitees } = streamInfo
@@ -33,12 +34,28 @@ async function createStream(streamInfo){
                               type: 'group-small',
                               uniqueName: stream.id.toString(),
                             })
-    return {
+    const topic = await getTopicInfo(stream.topicId)
+    const results = {
       streamId: stream.id,
+      creatorId: stream.creatorId,
       topicId: stream.topicId,
+      topic: topic.topic,
+      capacity: stream.capacity,
+      inviteOnly: stream.inviteOnly,
       startTime: stream.startTime,
       endTime: stream.endTime,
+      participants: {
+        details: [],
+      },
+      invitees: [],
     }
+    const socket = app.get('io')
+    if (stream.inviteOnly){
+      broadcastToInvitees(stream.id, socket, 'create_stream', results)
+    } else {
+      broadcastToFollowers(streamInfo.accountId, socket, 'create_stream', results)
+    }
+    return results
   } catch (error) {
     throw new Error(error)
   }

@@ -18,7 +18,7 @@ const {
 // Create Stream
 router.post('/', checkAccountBodyAccessToken, async function (req, res) {
   try {
-    const results = await createStream(req.body)
+    const results = await createStream(req.body, req.app)
     return res.send(results)
   } catch (error) {
     console.error(error)
