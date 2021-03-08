@@ -51,7 +51,7 @@ async function getDiscoveryStreams(accountId){
       }))
       const activeStreamsFltrd = activeStreamDetails.filter(stream => !stream.inviteOnly)
       if (activeStreamsFltrd.length>0){
-        return activeStreamsFltrd[0].streamId
+        return activeStreamsFltrd[0].id
       }
     }))
     // Collect all accessible stream Ids in Set
