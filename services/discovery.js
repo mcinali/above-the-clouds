@@ -45,8 +45,13 @@ async function getDiscoveryStreams(accountId){
     // Get active streams for accounts following
     const accountsFollowingStreamIds = await Promise.all(accountsFollowing.map(async (followingAccountId) => {
       const activeStreams = await getActiveAccountStreams(followingAccountId)
-      if (activeStreams.length>0){
-        return activeStreams[0].streamId
+      // Filter out inviteOnly streams
+      const activeStreamDetails = await Promise.all(activeStreams.map(async (streamParticipant) => {
+        return await getStreamDetails(streamParticipant.streamId)
+      }))
+      const activeStreamsFltrd = activeStreamDetails.filter(stream => !stream.inviteOnly)
+      if (activeStreamsFltrd.length>0){
+        return activeStreamsFltrd[0].streamId
       }
     }))
     // Collect all accessible stream Ids in Set

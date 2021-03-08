@@ -276,6 +276,7 @@ async function joinStream(joinInfo, app){
     const streamParticipant = await insertStreamParticipant(joinInfo)
     // Broadcast stream join to invitees/followers
     const socket = app.get('io')
+    // console.log(socket)
     broadcastStreamJoins(joinInfo.accountId, joinInfo.streamId, socket, 'join_stream')
     // Get twilio access token
     const twilioUserId = streamParticipant.accountId.toString()
@@ -317,6 +318,7 @@ async function leaveStream(body, app){
       })
     // Broadcast stream leave to active sockets
     const socket = app.get('io')
+    // console.log(socket)
     broadcastStreamLeaves(accountId, streamId, socket, 'leave_stream')
     return {
       streamId: streamId,
