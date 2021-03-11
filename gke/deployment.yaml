@@ -24,6 +24,7 @@ spec:
         command:
           - "/cloud_sql_proxy"
           - "-instances=above-the-clouds-app:us-central1:${DB_ADDRESS}=tcp:5432"
+        env:
         - name: DB_ADDRESS
           valueFrom:
             configMapKeyRef:
@@ -51,7 +52,7 @@ spec:
               name: backend
               key: web_url
         - name: POSTGRES_PASSWORD
-          vaueFrom:
+          valueFrom:
             secretKeyRef:
               name: backend-secret
               key: postgres-password
