@@ -162,7 +162,7 @@ async function pgMigrate(){
         id SERIAL PRIMARY KEY NOT NULL,
         socket_id VARCHAR(32) NOT NULL,
         account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
-        connected BOOLEAN NOT NULL,
+        end_time TIMESTAMPTZ,
         created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
         UNIQUE (socket_id, account_id)
       )`
