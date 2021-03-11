@@ -6,3 +6,4 @@ secrets*
 cloud-sql-proxy-sa-key.json
 cloud_sql_proxy
 node_modules
+gcloud*

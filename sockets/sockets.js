@@ -3,10 +3,19 @@ const {
   getAccountSocketConnections,
   updateSocketDisconnection,
 } = require('../models/sockets')
-const { getAccountFollowers } = require('../models/follows')
+const {
+  getAccountFollowers,
+} = require('../models/follows')
+const {
+  getStreamInvitations,
+  getStreamParticipants,
+  getStreamDetails,
+} = require('../models/streams')
 const { fetchAccountDetailsBasic } = require('../services/accounts')
+const { getDiscoveryStreams } = require('../services/discovery')
 const { authenticateSocket } = require('../middleware/auth')
 
+// Establish socket connection with client & broadcast user activity
 async function establishSockets(io){
   try {
     io.use(async (socket, next) => {
@@ -16,6 +25,7 @@ async function establishSockets(io){
       // Insert socket connection in DB
       const accountId = socket.handshake.auth.accountId
       const socketId = socket.id
+      const accountInfo = await fetchAccountDetailsBasic(accountId)
       console.log()
       console.log(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }), ` - Account ${accountId} connected`)
       const socketConnectionInfo = {
@@ -24,7 +34,7 @@ async function establishSockets(io){
       }
       insertSocketConnection(socketConnectionInfo)
       // Emit connections to online followers
-      broadcastToFollowers(accountId, socket, 'online')
+      broadcastToFollowers(accountId, socket, 'online', accountInfo)
       socket.on('disconnect', async () => {
         console.log()
         console.log(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }), ` - Account ${accountId} disconnected`)
@@ -38,7 +48,7 @@ async function establishSockets(io){
         // Emit disconnect to followers (if no active connections exist)
         const socketConnections = await getAccountSocketConnections(accountId, 1)
         if (!Boolean(socketConnections[0])){
-          broadcastToFollowers(accountId, socket, 'offline')
+          broadcastToFollowers(accountId, socket, 'offline', accountInfo)
         }
         socket.emit('offline', accountId)
       })
@@ -48,16 +58,96 @@ async function establishSockets(io){
   }
 }
 
-// Helper function to fetch followers and broadcast status change to them
-async function broadcastToFollowers(accountId, socket, channel){
+// Helper function to fetch followers and broadcast change to them
+async function broadcastToFollowers(accountId, socket, channel, info){
   try {
     const followers = await getAccountFollowers(accountId)
-    const accountInfo = await fetchAccountDetailsBasic(accountId)
     followers.map(async (follower) => {
       const id = follower.accountId
       const socketConnections = await getAccountSocketConnections(id, 24)
-      socketConnections.map(socketConnection => socket.broadcast.to(socketConnection.socketId).emit(channel, accountInfo))
+      socketConnections.map(socketConnection => socket.to(socketConnection.socketId).emit(channel, info))
     })
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+// Helper function to fetch followers and broadcast stream updates to them
+async function broadcastStreamJoins(accountId, streamId, socket, channel){
+  try {
+    // Get stream info
+    const streamInfo = await getStreamDetails(streamId)
+    // Get invitees & followers
+    const followers = await getAccountFollowers(accountId)
+    const invitees = await getStreamInvitations(streamId)
+    const inviteeAccountIds = [...new Set(invitees.map(invitee => invitee.inviteeAccountId).concat([streamInfo.creatorId]))]
+    inviteeAccountIds.map(async (id) => {
+      streamJoinsBroadcastHelper(id, streamId, socket, channel)
+    })
+    if (!streamInfo.inviteOnly){
+      followers.map(async (follower) => {
+        // Get accountId
+        const id = follower.accountId
+        if (!invitees.includes(id)){
+          streamJoinsBroadcastHelper(id, streamId, socket, channel)
+        }
+      })
+    }
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+// Helper function to broadcast stream updates
+async function streamJoinsBroadcastHelper(acccountId, streamId, socket, channel){
+  try {
+    // Get active socket connections for accountId
+    const socketConnections = await getAccountSocketConnections(acccountId, 24)
+    // Get discovery streams
+    const discoveryStreams = await getDiscoveryStreams(acccountId)
+    discoveryStreams.map(stream => {
+      if (stream.streamId==streamId){
+        // Broadcast participant details to active sockets
+        socketConnections.map(socketConnection => socket.to(socketConnection.socketId).emit(channel, stream))
+      }
+    })
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+// Helper function to fetch followers and broadcast stream updates to them
+async function broadcastStreamLeaves(accountId, streamId, socket, channel){
+  try {
+    // Create leave info object
+    const leaveInfo = {
+      streamId: streamId,
+      accountId: accountId,
+    }
+    // Get stream info
+    const streamInfo = await getStreamDetails(streamId)
+    // Get invitees + followers
+    const followers = await getAccountFollowers(accountId)
+    const invitees = await getStreamInvitations(streamId)
+    const inviteeAccountIds = [...new Set(invitees.map(invitee => invitee.inviteeAccountId).concat([streamInfo.creatorId]))]
+    inviteeAccountIds.map(async (id) => {
+      // Get active socket connections for accountId
+      const socketConnections = await getAccountSocketConnections(id, 24)
+      // Broadcast participant details to active sockets
+      socketConnections.map(socketConnection => socket.to(socketConnection.socketId).emit(channel, leaveInfo))
+    })
+    if (!streamInfo.inviteOnly){
+      followers.map(async (follower) => {
+        // Get accountId
+        const id = follower.accountId
+        if (!invitees.includes(id)){
+          // Get active socket connections for accountId
+          const socketConnections = await getAccountSocketConnections(id, 24)
+          // Broadcast participant details to active sockets
+          socketConnections.map(socketConnection => socket.to(socketConnection.socketId).emit(channel, leaveInfo))
+        }
+      })
+    }
   } catch (error) {
     throw new Error(error)
   }
@@ -65,4 +155,6 @@ async function broadcastToFollowers(accountId, socket, channel){
 
 module.exports = {
   establishSockets,
+  broadcastStreamJoins,
+  broadcastStreamLeaves,
 }

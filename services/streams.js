@@ -12,16 +12,23 @@ const {
   updateStreamEndTime,
 } = require('../models/streams')
 const { getAccountInfo, getAccountDetails, getProfilePic } = require('../models/accounts')
+const { fetchAccountDetails, fetchAccountDetailsBasic } = require('../services/accounts')
 const { getAccountsFollowing } = require('../models/follows')
 const { sendEmail } = require('../sendgrid')
 const { twilioClient, createTwilioRoomAccessToken, sendSMS } = require('../twilio')
 const { webURL } = require('../config')
+const {
+  broadcastStreamJoins,
+  broadcastStreamLeaves,
+} = require('../sockets/sockets')
 
 // Create Stream
-async function createStream(streamInfo){
+async function createStream(streamInfo, app){
   try {
+    // Insert stream in DB
     const stream = await insertStream(streamInfo)
     const { invitees } = streamInfo
+    // Send stream invites
     const streamInvitees = await Promise.all(invitees.map((invitee) => {
       return inviteParticipantToStream({
         streamId: stream.id,
@@ -29,10 +36,12 @@ async function createStream(streamInfo){
         inviteeAccountId: invitee.accountId,
       })
     }))
+    // Create twilio room
     const twilioRoom = await twilioClient.video.rooms.create({
                               type: 'group-small',
                               uniqueName: stream.id.toString(),
                             })
+    // Return results
     return {
       streamId: stream.id,
       topicId: stream.topicId,
@@ -71,18 +80,15 @@ async function getStreamParticipantsInfo(accountId, streamId){
     const accountFollowingRows = await getAccountsFollowing(accountId)
     const accountFollowing = accountFollowingRows.map(item => item.accountId)
     const participants = streamParticipants.map(async (participant) => {
-      const participantInfo = await getAccountInfo(participant.accountId)
-      const participantDetails = await getAccountDetails(participant.accountId)
-      const profilePic = await getProfilePic(participant.accountId)
-      const profilePicture = (profilePic) ? profilePic.profilePicture : null
+      const participantInfo = await fetchAccountDetailsBasic(participant.accountId)
       const following = (participant.accountId==accountId) ? null : (accountFollowing.includes(participant.accountId)) ? true : false
       return {
         streamParticipantId: participant.id,
         accountId: participant.accountId,
         username: participantInfo.username,
-        firstname: participantDetails.firstname,
-        lastname: participantDetails.lastname,
-        profilePicture: profilePicture,
+        firstname: participantInfo.firstname,
+        lastname: participantInfo.lastname,
+        profilePicture: participantInfo.profilePicture,
         following: following,
         startTime: participant.startTime,
       }
@@ -100,18 +106,15 @@ async function getStreamInviteesInfo(accountId, streamId){
     const accountFollowingRows = await getAccountsFollowing(accountId)
     const accountFollowing = accountFollowingRows.map(item => item.accountId)
     const invitees = streamInvites.map(async (invitee) => {
-      const inviteeInfo = await getAccountInfo(invitee.inviteeAccountId)
-      const inviteeDetails = await getAccountDetails(invitee.inviteeAccountId)
-      const profilePic = await getProfilePic(invitee.inviteeAccountId)
-      const profilePicture = (profilePic) ? profilePic.profilePicture : null
+      const inviteeInfo = await fetchAccountDetailsBasic(invitee.inviteeAccountId)
       const following = (invitee.accountId==accountId) ? null : (accountFollowing.includes(invitee.accountId)) ? true : false
       return {
         accountId: invitee.accountId,
         inviteeAccountId: invitee.inviteeAccountId,
         username: inviteeInfo.username,
-        firstname: inviteeDetails.firstname,
-        lastname: inviteeDetails.lastname,
-        profilePicture: profilePicture,
+        firstname: inviteeInfo.firstname,
+        lastname: inviteeInfo.lastname,
+        profilePicture: inviteeInfo.profilePicture,
         following: following,
         ts: invitee.createdAt,
       }
@@ -206,7 +209,7 @@ async function inviteParticipantToStream(inviteInfo){
 }
 
 // Join Stream
-async function joinStream(joinInfo){
+async function joinStream(joinInfo, app){
   try {
     const streamId = joinInfo.streamId
     const accountId = joinInfo.accountId
@@ -271,6 +274,11 @@ async function joinStream(joinInfo){
       }
     }
     const streamParticipant = await insertStreamParticipant(joinInfo)
+    // Broadcast stream join to invitees/followers
+    const socket = app.get('io')
+    // console.log(socket)
+    broadcastStreamJoins(joinInfo.accountId, joinInfo.streamId, socket, 'join_stream')
+    // Get twilio access token
     const twilioUserId = streamParticipant.accountId.toString()
     const twilioUniqueRoomName = streamParticipant.streamId.toString()
     const twilioAccessToken = createTwilioRoomAccessToken(twilioUserId, twilioUniqueRoomName)
@@ -287,7 +295,7 @@ async function joinStream(joinInfo){
 }
 
 // Leave Stream
-async function leaveStream(body){
+async function leaveStream(body, app){
   try {
     // twilioClient
     const { streamParticipantId, twilioRoomSID, twilioParticipantSID } = body
@@ -296,20 +304,26 @@ async function leaveStream(body){
     if (Boolean(streamParticipantDetails.endTime)){
       return 'User has already left stream'
     }
+    // Parse accountId + streamId from stream participant details
+    const accountId = streamParticipantDetails.accountId
+    const streamId = streamParticipantDetails.streamId
     // Set end time for user participation in stream
     const streamParticipantEndTime = await updateStreamParticipantEndTime(streamParticipantId)
     // Disconnect user from room
-    const streamId = streamParticipantEndTime.streamId
     twilioClient.video.rooms(twilioRoomSID)
       .participants(twilioParticipantSID)
       .update({status: 'disconnected'})
       .then(participant => {
         console.log(participant.status)
       })
+    // Broadcast stream leave to active sockets
+    const socket = app.get('io')
+    // console.log(socket)
+    broadcastStreamLeaves(accountId, streamId, socket, 'leave_stream')
     return {
-      streamId:streamId,
-      accountId:streamParticipantEndTime.accountId,
-      participantEndTime:streamParticipantEndTime.endTime,
+      streamId: streamId,
+      accountId: accountId,
+      participantEndTime: streamParticipantEndTime.endTime,
     }
   } catch (error) {
     throw new Error(error)

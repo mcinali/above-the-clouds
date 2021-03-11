@@ -55,7 +55,7 @@ router.post('/invite', checkAccountBodyAccessToken, checkAccountStreamAccess, as
 // Join Stream
 router.post('/join', checkAccountBodyAccessToken, async function (req, res) {
   try {
-    const results = await joinStream(req.body)
+    const results = await joinStream(req.body, req.app)
     return res.send(results)
   } catch (error) {
     console.error(error)
@@ -66,7 +66,7 @@ router.post('/join', checkAccountBodyAccessToken, async function (req, res) {
 // Leave Stream
 router.post('/leave', checkAccountBodyAccessToken, checkAccountStreamAccess, async function (req, res) {
   try {
-    const results = await leaveStream(req.body)
+    const results = await leaveStream(req.body, req.app)
     return res.send(results)
   } catch (error) {
     console.error(error)
