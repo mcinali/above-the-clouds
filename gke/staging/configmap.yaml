@@ -5,4 +5,4 @@ metadata:
 data:
   db_address: staging-above-the-clouds-dbs
   env: staging
-  web_url: https://www.abovethecloudsapp.staging.com
+  web_url: https://www.staging.abovethecloudsapp.com

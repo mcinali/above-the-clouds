@@ -23,7 +23,7 @@ const gcpDB = {
 const db = (env=='prod' || env=='staging') ? gcpDB : localDB
 
 // Set corsURL variable
-const corsURL = (env=='prod') ? /abovethecloudsapp\.com$/ : 'http://localhost:3000'
+const corsURL = (env=='prod' || env=='staging') ? /abovethecloudsapp\.com$/ : 'http://localhost:3000'
 
 module.exports = {
   db,
