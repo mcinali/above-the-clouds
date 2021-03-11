@@ -33,9 +33,17 @@ async function establishSockets(io){
         accountId: accountId,
         socketId: socketId,
       }
+      // Fetch recent socket connections
+      const recentSocketConnections = await getRecentAccountSocketConnections(accountId, 2)
+      // Insert socket connection into the DB
       insertSocketConnection(socketConnectionInfo)
       // Emit connections to online followers
       broadcastToFollowers(accountId, socket, 'online', accountInfo)
+      if (recentSocketConnections.length==0){
+        const message = `${accountInfo.firstname} ${accountInfo.lastname} (${accountInfo.username}) is online`
+        const followers = await getAccountFollowers(accountId)
+        followers.map(follower => pushNotificationMessage(follower.accountId, message, socket))
+      }
       socket.on('disconnect', async () => {
         console.log()
         console.log(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }), ` - Account ${accountId} disconnected`)
