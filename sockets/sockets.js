@@ -153,8 +153,19 @@ async function broadcastStreamLeaves(accountId, streamId, socket, channel){
   }
 }
 
+// Broadcast stream invitation
+async function pushNotificationMessage(inviteeAccountId, message, socket){
+  try {
+    const socketConnections = await getAccountSocketConnections(inviteeAccountId, 24)
+    socketConnections.map(socketConnection => socket.to(socketConnection.socketId).emit('notification', message))
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 module.exports = {
   establishSockets,
   broadcastStreamJoins,
   broadcastStreamLeaves,
+  pushNotificationMessage,
 }

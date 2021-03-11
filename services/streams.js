@@ -20,6 +20,7 @@ const { webURL } = require('../config')
 const {
   broadcastStreamJoins,
   broadcastStreamLeaves,
+  pushNotificationMessage,
 } = require('../sockets/sockets')
 
 // Create Stream
@@ -30,11 +31,14 @@ async function createStream(streamInfo, app){
     const { invitees } = streamInfo
     // Send stream invites
     const streamInvitees = await Promise.all(invitees.map((invitee) => {
-      return inviteParticipantToStream({
-        streamId: stream.id,
-        accountId: streamInfo.accountId,
-        inviteeAccountId: invitee.accountId,
-      })
+      return inviteParticipantToStream(
+        {
+          streamId: stream.id,
+          accountId: streamInfo.accountId,
+          inviteeAccountId: invitee.accountId,
+        },
+        app
+      )
     }))
     // Create twilio room
     const twilioRoom = await twilioClient.video.rooms.create({
@@ -152,7 +156,7 @@ async function getStreamInfo(input){
 }
 
 // Invite Participant to Stream
-async function inviteParticipantToStream(inviteInfo){
+async function inviteParticipantToStream(inviteInfo, app){
   try {
     // TO DO: Send invite email
     const { streamId, accountId, inviteeAccountId } = inviteInfo
@@ -186,7 +190,12 @@ async function inviteParticipantToStream(inviteInfo){
     sendEmail(msg)
     // Send text
     const phoneNumber = '+1'+inviteeAccountDetails.phone.toString()
-    const textMessage = `${firstname} ${lastname} (${username}) invited you to their stream "${topic.topic}":
+    const messageSubject = `${firstname} ${lastname} (${username}) invited you to their stream "${topic.topic}"`
+    const message = `You've been invited! ${messageSubject}`
+    const socket = app.get('io')
+    pushNotificationMessage(inviteeAccountId, message, socket)
+
+    const textMessage = `${messageSubject}:
 
     Join now: ${webURL}/stream?streamId=${streamId}
 
@@ -276,7 +285,6 @@ async function joinStream(joinInfo, app){
     const streamParticipant = await insertStreamParticipant(joinInfo)
     // Broadcast stream join to invitees/followers
     const socket = app.get('io')
-    // console.log(socket)
     broadcastStreamJoins(joinInfo.accountId, joinInfo.streamId, socket, 'join_stream')
     // Get twilio access token
     const twilioUserId = streamParticipant.accountId.toString()
@@ -318,7 +326,6 @@ async function leaveStream(body, app){
       })
     // Broadcast stream leave to active sockets
     const socket = app.get('io')
-    // console.log(socket)
     broadcastStreamLeaves(accountId, streamId, socket, 'leave_stream')
     return {
       streamId: streamId,
