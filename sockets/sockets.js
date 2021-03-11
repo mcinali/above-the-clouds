@@ -163,9 +163,9 @@ async function broadcastStreamLeaves(accountId, streamId, socket, channel){
 }
 
 // Broadcast stream invitation
-async function pushNotificationMessage(inviteeAccountId, message, socket){
+async function pushNotificationMessage(accountId, message, socket){
   try {
-    const socketConnections = await getActiveAccountSocketConnections(inviteeAccountId)
+    const socketConnections = await getActiveAccountSocketConnections(accountId)
     socketConnections.map(socketConnection => socket.to(socketConnection.socketId).emit('notification', message))
   } catch (error) {
     throw new Error(error)

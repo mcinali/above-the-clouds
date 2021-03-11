@@ -13,7 +13,10 @@ const {
 } = require('../models/streams')
 const { getAccountInfo, getAccountDetails, getProfilePic } = require('../models/accounts')
 const { fetchAccountDetails, fetchAccountDetailsBasic } = require('../services/accounts')
-const { getAccountsFollowing } = require('../models/follows')
+const {
+  getAccountsFollowing,
+  getAccountFollowers,
+} = require('../models/follows')
 const { sendEmail } = require('../sendgrid')
 const { twilioClient, createTwilioRoomAccessToken, sendSMS } = require('../twilio')
 const { webURL } = require('../config')
@@ -30,11 +33,12 @@ async function createStream(streamInfo, app){
     const stream = await insertStream(streamInfo)
     const { invitees } = streamInfo
     // Send stream invites
+    const { accountId } = streamInfo
     const streamInvitees = await Promise.all(invitees.map((invitee) => {
       return inviteParticipantToStream(
         {
           streamId: stream.id,
-          accountId: streamInfo.accountId,
+          accountId: accountId,
           inviteeAccountId: invitee.accountId,
         },
         app
@@ -45,6 +49,12 @@ async function createStream(streamInfo, app){
                               type: 'group-small',
                               uniqueName: stream.id.toString(),
                             })
+    // Send notification about stream creation
+    const accountDetails = await fetchAccountDetailsBasic(accountId)
+    const followers = await getAccountFollowers(accountId)
+    const socket = app.get('io')
+    const message = `${accountDetails.firstname} ${accountDetails.lastname} (${accountDetails.username}) started a stream`
+    followers.map(follower => pushNotificationMessage(follower.accountId, message, socket))
     // Return results
     return {
       streamId: stream.id,
