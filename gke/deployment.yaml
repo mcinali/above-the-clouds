@@ -50,6 +50,11 @@ spec:
             configMapKeyRef:
               name: backend
               key: web_url
+        - name: POSTGRES_PASSWORD
+          vaueFrom:
+            secretKeyRef:
+              name: backend-secret
+              key: postgres-password
         livenessProbe:
           httpGet:
             path: /

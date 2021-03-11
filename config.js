@@ -1,7 +1,7 @@
 const env = process.env.NODE_ENV
 const webURL = process.env.WEB_URL
+const POSTGRES_PASSWORD = process.env.POSTGRES_PASSWORD
 const fs = require('fs')
-const { GCP_POSTGRES_PASSWORD } = require('./secrets')
 
 // Local DB configuration
 const localDB = {
@@ -14,7 +14,7 @@ const localDB = {
 // GCP DB configuration
 const gcpDB = {
   user: 'backend',
-  password: GCP_POSTGRES_PASSWORD,
+  password: POSTGRES_PASSWORD,
   database: 'above-the-clouds',
   host: 'localhost',
   port: 5432,
