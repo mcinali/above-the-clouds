@@ -23,7 +23,8 @@ spec:
         name: cloud-sql-proxy
         command:
           - "/cloud_sql_proxy"
-          - "-instances=above-the-clouds-app:us-central1:${DB_ADDRESS}=tcp:5432"
+        args:
+          - "-instances=above-the-clouds-app:us-central1:$(DB_ADDRESS)=tcp:5432"
         env:
         - name: DB_ADDRESS
           valueFrom:
