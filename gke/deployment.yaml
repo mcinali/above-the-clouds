@@ -52,11 +52,6 @@ spec:
             configMapKeyRef:
               name: backend
               key: web_url
-        - name: TWILIO_ACCOUNT_SID
-          valueFrom:
-            configMapKeyRef:
-              name: backend
-              key: twilio_account_sid
         - name: TWILIO_API_KEY
           valueFrom:
             configMapKeyRef:
@@ -87,6 +82,11 @@ spec:
             secretKeyRef:
               name: backend-secret
               key: twilio_auth_token
+        - name: TWILIO_ACCOUNT_SID
+          valueFrom:
+            secretKeyRef:
+              name: backend-secret
+              key: twilio_account_sid
         livenessProbe:
           httpGet:
             path: /
