@@ -29,4 +29,14 @@ module.exports = {
   db,
   webURL,
   corsURL,
+  sendgridConfig: {
+    apiKey: process.env.SENDGRID_API_KEY,
+  },
+  twilioConfig: {
+    accountSid: process.env.TWILIO_ACCOUNT_SID,
+    authToken: process.env.TWILIO_AUTH_TOKEN,
+    apiKey: process.env.TWILIO_API_KEY,
+    apiSecret: process.env.TWILIO_API_SECRET,
+    serviceSid: process.env.TWILIO_SERVICE_SID,
+  }
 }

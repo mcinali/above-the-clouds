@@ -52,11 +52,41 @@ spec:
             configMapKeyRef:
               name: backend
               key: web_url
+        - name: TWILIO_ACCOUNT_SID
+          valueFrom:
+            configMapKeyRef:
+              name: backend
+              key: twilio_account_sid
+        - name: TWILIO_API_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: backend
+              key: twilio_api_key
+        - name: TWILIO_SERVICE_SID
+          valueFrom:
+            configMapKeyRef:
+              name: backend
+              key: twilio_service_sid
         - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
               name: backend-secret
               key: postgres-password
+        - name: SENDGRID_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: backend-secret
+              key: sendgrid_api_key
+        - name: TWILIO_API_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: backend-secret
+              key: twilio_api_secret
+        - name: TWILIO_AUTH_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: backend-secret
+              key: twilio_auth_token
         livenessProbe:
           httpGet:
             path: /
