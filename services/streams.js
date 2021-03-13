@@ -1,4 +1,9 @@
+const { webURL } = require('../config')
+const { sendEmail } = require('../sendgrid')
+const { twilioClient, createTwilioRoomAccessToken, sendSMS } = require('../twilio')
 const { getTopicInfo } = require('../models/topics')
+const { getAccountsFollowing, getAccountFollowers } = require('../models/follows')
+const { fetchAccountDetails, fetchAccountDetailsBasic } = require('../services/accounts')
 const {
   insertStream,
   getStreamDetails,
@@ -11,15 +16,6 @@ const {
   updateStreamParticipantEndTime,
   updateStreamEndTime,
 } = require('../models/streams')
-const { getAccountInfo, getAccountDetails, getProfilePic } = require('../models/accounts')
-const { fetchAccountDetails, fetchAccountDetailsBasic } = require('../services/accounts')
-const {
-  getAccountsFollowing,
-  getAccountFollowers,
-} = require('../models/follows')
-const { sendEmail } = require('../sendgrid')
-const { twilioClient, createTwilioRoomAccessToken, sendSMS } = require('../twilio')
-const { webURL } = require('../config')
 const {
   broadcastStreamJoins,
   broadcastStreamLeaves,
@@ -172,53 +168,37 @@ async function inviteParticipantToStream(inviteInfo, app){
     const { streamId, accountId, inviteeAccountId } = inviteInfo
     // Check to make sure user has permission to invite others to stream
     const streamDetails = await getStreamDetails(streamId)
-    // Instantiate email
-    const account = await getAccountInfo(accountId)
-    const username = account.username
-    const accountDetails = await getAccountDetails(accountId)
+    // Get account details for notifications
+    const accountDetails = await fetchAccountDetailsBasic(accountId)
+    // Get stream topic
     const topic = await getTopicInfo(streamDetails.topicId)
-    const inviteeAccount = await getAccountInfo(inviteeAccountId)
-    const inviteeAccountDetails = await getAccountDetails(inviteeAccountId)
-    const profilePic = await getProfilePic(inviteeAccountId)
-    const profilePicture = (profilePic) ? profilePic.profilePicture : null
+    // Get invitee account details
+    const inviteeAccountDetails = await fetchAccountDetails(inviteeAccountId)
+    // Get account following status
     const accountFollowingRows = await getAccountsFollowing(accountId)
     const accountFollowing = accountFollowingRows.map(item => item.accountId)
     const following = (inviteeAccountId==accountId) ? null : (accountFollowing.includes(inviteeAccountId)) ? true : false
     // Insert stream invitation into DB
     const streamInvitation = await insertStreamInvitation(inviteInfo)
-    // Send email
-    const firstname = accountDetails.firstname
-    const lastname = accountDetails.lastname
-    const msg = {
-      from: 'abovethecloudsapp@gmail.com',
-      to: inviteeAccountDetails.email,
-      subject: `${firstname} ${lastname} (${username}) invited you to their stream`,
-      text: `${firstname} ${lastname} (${username}) invited you to their stream "${topic.topic}".
-
-      Join now: ${webURL}/stream?streamId=${streamId}`,
-    }
-    sendEmail(msg)
-    // Send text
-    const phoneNumber = '+1'+inviteeAccountDetails.phone.toString()
-    const messageSubject = `${firstname} ${lastname} (${username}) invited you to their stream "${topic.topic}"`
+    // Send browser push notification
+    const messageSubject = `${accountDetails.firstname} ${accountDetails.lastname} (${accountDetails.username}) invited you to their stream "${topic.topic}"`
     const message = `You've been invited! ${messageSubject}`
     const socket = app.get('io')
     pushNotificationMessage(inviteeAccountId, message, socket)
-
+    // Send text notification
+    const phoneNumber = '+1'+inviteeAccountDetails.phone.toString()
     const textMessage = `${messageSubject}:
 
-    Join now: ${webURL}/stream?streamId=${streamId}
-
-    An invite email was sent to ${inviteeAccountDetails.email} for an optimal experience on desktop`
+    Join now: ${webURL}/stream?streamId=${streamId}`
     sendSMS(phoneNumber, textMessage)
 
     return {
       accountId: accountId,
       inviteeAccountId: inviteeAccountId,
-      username: inviteeAccount.username,
+      username: inviteeAccountDetails.username,
       firstname: inviteeAccountDetails.firstname,
       lastname: inviteeAccountDetails.lastname,
-      profilePicture: profilePicture,
+      profilePicture: inviteeAccountDetails.profilePicture,
       following: following,
       ts: streamInvitation.createdAt,
     }
