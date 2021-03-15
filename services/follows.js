@@ -14,7 +14,7 @@ const {
   getInvitationsToEmail,
   getInvitationIdForConvertedAccount,
 } = require('../models/invitations')
-const { getAccountSocketConnections } = require('../models/sockets')
+const { getActiveAccountSocketConnections } = require('../models/sockets')
 const { sendEmail } = require('../sendgrid')
 const { webURL } = require('../config')
 
@@ -150,7 +150,7 @@ async function getOnlineAccountsFollowing(accountId){
     const accountsFollowing = await getAccountsFollowing(accountId)
     const onlineFollowing = await Promise.all(accountsFollowing.map( async (following) => {
       const id = following.accountId
-      const socketConnections = await getAccountSocketConnections(id, 2)
+      const socketConnections = await getActiveAccountSocketConnections(id)
       if (Boolean(socketConnections[0])){
         const accountInfo = await fetchAccountDetailsBasic(id)
         return accountInfo

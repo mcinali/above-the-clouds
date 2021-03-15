@@ -1,4 +1,9 @@
+const { webURL } = require('../config')
+const { sendEmail } = require('../sendgrid')
+const { twilioClient, createTwilioRoomAccessToken, sendSMS } = require('../twilio')
 const { getTopicInfo } = require('../models/topics')
+const { getAccountsFollowing, getAccountFollowers } = require('../models/follows')
+const { fetchAccountDetails, fetchAccountDetailsBasic } = require('../services/accounts')
 const {
   insertStream,
   getStreamDetails,
@@ -11,15 +16,10 @@ const {
   updateStreamParticipantEndTime,
   updateStreamEndTime,
 } = require('../models/streams')
-const { getAccountInfo, getAccountDetails, getProfilePic } = require('../models/accounts')
-const { fetchAccountDetails, fetchAccountDetailsBasic } = require('../services/accounts')
-const { getAccountsFollowing } = require('../models/follows')
-const { sendEmail } = require('../sendgrid')
-const { twilioClient, createTwilioRoomAccessToken, sendSMS } = require('../twilio')
-const { webURL } = require('../config')
 const {
   broadcastStreamJoins,
   broadcastStreamLeaves,
+  pushNotificationMessage,
 } = require('../sockets/sockets')
 
 // Create Stream
@@ -29,18 +29,28 @@ async function createStream(streamInfo, app){
     const stream = await insertStream(streamInfo)
     const { invitees } = streamInfo
     // Send stream invites
+    const { accountId } = streamInfo
     const streamInvitees = await Promise.all(invitees.map((invitee) => {
-      return inviteParticipantToStream({
-        streamId: stream.id,
-        accountId: streamInfo.accountId,
-        inviteeAccountId: invitee.accountId,
-      })
+      return inviteParticipantToStream(
+        {
+          streamId: stream.id,
+          accountId: accountId,
+          inviteeAccountId: invitee.accountId,
+        },
+        app
+      )
     }))
     // Create twilio room
     const twilioRoom = await twilioClient.video.rooms.create({
                               type: 'group-small',
                               uniqueName: stream.id.toString(),
                             })
+    // Send notification about stream creation
+    const accountDetails = await fetchAccountDetailsBasic(accountId)
+    const followers = await getAccountFollowers(accountId)
+    const socket = app.get('io')
+    const message = `${accountDetails.firstname} ${accountDetails.lastname} (${accountDetails.username}) started a stream`
+    followers.map(follower => pushNotificationMessage(follower.accountId, message, socket))
     // Return results
     return {
       streamId: stream.id,
@@ -152,54 +162,43 @@ async function getStreamInfo(input){
 }
 
 // Invite Participant to Stream
-async function inviteParticipantToStream(inviteInfo){
+async function inviteParticipantToStream(inviteInfo, app){
   try {
     // TO DO: Send invite email
     const { streamId, accountId, inviteeAccountId } = inviteInfo
     // Check to make sure user has permission to invite others to stream
     const streamDetails = await getStreamDetails(streamId)
-    // Instantiate email
-    const account = await getAccountInfo(accountId)
-    const username = account.username
-    const accountDetails = await getAccountDetails(accountId)
+    // Get account details for notifications
+    const accountDetails = await fetchAccountDetailsBasic(accountId)
+    // Get stream topic
     const topic = await getTopicInfo(streamDetails.topicId)
-    const inviteeAccount = await getAccountInfo(inviteeAccountId)
-    const inviteeAccountDetails = await getAccountDetails(inviteeAccountId)
-    const profilePic = await getProfilePic(inviteeAccountId)
-    const profilePicture = (profilePic) ? profilePic.profilePicture : null
+    // Get invitee account details
+    const inviteeAccountDetails = await fetchAccountDetails(inviteeAccountId)
+    // Get account following status
     const accountFollowingRows = await getAccountsFollowing(accountId)
     const accountFollowing = accountFollowingRows.map(item => item.accountId)
     const following = (inviteeAccountId==accountId) ? null : (accountFollowing.includes(inviteeAccountId)) ? true : false
     // Insert stream invitation into DB
     const streamInvitation = await insertStreamInvitation(inviteInfo)
-    // Send email
-    const firstname = accountDetails.firstname
-    const lastname = accountDetails.lastname
-    const msg = {
-      from: 'abovethecloudsapp@gmail.com',
-      to: inviteeAccountDetails.email,
-      subject: `${firstname} ${lastname} (${username}) invited you to their stream`,
-      text: `${firstname} ${lastname} (${username}) invited you to their stream "${topic.topic}".
-
-      Join now: ${webURL}/stream?streamId=${streamId}`,
-    }
-    sendEmail(msg)
-    // Send text
+    // Send browser push notification
+    const messageSubject = `${accountDetails.firstname} ${accountDetails.lastname} (${accountDetails.username}) invited you to their stream "${topic.topic}"`
+    const message = `You've been invited! ${messageSubject}`
+    const socket = app.get('io')
+    pushNotificationMessage(inviteeAccountId, message, socket)
+    // Send text notification
     const phoneNumber = '+1'+inviteeAccountDetails.phone.toString()
-    const textMessage = `${firstname} ${lastname} (${username}) invited you to their stream "${topic.topic}":
+    const textMessage = `${messageSubject}:
 
-    Join now: ${webURL}/stream?streamId=${streamId}
-
-    An invite email was sent to ${inviteeAccountDetails.email} for an optimal experience on desktop`
+    Join now: ${webURL}/stream?streamId=${streamId}`
     sendSMS(phoneNumber, textMessage)
 
     return {
       accountId: accountId,
       inviteeAccountId: inviteeAccountId,
-      username: inviteeAccount.username,
+      username: inviteeAccountDetails.username,
       firstname: inviteeAccountDetails.firstname,
       lastname: inviteeAccountDetails.lastname,
-      profilePicture: profilePicture,
+      profilePicture: inviteeAccountDetails.profilePicture,
       following: following,
       ts: streamInvitation.createdAt,
     }
@@ -276,7 +275,6 @@ async function joinStream(joinInfo, app){
     const streamParticipant = await insertStreamParticipant(joinInfo)
     // Broadcast stream join to invitees/followers
     const socket = app.get('io')
-    // console.log(socket)
     broadcastStreamJoins(joinInfo.accountId, joinInfo.streamId, socket, 'join_stream')
     // Get twilio access token
     const twilioUserId = streamParticipant.accountId.toString()
@@ -318,7 +316,6 @@ async function leaveStream(body, app){
       })
     // Broadcast stream leave to active sockets
     const socket = app.get('io')
-    // console.log(socket)
     broadcastStreamLeaves(accountId, streamId, socket, 'leave_stream')
     return {
       streamId: streamId,

@@ -73,8 +73,9 @@ const {
 } = require('../models/discovery')
 const {
   insertSocketConnection,
+  getActiveAccountSocketConnections,
+  getRecentAccountSocketConnections,
   updateSocketDisconnection,
-  getAccountSocketConnections,
 } = require('../models/sockets.js')
 
 const testUsername = 'testAccount'
@@ -885,12 +886,16 @@ describe('Sockets Tests', function() {
   it(`Should...
     - Insert new Socket Connection
     - Make sure Socket Connection inserted correctly
-    - Fetch Socket Connections
-    - Make sure Socket Connections were fetched correctly
+    - Fetch Active Socket Connections
+    - Make sure Active Socket Connections were fetched correctly
+    - Fetch Recent Socket Connections
+    - Make sure Recent Socket Connections were fetched correctly
     - Update disconnected Socket Connection
     - Make sure disconnected Coket Connection was updated correctly
-    - Fetch Socket Connections (disconnected)
-    - Make sure Socket Connections (disconnected) were fetched correctly`, async function() {
+    - Fetch Active Socket Connections (disconnected)
+    - Make sure Active Socket Connections (disconnected) were fetched correctly
+    - Fetch Recent Socket Connections (disconnected)
+    - Make sure Recent Socket Connections were fetched correctly (disconnected)`, async function() {
       // Insert new Socket Connection
       const accountRow = await getAccountRow()
       const accountId = accountRow.id
@@ -902,27 +907,41 @@ describe('Sockets Tests', function() {
       // Make sure Socket Connection inserted correctly
       expect(socketConnection.accountId).to.equal(socketConnectionInfo.accountId)
       expect(socketConnection.socketId).to.equal(socketConnectionInfo.socketId)
-      expect(socketConnection.connected).to.equal(true)
-      // Fetch Socket Connections
-      const fetchedSocketConnections = await getAccountSocketConnections(accountId, 1)
-      const fetchedSocketConnectionsBadAccountId = await getAccountSocketConnections(-1, 1)
-      const fetchedSocketConnectionsExpired = await getAccountSocketConnections(accountId, 0)
-      // Make sure Socket Connections were fetched correctly
-      expect(fetchedSocketConnections[0].id).to.equal(socketConnection.id)
-      expect(fetchedSocketConnections[0].accountId).to.equal(socketConnection.accountId)
-      expect(fetchedSocketConnections[0].socketId).to.equal(socketConnection.socketId)
-      expect(fetchedSocketConnections[0].connected).to.equal(socketConnection.connected)
-      should.not.exist(fetchedSocketConnectionsBadAccountId[0])
-      should.not.exist(fetchedSocketConnectionsExpired[0])
+      should.not.exist(socketConnection.endTime)
+      // Fetch Active Socket Connections
+      const activeSocketConnections = await getActiveAccountSocketConnections(accountId)
+      const activeSocketConnectionsBad = await getActiveAccountSocketConnections(-1, 1)
+      // Make sure Active Socket Connections were fetched correctly
+      expect(activeSocketConnections[0].id).to.equal(socketConnection.id)
+      expect(activeSocketConnections[0].accountId).to.equal(socketConnection.accountId)
+      expect(activeSocketConnections[0].socketId).to.equal(socketConnection.socketId)
+      should.not.exist(activeSocketConnections[0].endTime)
+      should.not.exist(activeSocketConnectionsBad[0])
+      // Fetch Recent Socket Connections
+      const recentSocketConnections = await getRecentAccountSocketConnections(accountId, 1)
+      const recentSocketConnectionsBad = await getRecentAccountSocketConnections(accountId, 0)
+      // Make sure Recent Socket Connections were fetched correctly
+      expect(recentSocketConnections[0].id).to.equal(socketConnection.id)
+      expect(recentSocketConnections[0].accountId).to.equal(socketConnection.accountId)
+      expect(recentSocketConnections[0].socketId).to.equal(socketConnection.socketId)
+      should.not.exist(recentSocketConnections[0].endTime)
+      should.not.exist(recentSocketConnectionsBad[0])
       // Update disconnected Socket Connection
       const disconnectedSocket = await updateSocketDisconnection(socketConnectionInfo)
       // Make sure disconnected Coket Connection was updated correctly
       expect(disconnectedSocket.accountId).to.equal(socketConnectionInfo.accountId)
       expect(disconnectedSocket.socketId).to.equal(socketConnectionInfo.socketId)
-      expect(disconnectedSocket.connected).to.equal(false)
-      // Fetch Socket Connections (disconnected)
-      const fetchedDisconeectedSocketConnections = await getAccountSocketConnections(accountId, 1)
-      // Make sure Socket Connections (disconnected) were fetched correctly
-      should.not.exist(fetchedDisconeectedSocketConnections[0])
+      should.exist(disconnectedSocket.endTime)
+      // Fetch Active Socket Connections (disconnected)
+      const activeDisconnectedSocketConnections = await getActiveAccountSocketConnections(accountId)
+      // Make sure Active Socket Connections (disconnected) were fetched correctly
+      should.not.exist(activeDisconnectedSocketConnections[0])
+      // Fetch Recent Socket Connections (disconnected)
+      const recentDisconnectedSocketConnections = await getRecentAccountSocketConnections(accountId, 1)
+      // Make sure Recent Socket Connections were fetched correctly (disconnected)
+      expect(recentDisconnectedSocketConnections[0].id).to.equal(socketConnection.id)
+      expect(recentDisconnectedSocketConnections[0].accountId).to.equal(socketConnection.accountId)
+      expect(recentDisconnectedSocketConnections[0].socketId).to.equal(socketConnection.socketId)
+      should.exist(recentDisconnectedSocketConnections[0].endTime)
     })
   })
