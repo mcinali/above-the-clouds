@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend
+data:
+  db_address: staging-above-the-clouds-dbs
+  env: staging
+  web_url: https://www.staging.abovethecloudsapp.com
+  twilio_api_key: SK5b001f6fc9498e04c60d74a3c3cea856
+  twilio_service_sid: IS939e3e0527de55bd022581ba9670659a

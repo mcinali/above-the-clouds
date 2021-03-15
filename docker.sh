@@ -2,7 +2,7 @@
 command=$1
 echo $command
 
-VERSION='1.0.0'
+VERSION='1.0.1'
 IMAGE_NAME='backend'
 PROJECT_HOST='gcr.io'
 PROJECT_ID='above-the-clouds-app'

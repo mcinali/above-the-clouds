@@ -16,17 +16,24 @@ spec:
         app: backend
         tier: web
     spec:
-      serviceAccountName: cloud-sql-proxy-sa
+      serviceAccountName: backend
       containers:
       - image: gcr.io/cloudsql-docker/gce-proxy:1.17
         imagePullPolicy: Always
         name: cloud-sql-proxy
         command:
           - "/cloud_sql_proxy"
-          - "-instances=above-the-clouds-app:us-central1:above-the-clouds-dbs=tcp:5432"
+        args:
+          - "-instances=above-the-clouds-app:us-central1:$(DB_ADDRESS)=tcp:5432"
+        env:
+        - name: DB_ADDRESS
+          valueFrom:
+            configMapKeyRef:
+              name: backend
+              key: db_address
         securityContext:
           runAsNonRoot: true
-      - image: gcr.io/above-the-clouds-app/backend:1.0.0
+      - image: gcr.io/above-the-clouds-app/backend:1.0.1
         imagePullPolicy: Always
         name: backend
         ports:
@@ -36,7 +43,50 @@ spec:
           name: socket-port
         env:
         - name: NODE_ENV
-          value: "prod"
+          valueFrom:
+            configMapKeyRef:
+              name: backend
+              key: env
+        - name: WEB_URL
+          valueFrom:
+            configMapKeyRef:
+              name: backend
+              key: web_url
+        - name: TWILIO_API_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: backend
+              key: twilio_api_key
+        - name: TWILIO_SERVICE_SID
+          valueFrom:
+            configMapKeyRef:
+              name: backend
+              key: twilio_service_sid
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: backend-secret
+              key: postgres-password
+        - name: SENDGRID_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: backend-secret
+              key: sendgrid_api_key
+        - name: TWILIO_API_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: backend-secret
+              key: twilio_api_secret
+        - name: TWILIO_AUTH_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: backend-secret
+              key: twilio_auth_token
+        - name: TWILIO_ACCOUNT_SID
+          valueFrom:
+            secretKeyRef:
+              name: backend-secret
+              key: twilio_account_sid
         livenessProbe:
           httpGet:
             path: /
