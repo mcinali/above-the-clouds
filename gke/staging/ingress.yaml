@@ -1,0 +1,22 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: backend-ingress
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: above-the-clouds-stg-ip
+    networking.gke.io/managed-certificates: managed-cert
+    kubernetes.io/ingress.allow-http: "false"
+  labels:
+    app: backend
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /socket.io/*
+        backend:
+          serviceName: backend
+          servicePort: socket-port
+      - path: /*
+        backend:
+          serviceName: backend
+          servicePort: web-app-port
