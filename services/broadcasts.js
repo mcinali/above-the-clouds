@@ -48,6 +48,19 @@ async function onlineBroadcast(broadcastInfo){
   }
 }
 
+async function fetchRecentOnlineBroadcasts(accountId){
+  try {
+    const broadcastLookupInfo = {
+      accountId: accountId,
+      lookbackHours: 24,
+    }
+    return getRecentOnlineBroadcasts(broadcastLookupInfo)
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 module.exports = {
   onlineBroadcast,
+  fetchRecentOnlineBroadcasts,
 }
