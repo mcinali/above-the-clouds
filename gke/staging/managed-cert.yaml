@@ -1,0 +1,9 @@
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: managed-cert
+spec:
+  domains:
+    - staging.abovethecloudsapp.com
+    - www.staging.abovethecloudsapp.com
+    - staging.api.abovethecloudsapp.com
