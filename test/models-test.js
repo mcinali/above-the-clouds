@@ -80,7 +80,7 @@ const {
 const {
   insertOnlineBroadcast,
   getRecentOnlineBroadcasts,
-} = require('../models/broadcast')
+} = require('../models/broadcasts')
 
 const testUsername = 'testAccount'
 

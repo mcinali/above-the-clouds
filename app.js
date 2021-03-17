@@ -11,6 +11,7 @@ const topics = require('./routes/topics')
 const streams = require('./routes/streams')
 const discovery = require('./routes/discovery')
 const suggestions = require('./routes/suggestions')
+const broadcasts = require('./routes/broadcasts')
 const { establishSockets } = require('./sockets/sockets')
 const app = express()
 const http = require('http').createServer(app)
@@ -35,6 +36,7 @@ app.use('/topic', topics)
 app.use('/stream', streams)
 app.use('/discovery', discovery)
 app.use('/suggestions', suggestions)
+app.use('/broadcast', broadcasts)
 
 const hostname = '0.0.0.0';
 
