@@ -17,6 +17,7 @@ async function onlineBroadcast(broadcastInfo){
     const followerAccounts = await getAccountFollowers(accountId)
     const followerAccountIds = followerAccounts.map(row => row.accountId)
     const broadcastAccountIdsResolved = (broadcastAccountIds.length==0) ? followerAccountIds : broadcastAccountIds
+    // Make sure we're only broadcasting to account followers
     const broadcastAccountIdsFull = broadcastAccountIdsResolved.filter(id => followerAccountIds.includes(id))
     // Filter out accounts broadcasted to in the past 24 hrs
     const broadcastLookupInfo = {
