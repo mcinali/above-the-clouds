@@ -50,7 +50,7 @@ async function registerUser(accountInfo, params){
       firstname:accountDetails.firstname,
       lastname:accountDetails.lastname,
       hasToken: true,
-      token: accessTokenInfo.accessToken,
+      token: accessTokenInfo.token,
       createdAt:account.createdAt
     }
     return result
