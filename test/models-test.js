@@ -76,7 +76,11 @@ const {
   getActiveAccountSocketConnections,
   getRecentAccountSocketConnections,
   updateSocketDisconnection,
-} = require('../models/sockets.js')
+} = require('../models/sockets')
+const {
+  insertOnlineBroadcast,
+  getRecentOnlineBroadcasts,
+} = require('../models/broadcasts')
 
 const testUsername = 'testAccount'
 
@@ -943,5 +947,54 @@ describe('Sockets Tests', function() {
       expect(recentDisconnectedSocketConnections[0].accountId).to.equal(socketConnection.accountId)
       expect(recentDisconnectedSocketConnections[0].socketId).to.equal(socketConnection.socketId)
       should.exist(recentDisconnectedSocketConnections[0].endTime)
+    })
+  })
+
+  describe('Broadcasts Tests', function() {
+    it(`Should...
+      - Get original accountId
+      - Insert new broadcast Account
+      - Insert online broadcast
+      - Make sure online broadcast was inserted correctly
+      - Fetch recent online broadcasts for account
+      - Make sure recent online broadcasts for account were fetched correctly`, async function() {
+      // Get original accountId
+      const accountRow = await getAccountRow()
+      const accountId = accountRow.id
+      // Insert new broadcast Account
+      const broadcastTestAccountUsername = 'broadcastTestAccount'
+      await pgTransaction(`DELETE FROM accounts WHERE username = '${broadcastTestAccountUsername}'`)
+      const broadcastTestAccountInfo = {
+        username:broadcastTestAccountUsername,
+        password:'broadcastTestAccountPassword',
+      }
+      const broadcastTestAccount = await insertAccount(broadcastTestAccountInfo)
+      const broadcastAccountId = broadcastTestAccount.id
+      // Insert online broadcast
+      const broadcastInfo = {
+        accountId: accountId,
+        broadcastAccountId: broadcastAccountId,
+      }
+      const onlineBroadcast = await insertOnlineBroadcast(broadcastInfo)
+      // Make sure online broadcast was inserted correctly
+      expect(onlineBroadcast.accountId).to.equal(broadcastInfo.accountId)
+      expect(onlineBroadcast.broadcastAccountId).to.equal(broadcastInfo.broadcastAccountId)
+      // Fetch recent online broadcasts for account
+      const goodLookupInfo = {
+        accountId: accountId,
+        lookbackHours: 24,
+      }
+      const badLookupInfo = {
+        accountId: accountId,
+        lookbackHours: 0,
+      }
+      const recentOnlineBroadcasts = await getRecentOnlineBroadcasts(goodLookupInfo)
+      const recentOnlineBroadcastsBad = await getRecentOnlineBroadcasts(badLookupInfo)
+      // Make sure recent online broadcasts for account were fetched correctly
+      expect(recentOnlineBroadcasts.length).to.equal(1)
+      expect(recentOnlineBroadcasts[0].id).to.equal(onlineBroadcast.id)
+      expect(recentOnlineBroadcasts[0].accountId).to.equal(onlineBroadcast.accountId)
+      expect(recentOnlineBroadcasts[0].broadcastAccountId).to.equal(onlineBroadcast.broadcastAccountId)
+      should.not.exist(recentOnlineBroadcastsBad[0])
     })
   })

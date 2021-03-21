@@ -49,7 +49,7 @@ async function createStream(streamInfo, app){
     const accountDetails = await fetchAccountDetailsBasic(accountId)
     const followers = await getAccountFollowers(accountId)
     const socket = app.get('io')
-    const message = `${accountDetails.firstname} ${accountDetails.lastname} (${accountDetails.username}) started a stream`
+    const message = `${accountDetails.firstname} ${accountDetails.lastname} (${accountDetails.username}) started an audio room`
     followers.map(follower => pushNotificationMessage(follower.accountId, message, socket))
     // Return results
     return {
@@ -181,7 +181,7 @@ async function inviteParticipantToStream(inviteInfo, app){
     // Insert stream invitation into DB
     const streamInvitation = await insertStreamInvitation(inviteInfo)
     // Send browser push notification
-    const messageSubject = `${accountDetails.firstname} ${accountDetails.lastname} (${accountDetails.username}) invited you to their stream "${topic.topic}"`
+    const messageSubject = `${accountDetails.firstname} ${accountDetails.lastname} (${accountDetails.username}) invited you to their audio room "${topic.topic}"`
     const message = `You've been invited! ${messageSubject}`
     const socket = app.get('io')
     pushNotificationMessage(inviteeAccountId, message, socket)

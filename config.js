@@ -1,3 +1,4 @@
+require('dotenv').config()
 const env = process.env.NODE_ENV
 const webURL = process.env.WEB_URL
 const POSTGRES_PASSWORD = process.env.POSTGRES_PASSWORD

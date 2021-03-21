@@ -162,6 +162,30 @@ async function getOnlineAccountsFollowing(accountId){
   }
 }
 
+async function fetchAccountsFollowing(accountId){
+  try {
+    const following = await getAccountsFollowing(accountId)
+    const followingFrmtd = await Promise.all(following.map(async (row) => {
+      return await fetchAccountDetailsBasic(row.accountId)
+    }))
+    return followingFrmtd
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+async function fetchAccountFollowers(accountId){
+  try {
+    const followers = await getAccountFollowers(accountId)
+    const followersFrmtd = await Promise.all(followers.map(async (row) => {
+      return await fetchAccountDetailsBasic(row.accountId)
+    }))
+    return followersFrmtd
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 
 
 module.exports = {
@@ -169,4 +193,6 @@ module.exports = {
   unfollow,
   getFollowingSuggestions,
   getOnlineAccountsFollowing,
+  fetchAccountsFollowing,
+  fetchAccountFollowers,
 }
