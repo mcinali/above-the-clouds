@@ -2,10 +2,11 @@ const { pool, pgTransaction } = require('../pg_helpers')
 
 async function insertStream(streamInfo){
   try {
-    const { topicId, accountId, inviteOnly, capacity } = streamInfo
+    const { topicId, accountId, inviteOnly, capacity, startTime } = streamInfo
+    const startTimeFrmtd = (startTime) ? `'${startTime}'` : 'now()'
     const query = `
-      INSERT INTO streams (topic_id, creator_id, invite_only, capacity)
-      VALUES (${topicId}, ${accountId}, ${inviteOnly}, ${capacity})
+      INSERT INTO streams (topic_id, creator_id, invite_only, capacity, start_time)
+      VALUES (${topicId}, ${accountId}, ${inviteOnly}, ${capacity}, ${startTimeFrmtd})
       RETURNING *`
     const result = await pgTransaction(query)
     return result.rows[0]
@@ -17,7 +18,7 @@ async function insertStream(streamInfo){
 async function getStreamDetails(streamId){
   try {
     const query = `
-      SELECT id, topic_id, creator_id, invite_only, capacity, start_time, end_time
+      SELECT id, topic_id, creator_id, invite_only, capacity, start_time, end_time, created_at
       FROM streams where id = ${streamId}`
     return pool
             .query(query)
@@ -137,6 +138,45 @@ async function updateStreamEndTime(id){
   }
 }
 
+async function getScheduledStreamsForReminders(mins){
+  try {
+    const query = `
+      SELECT * FROM streams WHERE start_time > now() AND start_time < now() + INTERVAL '${mins} mins'`
+    return pool
+            .query(query)
+            .then(res => res.rows)
+            .catch(error => new Error(error))
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+async function insertStreamReminder(info){
+  try {
+    const { streamId, accountId } = info
+    const query = `
+      INSERT INTO stream_reminders (stream_id, account_id)
+      VALUES (${streamId}, ${accountId})
+      RETURNING *`
+    const result = await pgTransaction(query)
+    return result.rows[0]
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+async function getStreamReminders(streamId){
+  try {
+    const query = `SELECT * FROM stream_reminders WHERE stream_id = ${streamId}`
+    return pool
+            .query(query)
+            .then(res => res.rows)
+            .catch(error => new Error(error))
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 module.exports = {
   insertStream,
   getStreamDetails,
@@ -148,4 +188,7 @@ module.exports = {
   getActiveAccountStreams,
   updateStreamParticipantEndTime,
   updateStreamEndTime,
+  getScheduledStreamsForReminders,
+  insertStreamReminder,
+  getStreamReminders,
 }

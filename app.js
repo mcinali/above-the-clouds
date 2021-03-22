@@ -1,5 +1,7 @@
 const express = require('express')
 const cors = require('cors')
+const CronJob = require('cron').CronJob
+const { sendScheduledStreamReminders } = require('./services/streams')
 const { pgMigrate } = require('./pg_migrations')
 const index = require('./routes/index')
 const preregistration = require('./routes/preregistration')
@@ -51,3 +53,9 @@ http.listen(8000, hostname, () => {
 
 // RUN DB migrations
 pgMigrate()
+
+// Scheduled Stream Reminder Cronjob
+const job = new CronJob('45,15 * * * *', function () {
+  sendScheduledStreamReminders(15)
+}, null, true, 'America/Los_Angeles')
+job.start()

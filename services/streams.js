@@ -3,6 +3,7 @@ const { sendEmail } = require('../sendgrid')
 const { twilioClient, createTwilioRoomAccessToken, sendSMS } = require('../twilio')
 const { getTopicInfo } = require('../models/topics')
 const { getAccountsFollowing, getAccountFollowers } = require('../models/follows')
+const { getAccountDetails } = require('../models/accounts')
 const { fetchAccountDetails, fetchAccountDetailsBasic } = require('../services/accounts')
 const {
   insertStream,
@@ -15,6 +16,9 @@ const {
   getActiveAccountStreams,
   updateStreamParticipantEndTime,
   updateStreamEndTime,
+  getScheduledStreamsForReminders,
+  insertStreamReminder,
+  getStreamReminders,
 } = require('../models/streams')
 const {
   broadcastStreamJoins,
@@ -213,9 +217,17 @@ async function joinStream(joinInfo, app){
     const streamId = joinInfo.streamId
     const accountId = joinInfo.accountId
     const streamDetails = await getStreamDetails(streamId)
-    // Throw errors if stream does not exist or if stream is no longer active
-    if (streamDetails.endTime){
+    // Throw errors if stream does not exist
+    if (!Boolean(streamDetails)){
+      throw new Error('Stream does not exist.')
+    }
+    // Throw errors if stream is no longer active
+    if (streamDetails.endTime) {
       throw new Error('Stream is inactive. Users cannot join inactive streams.')
+    }
+    // Throw errors if stream has not started yet
+    if (streamDetails.startTime.getTime() > new Date().getTime()) {
+      throw new Error('Stream has not started yet.')
     }
     // Throw error if user is active in another stream
     const activeUserStreams = await getActiveAccountStreams(accountId)
@@ -357,6 +369,44 @@ async function endStream(streamId){
   }
 }
 
+async function createStreamReminder(info){
+  try{
+    const streamReminder = await insertStreamReminder(info)
+    return streamReminder
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+// Scheduled Stream Reminders
+async function sendScheduledStreamReminders(mins){
+  try {
+    const scheduledStreamsForReminders = await getScheduledStreamsForReminders(mins)
+    scheduledStreamsForReminders.map(async (scheduledStreamsForReminder) => {
+      const streamId = scheduledStreamsForReminder.id
+      const streamStartTime = scheduledStreamsForReminder.startTime
+      const topicId = scheduledStreamsForReminder.topicId
+      const topicDetails = await getTopicInfo(topicId)
+      const streamReminders = await getStreamReminders(streamId)
+      streamReminders.map(async (streamReminder) => {
+        const accountId = streamReminder.accountId
+        const accountDetails = await getAccountDetails(accountId)
+        const phoneNumber = accountDetails.phone
+        const minToStart = Math.ceil((streamStartTime.getTime() - new Date().getTime()) / (1000*60))
+        const textMessage = `Above the Clouds Reminder: '${topicDetails.topic}' audio room is starting in ${minToStart} minutes.
+
+        ${webURL}
+        `
+        sendSMS(phoneNumber, textMessage)
+      })
+    })
+    return
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+
 module.exports = {
   createStream,
   getStreamBasicInfo,
@@ -365,4 +415,6 @@ module.exports = {
   joinStream,
   leaveStream,
   endStream,
+  sendScheduledStreamReminders,
+  createStreamReminder,
 }

@@ -3,7 +3,7 @@ const { pool, pgTransaction } = require('../pg_helpers')
 async function getStreamCreationsForAccount(accountId, lookbackHours){
   try {
     const query = `
-      SELECT id, creator_id
+      SELECT id, creator_id, start_time
       FROM streams
       WHERE creator_id = ${accountId}
       AND created_at + INTERVAL '${lookbackHours} hour' > now()`

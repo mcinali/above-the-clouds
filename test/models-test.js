@@ -66,6 +66,9 @@ const {
   getActiveAccountStreams,
   updateStreamParticipantEndTime,
   updateStreamEndTime,
+  getScheduledStreamsForReminders,
+  insertStreamReminder,
+  getStreamReminders,
 } = require('../models/streams')
 const {
   getStreamCreationsForAccount,
@@ -698,8 +701,6 @@ describe('Streams Tests', function() {
   it(`Should...
     - Insert Stream
     - Check to make sure Stream info was inserted correctly
-    - Fetch Stream Info
-    - Check to make sure Stream info was fetched correctly
     - Insert Stream Invite
     - Check to make sure Stream Invite was inserted correctly
     - Fetch Stream Invitiations
@@ -715,7 +716,17 @@ describe('Streams Tests', function() {
     - Update Stream Participant End Time
     - Check to make sure Stream Participant End Time was updated correctly
     - Update Stream End Time
-    - Check to make sure Stream End Time was updated correctly`, async function() {
+    - Check to make sure Stream End Time was updated correctly
+    - Insert future stream info
+    - Check to make sure Future Stream info was inserted correctly
+    - Fetch Stream Info
+    - Check to make sure Stream info was fetched correctly
+    - Fetch future streams for reminders
+    - Check to make sure future streams for reminders were fetched correctly
+    - Insert stream reminder
+    - Check to make sure stream reminder was inserted correctly
+    - Fetch stream reminders
+    - Check to make sure sream reminders were fetched correctly`, async function() {
       const accountRow = await getAccountRow()
       const accountId = accountRow.id
       const topic = await getTopicRow()
@@ -812,6 +823,50 @@ describe('Streams Tests', function() {
       // Check to make sure Stream End Time was updated correctly
       expect(streamEnd.id).to.equal(stream.id)
       expect(streamEnd.endTime.getTime() - streamEndBenchmark.getTime()).to.be.within(0,1)
+      // Insert future stream info
+      const minsAhead = 60
+      const futureStartTime = new Date(new Date().getTime() + 1000*60*minsAhead).toISOString()
+      const futureStreamInfo = {
+        topicId: topicId,
+        accountId: accountId,
+        inviteOnly: true,
+        capacity:4,
+        startTime: futureStartTime,
+      }
+      const futureStream = await insertStream(futureStreamInfo)
+      // Check to make sure Future Stream info was inserted correctly
+      expect(futureStream.topicId).to.equal(futureStreamInfo.topicId)
+      expect(futureStream.creatorId).to.equal(futureStreamInfo.accountId)
+      expect(futureStream.inviteOnly).to.equal(futureStreamInfo.inviteOnly)
+      expect(futureStream.capacity).to.equal(futureStreamInfo.capacity)
+      expect(futureStream.startTime.getTime()).to.be.above(streamStart.getTime())
+      should.not.exist(stream.endTime)
+      // Fetch future streams for reminders
+      const scheduledStreamsForReminders = await getScheduledStreamsForReminders(minsAhead)
+      const scheduledStreamsForRemindersEmpty = await getScheduledStreamsForReminders(0)
+      // Check to make sure future streams for reminders were fetched correctly
+      expect(scheduledStreamsForReminders.length).to.be.above(0)
+      scheduledStreamsForReminders.map(stream => {
+        expect(stream.startTime.getTime()).to.be.above(new Date().getTime())
+        expect(stream.startTime.getTime()).to.be.below(new Date().getTime() + 1000*60*minsAhead)
+      })
+      expect(scheduledStreamsForRemindersEmpty.length).to.equal(0)
+      // Insert stream reminder
+      const streamReminderInfo = {
+        streamId: futureStream.id,
+        accountId: futureStream.creatorId,
+      }
+      const streamReminder = await insertStreamReminder(streamReminderInfo)
+      // Check to make sure stream reminder was inserted correctly
+      expect(streamReminder.streamId).to.equal(streamReminderInfo.streamId)
+      expect(streamReminder.accountId).to.equal(streamReminderInfo.accountId)
+      // Fetch stream reminders
+      const reminderStreams = await getStreamReminders(futureStream.id)
+      // Check to make sure sream reminders were fetched correctly
+      expect(reminderStreams.length).to.equal(1)
+      expect(reminderStreams[0].id).to.equal(streamReminder.id)
+      expect(reminderStreams[0].streamId).to.equal(streamReminder.streamId)
+      expect(reminderStreams[0].accountId).to.equal(streamReminder.accountId)
   })
 })
 

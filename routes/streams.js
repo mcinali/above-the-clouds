@@ -4,6 +4,7 @@ const {
   createStream,
   getStreamInfo,
   inviteParticipantToStream,
+  createStreamReminder,
   joinStream,
   leaveStream,
   endStream,
@@ -49,6 +50,17 @@ router.post('/invite', checkAccountBodyAccessToken, checkAccountStreamAccess, as
   } catch (error) {
     console.error(error)
     return res.status(400).json({error: `Failed to send stream invite`})
+  }
+})
+
+// Set stream reminder
+router.post('/reminder', checkAccountBodyAccessToken, async function (req, res) {
+  try {
+    const results = await createStreamReminder(req.body)
+    return res.send(results)
+  } catch (error) {
+    console.error(error)
+    return res.status(400).json({error: `Failed to end stream`})
   }
 })
 
