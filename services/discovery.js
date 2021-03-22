@@ -11,6 +11,7 @@ const {
   getStreamParticipants,
   getStreamDetails,
   getActiveAccountStreams,
+  getStreamReminders,
 } = require('../models/streams')
 const { fetchAccountDetailsBasic } = require('../services/accounts')
 
@@ -74,8 +75,6 @@ async function getDiscoveryStreams(accountId){
       streamDetails['topic'] = topicInfo.topic
       // Get stream participants
       const streamParticipants = await getStreamParticipants(streamId)
-      // Get invitations
-      const invitationsToStream = streamInvitations.filter(item => item.streamId==streamId)
       // Get following participants
       const followingParticipants = streamParticipants.filter(participant => accountsFollowing.includes(participant.accountId))
       // Check if user is active in stream
@@ -87,6 +86,15 @@ async function getDiscoveryStreams(accountId){
         const following = accountsFollowing.filter(followingAccountId => followingAccountId==participant.accountId)
         participantAccountDetails['following'] = (following.length>0) ? true : (participant.accountId==accountId) ? null : false
         return participantAccountDetails
+      }))
+      // Get invitations
+      const invitationsToStream = streamInvitations.filter(item => item.streamId==streamId)
+      // Get stream reminders
+      const streamReminders = await getStreamReminders(streamId)
+      const streamReminderAccountIds = streamReminders.map(streamReminder => streamReminder.accountId)
+      // Format stream reminder accounts
+      const streamReminderAccountsFrmtd = await Promise.all(streamReminderAccountIds.map(async (streamReminderAccountId) => {
+        return await fetchAccountDetailsBasic(streamReminderAccountId)
       }))
       // Attached stream participant information to stream object
       return {
@@ -104,7 +112,8 @@ async function getDiscoveryStreams(accountId){
           ttlParticipants: streamParticipants.length,
           ttlFollowing: followingParticipants.length,
           details: participantsFrmtd,
-        }
+        },
+        reminders: streamReminderAccountsFrmtd,
       }
     }))
     // Sort potential streams
