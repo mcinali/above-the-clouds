@@ -104,7 +104,7 @@ async function fetchAccountDetailsBasic(accountId){
       username:account.username,
       firstname:accountDetails.firstname,
       lastname:accountDetails.lastname,
-      // profilePicture: profilePicture,
+      profilePicture: profilePicture,
     }
     return result
   } catch (error) {
