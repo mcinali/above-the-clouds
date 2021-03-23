@@ -69,6 +69,8 @@ async function getDiscoveryStreams(accountId){
     const streamObjects = await Promise.all(streamIds.map(async (streamId) => {
       // Get stream details
       const streamDetails = await getStreamDetails(streamId)
+      // Get creator account info
+      const creatorAccountDetails = await fetchAccountDetailsBasic(streamDetails.creatorId)
       // Get topic info
       const topicInfo = await getTopicInfo(streamDetails.topicId)
       // Attach topic to stream object
@@ -99,7 +101,7 @@ async function getDiscoveryStreams(accountId){
       // Attached stream participant information to stream object
       return {
         streamId: streamDetails.id,
-        creatorId: streamDetails.creatorId,
+        creator: creatorAccountDetails,
         topicId: streamDetails.topicId,
         topic: topicInfo.topic,
         isActive: isActive,
