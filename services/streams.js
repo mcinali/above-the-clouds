@@ -18,7 +18,8 @@ const {
   updateStreamEndTime,
   getScheduledStreamsForReminders,
   insertStreamReminder,
-  getStreamReminders,
+  getActiveStreamReminders,
+  deactivateStreamRemindersUpdate,
 } = require('../models/streams')
 const {
   broadcastStreamJoins,
@@ -369,16 +370,7 @@ async function endStream(streamId){
   }
 }
 
-async function createStreamReminder(info){
-  try{
-    const streamReminder = await insertStreamReminder(info)
-    return streamReminder
-  } catch (error) {
-    throw new Error(error)
-  }
-}
-
-// Scheduled Stream Reminders
+// Send reminder for scheduled stream
 async function sendScheduledStreamReminders(mins){
   try {
     const scheduledStreamsForReminders = await getScheduledStreamsForReminders(mins)
@@ -387,7 +379,7 @@ async function sendScheduledStreamReminders(mins){
       const streamStartTime = scheduledStreamsForReminder.startTime
       const topicId = scheduledStreamsForReminder.topicId
       const topicDetails = await getTopicInfo(topicId)
-      const streamReminders = await getStreamReminders(streamId)
+      const streamReminders = await getActiveStreamReminders(streamId)
       streamReminders.map(async (streamReminder) => {
         const accountId = streamReminder.accountId
         const accountDetails = await getAccountDetails(accountId)
@@ -406,6 +398,26 @@ async function sendScheduledStreamReminders(mins){
   }
 }
 
+// Create reminder for scheduled stream
+async function createStreamReminder(info){
+  try{
+    const streamReminder = await insertStreamReminder(info)
+    return streamReminder
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+// Deactivate reminder for scheduled stream
+async function deactivateStreamReminder(info){
+  try{
+    const { streamReminderId } = info
+    const deacticatedStreamReminder = await deactivateStreamRemindersUpdate(streamReminderId)
+    return deacticatedStreamReminder
+  } catch (error) {
+    throw new Error(error)
+  }
+}
 
 module.exports = {
   createStream,
@@ -417,4 +429,5 @@ module.exports = {
   endStream,
   sendScheduledStreamReminders,
   createStreamReminder,
+  deactivateStreamReminder,
 }

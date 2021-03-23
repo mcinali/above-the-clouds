@@ -7,6 +7,7 @@ const {
   getStreamDetails,
   getStreamParticipants,
   getStreamParticipantDetails,
+  getStreamReminder,
 } = require('../models/streams')
 const { verifyHashedText } = require('../encryption')
 
@@ -238,6 +239,21 @@ async function checkAccountStreamAccess(req, res, next){
   }
 }
 
+async function checkAccountStreamReminderAccess(req, res, next){
+  try {
+    const { streamReminderId, accountId } = req.body
+    const streamReminderDetails = await getStreamReminder(streamReminderId)
+    if (!Boolean(streamReminderDetails)){
+      return res.status(400).json({error: ['Stream reminder does not exist']})
+    } else if (streamReminderDetails.accountId != accountId){
+      return res.status(401).json({error: ['Account does not have acccess to this stream reminder']})
+    }
+    next()
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 module.exports = {
   checkLoginCredentials,
   validatePasswordResetToken,
@@ -248,4 +264,5 @@ module.exports = {
   checkAccountParamsAccessToken,
   authenticateSocket,
   checkAccountStreamAccess,
+  checkAccountStreamReminderAccess,
 }

@@ -5,6 +5,7 @@ const {
   getStreamInfo,
   inviteParticipantToStream,
   createStreamReminder,
+  deactivateStreamReminder,
   joinStream,
   leaveStream,
   endStream,
@@ -13,6 +14,7 @@ const {
   checkAccountBodyAccessToken,
   checkAccountQueryAccessToken,
   checkAccountStreamAccess,
+  checkAccountStreamReminderAccess,
 } = require('../middleware/auth')
 
 
@@ -57,6 +59,17 @@ router.post('/invite', checkAccountBodyAccessToken, checkAccountStreamAccess, as
 router.post('/reminder', checkAccountBodyAccessToken, async function (req, res) {
   try {
     const results = await createStreamReminder(req.body)
+    return res.send(results)
+  } catch (error) {
+    console.error(error)
+    return res.status(400).json({error: `Failed to end stream`})
+  }
+})
+
+// Set stream reminder
+router.post('/reminder/deactivate', checkAccountBodyAccessToken, checkAccountStreamReminderAccess, async function (req, res) {
+  try {
+    const results = await deactivateStreamReminder(req.body)
     return res.send(results)
   } catch (error) {
     console.error(error)

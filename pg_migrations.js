@@ -182,6 +182,7 @@ async function pgMigrate(){
         id SERIAL PRIMARY KEY NOT NULL,
         stream_id INTEGER NOT NULL REFERENCES streams(id) ON DELETE CASCADE,
         account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+        active BOOLEAN NOT NULL DEFAULT true,
         created_at TIMESTAMPTZ NOT NULL DEFAULT now()
       )`
     )

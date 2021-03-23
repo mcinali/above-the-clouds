@@ -11,7 +11,7 @@ const {
   getStreamParticipants,
   getStreamDetails,
   getActiveAccountStreams,
-  getStreamReminders,
+  getActiveStreamReminders,
 } = require('../models/streams')
 const { fetchAccountDetailsBasic } = require('../services/accounts')
 
@@ -92,7 +92,7 @@ async function getDiscoveryStreams(accountId){
       // Get invitations
       const invitationsToStream = streamInvitations.filter(item => item.streamId==streamId)
       // Get stream reminders
-      const streamReminders = await getStreamReminders(streamId)
+      const streamReminders = await getActiveStreamReminders(streamId)
       const streamReminderAccountIds = streamReminders.map(streamReminder => streamReminder.accountId)
       // Format stream reminder accounts
       const streamReminderAccountsFrmtd = await Promise.all(streamReminderAccountIds.map(async (streamReminderAccountId) => {

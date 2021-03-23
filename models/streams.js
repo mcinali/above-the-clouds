@@ -165,9 +165,21 @@ async function insertStreamReminder(info){
   }
 }
 
-async function getStreamReminders(streamId){
+async function getStreamReminder(streamReminderId){
   try {
-    const query = `SELECT * FROM stream_reminders WHERE stream_id = ${streamId}`
+    const query = `SELECT * FROM stream_reminders WHERE id = ${streamReminderId}`
+    return pool
+            .query(query)
+            .then(res => res.rows[0])
+            .catch(error => new Error(error))
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
+async function getActiveStreamReminders(streamId){
+  try {
+    const query = `SELECT * FROM stream_reminders WHERE stream_id = ${streamId} AND active = true`
     return pool
             .query(query)
             .then(res => res.rows)
@@ -176,6 +188,17 @@ async function getStreamReminders(streamId){
     throw new Error(error)
   }
 }
+
+async function deactivateStreamRemindersUpdate(reminderId){
+  try {
+    const query = `UPDATE stream_reminders SET active = false WHERE id = ${reminderId} RETURNING *`
+    const result = await pgTransaction(query)
+    return result.rows[0]
+  } catch (error) {
+    throw new Error(error)
+  }
+}
+
 
 module.exports = {
   insertStream,
@@ -190,5 +213,7 @@ module.exports = {
   updateStreamEndTime,
   getScheduledStreamsForReminders,
   insertStreamReminder,
-  getStreamReminders,
+  getStreamReminder,
+  getActiveStreamReminders,
+  deactivateStreamRemindersUpdate,
 }

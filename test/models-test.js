@@ -68,7 +68,9 @@ const {
   updateStreamEndTime,
   getScheduledStreamsForReminders,
   insertStreamReminder,
-  getStreamReminders,
+  getStreamReminder,
+  getActiveStreamReminders,
+  deactivateStreamRemindersUpdate,
 } = require('../models/streams')
 const {
   getStreamCreationsForAccount,
@@ -725,8 +727,14 @@ describe('Streams Tests', function() {
     - Check to make sure future streams for reminders were fetched correctly
     - Insert stream reminder
     - Check to make sure stream reminder was inserted correctly
-    - Fetch stream reminders
-    - Check to make sure sream reminders were fetched correctly`, async function() {
+    - Fetch stream reminder
+    - Check to make sure stream reminder was fetched correctly
+    - Fetch active stream reminders
+    - Check to make sure active stream reminders were fetched correctly
+    - Deactivate stream reminder
+    - Check to make sure stream reminder was deactivated correctly
+    - Fetch deactivated stream reminders
+    - Check to make sure deacticated stream reminders were fetched correctly`, async function() {
       const accountRow = await getAccountRow()
       const accountId = accountRow.id
       const topic = await getTopicRow()
@@ -860,13 +868,31 @@ describe('Streams Tests', function() {
       // Check to make sure stream reminder was inserted correctly
       expect(streamReminder.streamId).to.equal(streamReminderInfo.streamId)
       expect(streamReminder.accountId).to.equal(streamReminderInfo.accountId)
-      // Fetch stream reminders
-      const reminderStreams = await getStreamReminders(futureStream.id)
-      // Check to make sure sream reminders were fetched correctly
+      // Fetch stream reminder
+      const fetchedStreamReminder = await getStreamReminder(streamReminder.id)
+      // Check to make sure stream reminder was fetched correctly
+      expect(fetchedStreamReminder.id).to.equal(streamReminder.id)
+      expect(fetchedStreamReminder.accountId).to.equal(streamReminder.accountId)
+      expect(fetchedStreamReminder.streamId).to.equal(streamReminder.streamId)
+      expect(fetchedStreamReminder.active).to.equal(streamReminder.active)
+      // Fetch active stream reminders
+      const reminderStreams = await getActiveStreamReminders(futureStream.id)
+      // Check to make sure active stream reminders were fetched correctly
       expect(reminderStreams.length).to.equal(1)
       expect(reminderStreams[0].id).to.equal(streamReminder.id)
       expect(reminderStreams[0].streamId).to.equal(streamReminder.streamId)
       expect(reminderStreams[0].accountId).to.equal(streamReminder.accountId)
+      // Deactivate stream reminder
+      const deactivatedStreamReminder = await deactivateStreamRemindersUpdate(streamReminder.id)
+      // Check to make sure stream reminder was deactivated correctly
+      expect(deactivatedStreamReminder.id).to.equal(streamReminder.id)
+      expect(deactivatedStreamReminder.streamId).to.equal(streamReminder.streamId)
+      expect(deactivatedStreamReminder.accountId).to.equal(streamReminder.accountId)
+      expect(deactivatedStreamReminder.active).to.equal(false)
+      // Fetch deactivated stream reminders
+      const deactivatedReminderStreams = await getActiveStreamReminders(deactivatedStreamReminder.streamId)
+      // Check to make sure deacticated stream reminders were fetched correctly
+      expect(deactivatedReminderStreams.length).to.equal(0)
   })
 })
 
