@@ -93,10 +93,11 @@ async function getDiscoveryStreams(accountId){
       const invitationsToStream = streamInvitations.filter(item => item.streamId==streamId)
       // Get stream reminders
       const streamReminders = await getActiveStreamReminders(streamId)
-      const streamReminderAccountIds = streamReminders.map(streamReminder => streamReminder.accountId)
       // Format stream reminder accounts
-      const streamReminderAccountsFrmtd = await Promise.all(streamReminderAccountIds.map(async (streamReminderAccountId) => {
-        return await fetchAccountDetailsBasic(streamReminderAccountId)
+      const streamReminderAccountsFrmtd = await Promise.all(streamReminders.map(async (streamReminder) => {
+        const result = await fetchAccountDetailsBasic(streamReminder.accountId)
+        result['streamReminderId'] = streamReminder.id
+        return result
       }))
       // Attached stream participant information to stream object
       return {
