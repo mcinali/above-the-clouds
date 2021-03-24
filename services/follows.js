@@ -63,10 +63,10 @@ async function unfollow(unfollowInfo){
 
 async function getFollowingSuggestions(accountId){
   try {
-    // Get accounts following
+    // Get accountIds for following
     const accountsFollowingRows = await getAccountsFollowing(accountId)
     const accountsFollowing = accountsFollowingRows.map(account => { return account.accountId })
-    // Get account followers
+    // Get accountIds for followers
     const accountFollowersRows = await getAccountFollowers(accountId)
     const accountFollowers = accountFollowersRows.map(account => { return account.accountId })
     // Get email used to register
@@ -92,8 +92,15 @@ async function getFollowingSuggestions(accountId){
     const filterAccountIds = accountsFollowing.concat([parseInt(accountId)])
     // Get "first order account ids" (i.e. accountIds that invited user + following accountIds)
     const firstOrderAccountIds = [...new Set(accountsFollowing.concat(invitationAccountIds))]
-    // Suggest accounts that are followed by 1st order accountIds (accounts following + invite accounts)
+    // Instantiate following suggestions dict (to score suggestions)
     const followingSuggestionsDict = {}
+    // Add inviters that account is not already following
+    invitationAccountIds.map(invitationAccountId => {
+      if (!filterAccountIds.includes(invitationAccountId)){
+        followingSuggestionsDict[invitationAccountId] = 5
+      }
+    })
+    // Suggest accounts that following are following
     await Promise.all(firstOrderAccountIds.map(async (id) => {
       const followSuggestionsArray = await getAccountsFollowing(id)
       followSuggestionsArray.map(followSuggestionRow => {
